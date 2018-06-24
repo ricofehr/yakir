@@ -1,0 +1,11 @@
+# Vagrant folder
+/.vagrant
+
+# tmp folder
+/tmp
+
+# password file
+ansible/group_vars/master/passwords
+
+# ansible retry file
+ansible/playbook.retry

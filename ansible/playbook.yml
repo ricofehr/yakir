@@ -1,0 +1,17 @@
+---
+- hosts:
+    - master
+    - nodes
+  serial: 1
+  become: false
+  strategy: linear
+  roles:
+    - role: base
+    - role: docker
+      become: true
+    - role: kubernetes
+      become: true
+    - role: k8s
+  pre_tasks:
+    - name: Ensure gitmodules update
+      local_action: command git submodule update --init --recursive

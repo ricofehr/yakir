@@ -1,0 +1,9 @@
+[submodule "ansible/roles/kubernetes"]
+	path = ansible/roles/kubernetes
+	url = https://github.com/ricofehr/ansible-role-kubernetes
+[submodule "ansible/roles/base"]
+	path = ansible/roles/base
+	url = https://github.com/ricofehr/ansible-role-base
+[submodule "ansible/roles/docker"]
+	path = ansible/roles/docker
+	url = https://github.com/geerlingguy/ansible-role-docker

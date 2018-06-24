@@ -1,0 +1,199 @@
+---
+
+- name: Add current user to docker group
+  user:
+    append: yes
+    name: "{{ ansible_user }}"
+    groups:
+      - docker
+  become: yes
+
+- name: Remove Default Host Entry
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '^127\.0\.0\.1.*$'
+    state: absent
+  become: yes
+
+- name: Remove Default Host Entry 2
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '^10\..*$'
+    state: absent
+  become: yes
+
+- name: K8s ip routed by public master1
+  shell: route -n | grep 10.96.0.1 || route add 10.96.0.1 gw {{ hostvars['k8s-master1']['ansible_host'] }}
+  args:
+    creates: /home/{{ ansible_user }}/.k8sinstall
+  become: yes
+  when: kubernetes_node_type == 'worker'
+
+- name: Dns ip routed by public master1
+  shell: route -n | grep 10.96.0.10 || route add 10.96.0.10 gw {{ hostvars['k8s-master1']['ansible_host'] }}
+  args:
+    creates: /home/{{ ansible_user }}/.k8sinstall
+  become: yes
+  when: kubernetes_node_type == 'worker'
+
+- name: K8s ip route at start
+  copy:
+    content: |
+             #!/bin/bash
+             route add 10.96.0.1 gw {{ hostvars['k8s-master1']['ansible_host'] }}
+             route add 10.96.0.10 gw {{ hostvars['k8s-master1']['ansible_host'] }}
+    dest: /etc/network/if-up.d/routemaster
+    owner: root
+    mode: 0755
+  become: yes
+  when: kubernetes_node_type == 'worker'
+
+- name: Restart kubeproxy at reboot
+  copy:
+    content: |
+             #!/bin/bash
+             sudo -i -u {{ ansible_user}} nohup kubectl proxy --address={{ ansible_host }} --accept-hosts='^.*$' &
+             exit
+    dest: /etc/rc.local
+    owner: root
+    mode: 0755
+  become: yes
+  when: kubernetes_node_type == 'admin'
+
+- name: swapoff
+  shell: swapoff -a
+  args:
+    creates: /home/{{ ansible_user }}/.k8sinstall
+  become: yes
+
+- name: Remove Swap from fstab
+  become: yes
+  lineinfile:
+    dest: /etc/fstab
+    regexp: '^.*swap.*$'
+    state: absent
+  become: yes
+
+- name: Ensure kubelet.service
+  service: name=kubelet state=started enabled=yes
+  become: yes
+
+- name: write kubadm-config with feature gates
+  template:
+    src: templates/kubeadm-config.yml.j2
+    dest: ~/kubeadm-config.yaml
+    mode: 0755
+
+- name: init master
+  shell: kubeadm init --config kubeadm-config.yaml
+  args:
+    creates: /home/{{ ansible_user }}/.k8sinstall
+  run_once: true
+  become: yes
+  when: kubernetes_node_type == 'admin'
+
+- name: "init {{ ansible_user }} env"
+  shell: >
+    mkdir -p /home/{{ ansible_user }}/.kube;
+    sudo cp -i /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config;
+    sudo chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config;
+  run_once: true
+  when: kubernetes_node_type == 'admin'
+
+- name: get token
+  shell:  kubeadm token list | tail -n 1 | sed "s; .*;;"
+  register: master_token
+  run_once: true
+  become: yes
+  when: kubernetes_node_type == 'admin'
+
+- name: launch weave
+  shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+  args:
+    creates: ~/.k8sinstall
+  run_once: true
+  when: kubernetes_node_type == 'admin'
+
+- name: launch dashboard
+  shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+  args:
+    creates: ~/.k8sinstall
+  run_once: true
+  when: kubernetes_node_type == 'admin'
+
+- name: grant dashboard permissions
+  shell: kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard
+  args:
+    creates: ~/.k8sinstall
+  run_once: true
+  when: kubernetes_node_type == 'admin'
+
+- name: clone heapster
+  shell: git clone https://github.com/kubernetes/heapster
+  args:
+    creates: ~/.k8sinstall
+  run_once: true
+  when: kubernetes_node_type == 'admin'
+
+- name: launch influxdb
+  shell: kubectl apply -f heapster/deploy/kube-config/influxdb/
+  args:
+    creates: ~/.k8sinstall
+  run_once: true
+  when: kubernetes_node_type == 'admin'
+
+- name: launch heapster
+  shell: kubectl apply -f heapster/deploy/kube-config/rbac/heapster-rbac.yaml
+  args:
+    creates: ~/.k8sinstall
+  run_once: true
+  when: kubernetes_node_type == 'admin'
+
+- name: Add k8snode
+  shell: "kubeadm join --token {{ hostvars['k8s-master1']['master_token'].stdout }} --skip-preflight-checks=true --discovery-token-unsafe-skip-ca-verification {{ hostvars['k8s-master1']['ansible_host'] }}:443"
+  args:
+    creates: /home/{{ ansible_user }}/.k8sinstall
+  become: yes
+  when:
+    - kubernetes_node_type == 'worker'
+
+- name: proxy master
+  shell: nohup kubectl proxy --address={{ ansible_host }} --accept-hosts='^.*$' &
+  args:
+    creates: ~/.k8sinstall
+  when: kubernetes_node_type == 'admin'
+
+- name: url dashboard
+  debug:
+    msg: "You can reach the dashboard with http://{{ ansible_host }}:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/"
+  when: kubernetes_node_type == 'admin'
+
+- name: Ensure k8s is running and ready
+  pause:
+    minutes: 2
+
+- name: Resolv.conf on k8s dns pod
+  copy:
+    content: |
+             nameserver 10.96.0.10
+             nameserver 8.8.8.8
+             search svc.cluster.local
+    dest: /etc/resolv.conf
+  become: yes
+
+- name: get contents of authkey
+  command: cat /home/{{ ansible_user }}/.ssh/authorized_keys
+  register: authkey
+
+- name: Set authorized key for root user
+  authorized_key:
+    user: "root"
+    state: present
+    key: "{{ authkey.stdout }}"
+  become: yes
+
+- name: end install
+  file:
+    dest: ~/.k8sinstall
+    state: touch
+    force: yes
