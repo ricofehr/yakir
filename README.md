@@ -23,6 +23,7 @@ Prerequisites
 ## Run
 
 ```
+$ git submodule update --init
 $ vagrant up
 ```
 
