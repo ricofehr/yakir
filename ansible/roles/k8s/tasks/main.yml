@@ -101,7 +101,7 @@
   when: kubernetes_node_type == 'admin'
 
 - name: get token
-  shell:  kubeadm token list | tail -n 1 | sed "s; .*;;"
+  shell:  kubeadm token list | tail -n +2 | head -n 1 | sed "s; .*;;"
   register: master_token
   run_once: true
   become: yes
@@ -150,7 +150,7 @@
   when: kubernetes_node_type == 'admin'
 
 - name: Add k8snode
-  shell: "kubeadm join --token {{ hostvars['k8s-master1']['master_token'].stdout }} --skip-preflight-checks=true --discovery-token-unsafe-skip-ca-verification {{ hostvars['k8s-master1']['ansible_host'] }}:443"
+  shell: "kubeadm join --token {{ hostvars['k8s-master1']['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification {{ hostvars['k8s-master1']['ansible_host'] }}:443"
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   become: yes
