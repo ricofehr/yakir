@@ -78,14 +78,8 @@
   service: name=kubelet state=started enabled=yes
   become: yes
 
-- name: write kubadm-config with feature gates
-  template:
-    src: templates/kubeadm-config.yml.j2
-    dest: ~/kubeadm-config.yaml
-    mode: 0755
-
 - name: init master
-  shell: kubeadm init --config kubeadm-config.yaml
+  shell: kubeadm init --apiserver-advertise-address {{ ansible_host }} --apiserver-bind-port 443 --node-name {{ inventory_hostname }}
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   run_once: true
@@ -150,7 +144,7 @@
   when: kubernetes_node_type == 'admin'
 
 - name: Add k8snode
-  shell: "kubeadm join --token {{ hostvars['k8s-master1']['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification {{ hostvars['k8s-master1']['ansible_host'] }}:443"
+  shell: "kubeadm join --token {{ hostvars['k8s-master1']['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} {{ hostvars['k8s-master1']['ansible_host'] }}:443"
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   become: yes
