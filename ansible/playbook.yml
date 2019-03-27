@@ -15,3 +15,15 @@
   pre_tasks:
     - name: Ensure gitmodules update
       local_action: command git submodule update --init --recursive
+
+- hosts:
+    - master
+  serial: 1
+  become: false
+  strategy: linear
+  roles:
+    - role: helm
+    - role: kubedashboard
+  pre_tasks:
+    - name: Ensure gitmodules update
+      local_action: command git submodule update --init --recursive

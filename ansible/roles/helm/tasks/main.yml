@@ -1,0 +1,53 @@
+---
+
+- name: Tiller Service Account
+  copy:
+    content: |
+             apiVersion: v1
+             kind: ServiceAccount
+             metadata:
+               name: tiller
+               namespace: kube-system
+             ---
+             kind: ClusterRoleBinding
+             apiVersion: rbac.authorization.k8s.io/v1beta1
+             metadata:
+               name: tiller-clusterrolebinding
+             subjects:
+             - kind: ServiceAccount
+               name: tiller
+               namespace: kube-system
+             roleRef:
+               kind: ClusterRole
+               name: cluster-admin
+               apiGroup: ""
+    dest: ~/tillersa.yml
+
+- name: Create Tiller SA
+  shell: kubectl create -f ~/tillersa.yml
+
+- name: Download helm binary
+  get_url:
+    url: https://storage.googleapis.com/kubernetes-helm/helm-v2.13.1-linux-amd64.tar.gz
+    dest: /tmp/helm-v2.13.1-linux-amd64.tar.gz
+    mode: 0755
+
+- name: Extract helm binary
+  shell: >
+    tar xvfz helm-v2.13.1-linux-amd64.tar.gz;
+    chmod +x linux-amd64/helm;
+    mv linux-amd64/helm /usr/local/bin/;
+    rm -rf linux-amd64;
+  args:
+    chdir: /tmp
+  become: yes
+
+- name: Init helm
+  shell: helm init --service-account tiller
+
+- name: Ensure helm container is running
+  pause:
+    minutes: 2
+
+- name: Add google incubator repo
+  shell: helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator

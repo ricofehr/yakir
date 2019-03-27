@@ -1,0 +1,31 @@
+---
+
+- name: launch dashboard
+  shell: helm install stable/kubernetes-dashboard --name dashboard --namespace kube-system --set enableSkipLogin=true
+
+- name: Dashboard Admin Role (using only on test deployment !)
+  copy:
+    content: |
+             apiVersion: rbac.authorization.k8s.io/v1beta1
+             kind: ClusterRoleBinding
+             metadata:
+               name: kubernetes-dashboard
+               labels:
+                 k8s-app: dashboard-kubernetes-dashboard
+             roleRef:
+               apiGroup: rbac.authorization.k8s.io
+               kind: ClusterRole
+               name: cluster-admin
+             subjects:
+             - kind: ServiceAccount
+               name: dashboard-kubernetes-dashboard
+               namespace: kube-system
+    dest: ~/dashboard-admin.yml
+
+- name: Apply admin role to dashboard
+  shell: kubectl create -f ~/dashboard-admin.yml
+
+- name: url dashboard
+  debug:
+    msg: "You can reach the dashboard with http://{{ ansible_host }}:8001/api/v1/namespaces/kube-system/services/https:dashboard-kubernetes-dashboard:https/proxy/"
+  when: kubernetes_node_type == 'admin'

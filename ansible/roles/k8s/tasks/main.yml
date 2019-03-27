@@ -108,13 +108,6 @@
   run_once: true
   when: kubernetes_node_type == 'admin'
 
-- name: launch dashboard
-  shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
-  args:
-    creates: ~/.k8sinstall
-  run_once: true
-  when: kubernetes_node_type == 'admin'
-
 - name: grant dashboard permissions
   shell: kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard
   args:

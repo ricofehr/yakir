@@ -29,4 +29,4 @@ $ vagrant up
 
 Once setup done
 - Dashboard is reached here
-http://192.168.78.10:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
+http://192.168.78.10:8001/api/v1/namespaces/kube-system/services/https:dashboard-kubernetes-dashboard:https/proxy/
