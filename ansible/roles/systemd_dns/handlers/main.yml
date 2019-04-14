@@ -1,0 +1,12 @@
+---
+
+- name: restart resolved
+  shell: service systemd-resolved restart 
+  become: yes
+
+# - name: restart resolved
+#   service:
+#     name: systemd-resolved
+#     state: restarted
+#     enabled: yes
+#   become: yes

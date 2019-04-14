@@ -8,29 +8,31 @@
       - docker
   become: yes
 
-- name: Remove Default Host Entry
-  lineinfile:
-    dest: /etc/hosts
-    regexp: '^127\.0\.0\.1.*$'
-    state: absent
+- name: Update /etc/hosts - Remove hostname to 127.0.0.1 resolved hosts
+  lineinfile: dest=/etc/hosts regexp='^127\.0\.0\.1' line='127.0.0.1 localhost' owner=root group=root mode=0644
   become: yes
 
-- name: Remove Default Host Entry 2
-  lineinfile:
-    dest: /etc/hosts
-    regexp: '^10\..*$'
-    state: absent
+- name: Update /etc/hosts - Ensure private ip for k8s-master1 resolved hosts
+  lineinfile: dest=/etc/hosts regexp='k8s-master1$' line='{{ k8s_master_ip }} k8s-master1' owner=root group=root mode=0644
+  become: yes
+
+- name: Update /etc/hosts - Ensure private ip for k8s-node1 resolved hosts
+  lineinfile: dest=/etc/hosts regexp='k8s-node1$' line='{{ k8s_node1_ip }} k8s-node1' owner=root group=root mode=0644
+  become: yes
+
+- name: Update /etc/hosts - Ensure private ip for k8s-node2 resolved hosts
+  lineinfile: dest=/etc/hosts regexp='k8s-node2$' line='{{ k8s_node2_ip }} k8s-node2' owner=root group=root mode=0644
   become: yes
 
 - name: K8s ip routed by public master1
-  shell: route -n | grep 10.96.0.1 || route add 10.96.0.1 gw {{ hostvars['k8s-master1']['ansible_host'] }}
+  shell: route -n | grep 10.96.0.1 || route add 10.96.0.1 gw {{ k8s_master_ip }}
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   become: yes
   when: kubernetes_node_type == 'worker'
 
 - name: Dns ip routed by public master1
-  shell: route -n | grep 10.96.0.10 || route add 10.96.0.10 gw {{ hostvars['k8s-master1']['ansible_host'] }}
+  shell: route -n | grep 10.96.0.10 || route add 10.96.0.10 gw {{ k8s_master_ip }}
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   become: yes
@@ -40,8 +42,8 @@
   copy:
     content: |
              #!/bin/bash
-             route add 10.96.0.1 gw {{ hostvars['k8s-master1']['ansible_host'] }}
-             route add 10.96.0.10 gw {{ hostvars['k8s-master1']['ansible_host'] }}
+             route add 10.96.0.1 gw {{ k8s_master_ip }}
+             route add 10.96.0.10 gw {{ k8s_master_ip }}
     dest: /etc/network/if-up.d/routemaster
     owner: root
     mode: 0755
@@ -52,7 +54,7 @@
   copy:
     content: |
              #!/bin/bash
-             sudo -i -u {{ ansible_user}} nohup kubectl proxy --address={{ ansible_host }} --accept-hosts='^.*$' &
+             sudo -i -u {{ ansible_user}} nohup kubectl proxy --address={{ k8s_master_ip }} --accept-hosts='^.*$' &
              exit
     dest: /etc/rc.local
     owner: root
@@ -79,7 +81,7 @@
   become: yes
 
 - name: init master
-  shell: kubeadm init --apiserver-advertise-address {{ ansible_host }} --apiserver-bind-port 443 --node-name {{ inventory_hostname }}
+  shell: kubeadm init --apiserver-advertise-address {{ k8s_master_ip }} --apiserver-bind-port 443 --node-name {{ inventory_hostname }}
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   run_once: true
@@ -137,7 +139,7 @@
   when: kubernetes_node_type == 'admin'
 
 - name: Add k8snode
-  shell: "kubeadm join --token {{ hostvars['k8s-master1']['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} {{ hostvars['k8s-master1']['ansible_host'] }}:443"
+  shell: "kubeadm join --token {{ hostvars['k8s-master1']['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} {{ k8s_master_ip }}:443"
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   become: yes
@@ -145,14 +147,9 @@
     - kubernetes_node_type == 'worker'
 
 - name: proxy master
-  shell: nohup kubectl proxy --address={{ ansible_host }} --accept-hosts='^.*$' &
+  shell: nohup kubectl proxy --address={{ k8s_master_ip }} --accept-hosts='^.*$' &
   args:
     creates: ~/.k8sinstall
-  when: kubernetes_node_type == 'admin'
-
-- name: url dashboard
-  debug:
-    msg: "You can reach the dashboard with http://{{ ansible_host }}:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/"
   when: kubernetes_node_type == 'admin'
 
 - name: Ensure k8s is running and ready

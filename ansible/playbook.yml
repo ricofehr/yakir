@@ -6,6 +6,7 @@
   become: false
   strategy: linear
   roles:
+    - role: systemd_dns
     - role: base
     - role: docker
       become: true

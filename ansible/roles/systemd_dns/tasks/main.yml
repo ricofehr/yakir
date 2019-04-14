@@ -1,0 +1,11 @@
+---
+
+- name: disable systemd-resolved
+  shell: |
+    systemctl stop systemd-resolved
+    systemctl disable systemd-resolved
+    rm -f /etc/resolv.conf
+    echo "nameserver 8.8.8.8" > /etc/resolv.conf
+  args:
+    executable: /bin/bash
+  become: yes

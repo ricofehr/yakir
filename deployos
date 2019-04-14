@@ -1,0 +1,146 @@
+#!/bin/bash -e
+
+# Default parameters value
+OSUSER="tenant0"
+OSPASSWORD="tenant0"
+OSAUTHURL="http://172.29.236.101:5000/v3"
+OSTENANT="tenant0"
+OSREGION="RegionOne"
+FLAVORMASTERS="large"
+FLAVORNODES="xlarge"
+PRIVATENETWORK="private"
+PUBLICNETWORK="public"
+SECURITYGROUP="k8s"
+UBUNTUIMAGE="bionic"
+SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
+
+# Help function
+deployhelp() {
+  cat <<EOF
+Usage: $0 [options]
+-h           this is some help text.
+-a xxxx      openstack auth url, default is http://172.29.236.101:5000/v3
+-u xxxx      openstack user, default is tenant0
+-p xxxx      openstack password, default is tenant0
+-t xxxx      openstack tenant, default is tenant0
+-r xxxx      openstack region, default is RegionOne
+-fm xxxx     openstack flavor for master instance, default is large
+-fn xxxx     openstack flavor for nodes instance, default is xlarge
+-s xxxx      openstack tenant security group, default is k8s
+-o xxxx      openstack operating system image, default is bionic
+-k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
+EOF
+
+exit 1
+}
+
+# Parse cmd options
+while (($# > 0)); do
+  case "$1" in
+    -a)
+      shift
+      OSAUTHURL="$1"
+      shift
+      ;;
+    -u)
+      shift
+      OSUSER="$1"
+      shift
+      ;;
+    -p)
+      shift
+      OSPASSORD="$1"
+      shift
+      ;;
+    -t)
+      shift
+      OSTENANT="$1"
+      shift
+      ;;
+    -r)
+      shift
+      OSREGION="$1"
+      shift
+      ;;
+    -fm)
+      shift
+      FLAVORMASTERS="$1"
+      shift
+      ;;
+    -fn)
+      shift
+      FLAVORNODES="$1"
+      shift
+      ;;
+    -s)
+      shift
+      SECURITYGROUP="$1"
+      shift
+      ;;
+    -o)
+      shift
+      UBUNTUIMAGE="$1"
+      shift
+      ;;
+    -k)
+      shift
+      SSHKEYFILE="$1"
+      shift
+      ;;
+    -h)
+      shift
+      deployhelp
+      ;;
+    *)
+      shift
+      deployhelp
+      ;;
+  esac
+done
+
+# Ensure prerequisites parameters
+if [[ -z "$OSAUTHURL" ]]; then
+  echo "-a openstack auth url paremeter is missing"
+  deployhelp
+fi
+
+if [[ -z "$OSTENANT" ]]; then
+  echo "-t openstack tenant paremeter is missing"
+  deployhelp
+fi
+
+# Create k8s vms
+pushd tf/openstack > /dev/null
+terraform init
+terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
+-var provider_password="$OSPASSWORD" -var provider_auth_url="$OSAUTHURL" \
+-var provider_region="$OSREGION" -var flavor_master="$FLAVORMASTERS" \
+-var flavor_node="$FLAVORNODES" -var private_network_name="$PRIVATENETWORK" \
+-var public_network_name="$PUBLICNETWORK" -var security_group="$SECURITYGROUP" \
+-var image="$UBUNTUIMAGE" -var keypair_sshkey="$(cat $SSHKEYFILE | tr -d "\n")" -auto-approve
+sleep 30
+
+# get private and public vm ips
+K8SMASTER_IP="$(terraform output k8s-master1-ip)"
+K8SMASTER_PRIVATE_IP="$(terraform output k8s-master1-private-ip)"
+K8SMASTER_NODE1="$(terraform output k8s-node1-ip)"
+K8SNODE1_PRIVATE_IP="$(terraform output k8s-node1-private-ip)"
+K8SMASTER_NODE2="$(terraform output k8s-node2-ip)"
+K8SNODE2_PRIVATE_IP="$(terraform output k8s-node2-private-ip)"
+popd > /dev/null
+
+pushd ansible > /dev/null
+
+# Prepare inventory
+echo "[master]" > tfinventory
+echo "k8s-master1 ansible_host=${K8SMASTER_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+echo "[nodes]" >> tfinventory
+echo "k8s-node1 ansible_host=${K8SMASTER_NODE1} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+echo "k8s-node2 ansible_host=${K8SMASTER_NODE2} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+
+# Install one K8S master and two K8S nodes
+ansible-playbook -i tfinventory \
+--ssh-extra-args "-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
+--extra-vars "k8s_master_ip=$K8SMASTER_PRIVATE_IP" --extra-vars "k8s_node1_ip=$K8SNODE1_PRIVATE_IP" --extra-vars "k8s_node2_ip=$K8SNODE2_PRIVATE_IP"
+
+popd > /dev/null
