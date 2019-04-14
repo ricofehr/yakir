@@ -138,6 +138,9 @@ echo "[nodes]" >> tfinventory
 echo "k8s-node1 ansible_host=${K8SMASTER_NODE1} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
 echo "k8s-node2 ansible_host=${K8SMASTER_NODE2} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
 
+# Disable cowsay ansible output
+export ANSIBLE_NOCOWS=1
+
 # Install one K8S master and two K8S nodes
 ansible-playbook -i tfinventory \
 --ssh-extra-args "-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
