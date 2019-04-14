@@ -48,7 +48,7 @@ Usage: ./deployos [options]
 -o xxxx      openstack operating system image, default is bionic
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
 ```
-Default values are defined following openstack deployment on the repo https://github.com/ricofehr/os-ansible
+Default values are defined following openstack deployment with the repo https://github.com/ricofehr/os-ansible-poc
 
 Once installed, the terraform folder is into tf/openstack, for example destroy the k8s deployment
 ```
