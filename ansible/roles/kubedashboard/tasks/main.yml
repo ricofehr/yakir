@@ -1,8 +1,5 @@
 ---
 
-- name: launch dashboard
-  shell: helm install stable/kubernetes-dashboard --name dashboard --namespace kube-system --set enableSkipLogin=true
-
 - name: Dashboard Admin Role (using only on test deployment !)
   copy:
     content: |
@@ -25,7 +22,21 @@
 - name: Apply admin role to dashboard
   shell: kubectl create -f ~/dashboard-admin.yml
 
+- name: Ensure helm-values folder is present
+  file:
+    path: helm-values
+    state: directory
+    mode: 0755
+
+- name: Values parameters file
+  template:
+    src: templates/values.yml.j2
+    dest: helm-values/dashboard.yml
+
+- name: launch dashboard
+  shell: helm install --name dashboard --namespace kube-system -f helm-values/dashboard.yml stable/kubernetes-dashboard
+
 - name: url dashboard
   debug:
     msg: "You can reach the dashboard with http://{{ ansible_host }}:8001/api/v1/namespaces/kube-system/services/https:dashboard-kubernetes-dashboard:https/proxy/"
-  when: kubernetes_node_type == 'admin'
+  when: is_cloud == '0'

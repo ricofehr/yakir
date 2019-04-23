@@ -1,0 +1,6 @@
+---
+
+dashboard_domain: dashboard.k8s.local
+dashboard_proto_url: http
+dashboard_ssl: false
+dashboard_persistence_disk: false
