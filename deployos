@@ -11,8 +11,10 @@ FLAVORNODES="xlarge"
 PRIVATENETWORK="private"
 PUBLICNETWORK="public"
 SECURITYGROUP="k8s"
-UBUNTUIMAGE="bionic"
+LINUXIMAGE="bionic"
 SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
+FLOATINGIPID=""
+SUBNETID=""
 
 # Help function
 deployhelp() {
@@ -26,7 +28,9 @@ Usage: $0 [options]
 -r xxxx      openstack region, default is RegionOne
 -fm xxxx     openstack flavor for master instance, default is large
 -fn xxxx     openstack flavor for nodes instance, default is xlarge
+-fip xxxx    openstack floatingip network id, no default
 -s xxxx      openstack tenant security group, default is k8s
+-snet xxxx   openstack subnet id, no default
 -o xxxx      openstack operating system image, default is bionic
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
 EOF
@@ -49,7 +53,7 @@ while (($# > 0)); do
       ;;
     -p)
       shift
-      OSPASSORD="$1"
+      OSPASSWORD="$1"
       shift
       ;;
     -t)
@@ -60,6 +64,11 @@ while (($# > 0)); do
     -r)
       shift
       OSREGION="$1"
+      shift
+      ;;
+    -fip)
+      shift
+      FLOATINGIPID="$1"
       shift
       ;;
     -fm)
@@ -77,9 +86,14 @@ while (($# > 0)); do
       SECURITYGROUP="$1"
       shift
       ;;
+    -snet)
+      shift
+      SUBNETID="$1"
+      shift
+      ;;
     -o)
       shift
-      UBUNTUIMAGE="$1"
+      LINUXIMAGE="$1"
       shift
       ;;
     -k)
@@ -109,6 +123,57 @@ if [[ -z "$OSTENANT" ]]; then
   deployhelp
 fi
 
+if [[ -z "$OSUSER" ]]; then
+  echo "-t openstack user paremeter is missing"
+  deployhelp
+fi
+
+if [[ -z "$OSPASSWORD" ]]; then
+  echo "-p openstack password parameter is missing"
+  deployhelp
+fi
+
+if [[ -z "$OSREGION" ]]; then
+  echo "-r openstack region parameter is missing"
+  deployhelp
+fi
+
+if [[ -z "$FLAVORMASTERS" ]]; then
+  echo "-fm openstack master flavor parameter is missing"
+  deployhelp
+fi
+
+if [[ -z "$FLAVORNODES" ]]; then
+  echo "-fn openstack node flavor parameter is missing"
+  deployhelp
+fi
+
+if [[ -z "$SECURITYGROUP" ]]; then
+  echo "-s openstack security group parameter is missing"
+  deployhelp
+fi
+
+if [[ -z "$LINUXIMAGE" ]]; then
+  echo "-o openstack linux image parameter is missing"
+  deployhelp
+fi
+
+if [[ -z "$SSHKEYFILE" ]]; then
+  echo "-k ssh key parameter is missing"
+  deployhelp
+fi
+
+if [[ -z "$FLOATINGIPID" ]]; then
+  echo "-fip openstack floatingip network id parameter is missing"
+  deployhelp
+fi
+
+if [[ -z "$SUBNETID" ]]; then
+  echo "-snet openstack private subnet id parameter is missing"
+  deployhelp
+fi
+
+
 # Create k8s vms
 pushd tf/openstack > /dev/null
 terraform init
@@ -117,15 +182,15 @@ terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 -var provider_region="$OSREGION" -var flavor_master="$FLAVORMASTERS" \
 -var flavor_node="$FLAVORNODES" -var private_network_name="$PRIVATENETWORK" \
 -var public_network_name="$PUBLICNETWORK" -var security_group="$SECURITYGROUP" \
--var image="$UBUNTUIMAGE" -var keypair_sshkey="$(cat $SSHKEYFILE | tr -d "\n")" -auto-approve
+-var image="$LINUXIMAGE" -var keypair_sshkey="$(cat $SSHKEYFILE | tr -d "\n")" -auto-approve
 sleep 30
 
 # get private and public vm ips
 K8SMASTER_IP="$(terraform output k8s-master1-ip)"
 K8SMASTER_PRIVATE_IP="$(terraform output k8s-master1-private-ip)"
-K8SMASTER_NODE1="$(terraform output k8s-node1-ip)"
+K8SNODE1_IP="$(terraform output k8s-node1-ip)"
 K8SNODE1_PRIVATE_IP="$(terraform output k8s-node1-private-ip)"
-K8SMASTER_NODE2="$(terraform output k8s-node2-ip)"
+K8SNODE2_IP="$(terraform output k8s-node2-ip)"
 K8SNODE2_PRIVATE_IP="$(terraform output k8s-node2-private-ip)"
 popd > /dev/null
 
@@ -135,8 +200,8 @@ pushd ansible > /dev/null
 echo "[master]" > tfinventory
 echo "k8s-master1 ansible_host=${K8SMASTER_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
 echo "[nodes]" >> tfinventory
-echo "k8s-node1 ansible_host=${K8SMASTER_NODE1} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-echo "k8s-node2 ansible_host=${K8SMASTER_NODE2} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+echo "k8s-node1 ansible_host=${K8SNODE1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+echo "k8s-node2 ansible_host=${K8SNODE2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
 
 # Disable cowsay ansible output
 export ANSIBLE_NOCOWS=1
@@ -144,6 +209,11 @@ export ANSIBLE_NOCOWS=1
 # Install one K8S master and two K8S nodes
 ansible-playbook -i tfinventory \
 --ssh-extra-args "-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
---extra-vars "k8s_master_ip=$K8SMASTER_PRIVATE_IP" --extra-vars "k8s_node1_ip=$K8SNODE1_PRIVATE_IP" --extra-vars "k8s_node2_ip=$K8SNODE2_PRIVATE_IP"
+--extra-vars "k8s_master_ip=$K8SMASTER_PRIVATE_IP" --extra-vars "k8s_node1_ip=$K8SNODE1_PRIVATE_IP" \
+--extra-vars "k8s_node2_ip=$K8SNODE2_PRIVATE_IP" --extra-vars "is_cloud=1" \
+--extra-vars "cloud_username=$OSUSER" --extra-vars "cloud_password=$OSPASSWORD" \
+--extra-vars "cloud_authurl=$OSAUTHURL" --extra-vars "cloud_tenant_name=$OSTENANT" \
+--extra-vars "cloud_subnet_id=$SUBNETID" --extra-vars "cloud_floatingnetwork_id=$FLOATINGIPID" \
+--extra-vars "global_ci_install=1" --extra-vars "global_persistence_disk=1"
 
 popd > /dev/null

@@ -31,6 +31,13 @@ Once setup done
 - Dashboard is reached here
 http://192.168.78.10:8001/api/v1/namespaces/kube-system/services/https:dashboard-kubernetes-dashboard:https/proxy/
 
+## CI Tools
+
+Install some CI Tools into the k8s cluster
+```
+CI_INSTALL=1 vagrant up
+```
+
 ## Openstack deployment
 
 An openstack deployment is setted with Terraform, use 'deployos' script for managed this

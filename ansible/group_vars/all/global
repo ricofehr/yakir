@@ -1,0 +1,5 @@
+---
+
+global_domain: k8s.local
+global_ci_install: 0
+global_persistence_disk: false

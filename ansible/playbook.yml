@@ -10,6 +10,7 @@
     - role: base
     - role: docker
       become: true
+    - role: docker_postinstall
     - role: kubernetes
       become: true
     - role: k8s
@@ -24,6 +25,13 @@
   strategy: linear
   roles:
     - role: helm
+    - role: ingress
+    - role: gogs
+      when: global_ci_install == '1'
+    - role: concourse
+      when: global_ci_install == '1'
+    - role: sonar
+      when: global_ci_install == '1'
     - role: kubedashboard
   pre_tasks:
     - name: Ensure gitmodules update

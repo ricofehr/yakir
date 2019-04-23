@@ -44,6 +44,7 @@ Vagrant.configure("2") do |config|
           machine.vm.provision "ansible" do |ansible|
             ansible.playbook = "ansible/playbook.yml"
             ansible.inventory_path = "ansible/inventory"
+            ansible.extra_vars = { global_ci_install: "#{ENV['CI_INSTALL']}" }
             ansible.verbose = false
             ansible.limit = "all"
           end

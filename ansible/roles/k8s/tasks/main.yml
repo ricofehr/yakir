@@ -60,7 +60,9 @@
     owner: root
     mode: 0755
   become: yes
-  when: kubernetes_node_type == 'admin'
+  when:
+    - kubernetes_node_type == 'admin'
+    - is_cloud == '0'
 
 - name: swapoff
   shell: swapoff -a
@@ -76,9 +78,44 @@
     state: absent
   become: yes
 
+- name: Ensure /etc/kubernetes folder is present
+  file:
+    path: /etc/kubernetes
+    owner: root
+    state: directory
+    mode: 0755
+  become: yes
+
+- name: generate cloud.conf
+  template:
+    src: templates/cloud.conf.j2
+    dest: /etc/kubernetes/cloud.conf
+  become: yes
+  when: is_cloud == '1'
+
+- name: generate kubeadm.conf
+  template:
+    src: templates/kubeadm.conf.j2
+    dest: /etc/kubernetes/kubeadm.conf
+  become: yes
+  when: is_cloud == '1'
+
+- name: Kubelet cloud arguments
+  shell: |
+    sed -i "s/cgroup-driver=systemd/cgroup-driver=cgroupfs/g" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+    sed -i -E 's/(.*)KUBELET_KUBECONFIG_ARGS=(.*)$/\1KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=\/etc\/kubernetes\/cloud.conf \2/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+    systemctl daemon-reload
+    systemctl restart kubelet
+  become: yes
+  when: is_cloud == '1'
+
 - name: Ensure kubelet.service
   service: name=kubelet state=started enabled=yes
   become: yes
+
+- name: Ensure kubelet is running and ready
+  pause:
+    seconds: 120
 
 - name: init master
   shell: kubeadm init --apiserver-advertise-address {{ k8s_master_ip }} --apiserver-bind-port 443 --node-name {{ inventory_hostname }}
@@ -86,7 +123,19 @@
     creates: /home/{{ ansible_user }}/.k8sinstall
   run_once: true
   become: yes
-  when: kubernetes_node_type == 'admin'
+  when:
+    - kubernetes_node_type == 'admin'
+    - is_cloud == '0'
+
+- name: init master
+  shell: kubeadm init --config /etc/kubernetes/kubeadm.conf
+  args:
+    creates: /home/{{ ansible_user }}/.k8sinstall
+  run_once: true
+  become: yes
+  when:
+    - kubernetes_node_type == 'admin'
+    - is_cloud == '1'
 
 - name: "init {{ ansible_user }} env"
   shell: >
@@ -150,11 +199,28 @@
   shell: nohup kubectl proxy --address={{ k8s_master_ip }} --accept-hosts='^.*$' &
   args:
     creates: ~/.k8sinstall
-  when: kubernetes_node_type == 'admin'
+  when:
+    - kubernetes_node_type == 'admin'
+    - is_cloud == '0'
 
 - name: Ensure k8s is running and ready
   pause:
     minutes: 2
+
+- name: Cinder storage class file
+  template:
+    src: templates/cinder-sc.yml.j2
+    dest: /etc/kubernetes/cinder-sc.yml
+  become: yes
+  when:
+    - kubernetes_node_type == 'admin'
+    - is_cloud == '1'
+
+- name: Apply storage class
+  shell: kubectl apply -f /etc/kubernetes/cinder-sc.yml
+  when:
+    - kubernetes_node_type == 'admin'
+    - is_cloud == '1'
 
 - name: Resolv.conf on k8s dns pod
   copy:
