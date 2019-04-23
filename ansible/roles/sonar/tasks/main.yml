@@ -1,0 +1,15 @@
+---
+
+- name: Ensure helm-values folder is present
+  file:
+    path: helm-values
+    state: directory
+    mode: 0755
+
+- name: Values parameters file
+  template:
+    src: templates/values.yml.j2
+    dest: helm-values/sonar.yml
+
+- name: launch sonar
+  shell: helm install --name sonar -f helm-values/sonar.yml stable/sonarqube

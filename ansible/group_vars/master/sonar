@@ -1,0 +1,4 @@
+---
+
+sonar_domain: sonar.{{ global_domain }}
+sonar_persistence_disk: "{{ global_persistence_disk }}"
