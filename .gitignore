@@ -10,6 +10,9 @@ ansible/group_vars/master/passwords
 # ansible retry file
 ansible/playbook.retry
 
+# ansible tf inventory
+ansible/tfinventory
+
 #  Local .terraform directories
 **/.terraform/*
 
