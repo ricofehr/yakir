@@ -1,0 +1,4 @@
+---
+
+gogs_domain: gogs.{{ global_domain }}
+gogs_persistence_disk: "{{ global_persistence_disk }}"
