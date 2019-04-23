@@ -1,0 +1,4 @@
+---
+
+- name: launch nginx ingress
+  shell: helm install stable/nginx-ingress
