@@ -1,0 +1,4 @@
+---
+
+concourse_domain: concourse.{{ global_domain }}
+concourse_persistence_disk: "{{ global_persistence_disk }}"
