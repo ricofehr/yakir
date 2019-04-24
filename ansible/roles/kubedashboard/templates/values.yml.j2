@@ -144,10 +144,10 @@ rbac:
 
 serviceAccount:
   # Specifies whether a service account should be created
-  create: false
+  create: true
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: kubernetes-dashboard
+  name: dashboard-kubernetes-dashboard
 
 livenessProbe:
   # Number of seconds to wait before sending first probe
