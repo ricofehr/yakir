@@ -8,6 +8,8 @@ domain-name={{ cloud_domain_name }}
 [LoadBalancer]
 subnet-id={{ cloud_subnet_id }}
 floating-network-id={{ cloud_floatingnetwork_id }}
+manage-security-groups=true
+node-security-group=k8s
 
 [BlockStorage]
 bs-version=v2
