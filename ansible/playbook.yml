@@ -28,6 +28,8 @@
     - role: ingress
     - role: gogs
       when: global_ci_install == '1'
+    - role: registry
+      when: global_ci_install == '1'
     - role: concourse
       when: global_ci_install == '1'
     - role: sonar

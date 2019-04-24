@@ -1,0 +1,15 @@
+---
+
+- name: Ensure helm-values folder is present
+  file:
+    path: helm-values
+    state: directory
+    mode: 0755
+
+- name: Values parameters file
+  template:
+    src: templates/values.yml.j2
+    dest: helm-values/registry.yml
+
+- name: launch docker registry
+  shell: helm install --name registry -f helm-values/registry.yml stable/docker-registry

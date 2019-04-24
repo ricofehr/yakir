@@ -1,0 +1,4 @@
+---
+
+registry_domain: registry.{{ global_domain }}
+registry_persistence_disk: "{{ global_persistence_disk }}"

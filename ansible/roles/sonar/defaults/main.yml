@@ -1,6 +1,6 @@
 ---
 
-sonar_domain: gogs.k8s.local
+sonar_domain: sonar.k8s.local
 sonar_proto_url: http
 sonar_ssl: false
 sonar_persistence_disk: false
