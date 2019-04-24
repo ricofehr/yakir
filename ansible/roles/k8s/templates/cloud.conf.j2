@@ -8,8 +8,12 @@ domain-name={{ cloud_domain_name }}
 [LoadBalancer]
 subnet-id={{ cloud_subnet_id }}
 floating-network-id={{ cloud_floatingnetwork_id }}
+lb-method=LEAST_CONNECTIONS
+create-monitor=true
+monitor-delay=5s
+monitor-timeout=3s
+monitor-max-retries=5
 manage-security-groups=true
-node-security-group=k8s
 
 [BlockStorage]
 bs-version=v2
