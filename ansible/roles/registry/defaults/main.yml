@@ -1,6 +1,6 @@
 ---
 
 registry_domain: registry.k8s.local
-registry_proto_url: http
-registry_ssl: false
+registry_proto_url: https
+registry_ssl: true
 registry_persistence_disk: false

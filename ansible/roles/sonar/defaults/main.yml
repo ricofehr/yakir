@@ -1,6 +1,6 @@
 ---
 
 sonar_domain: sonar.k8s.local
-sonar_proto_url: http
-sonar_ssl: false
+sonar_proto_url: https
+sonar_ssl: true
 sonar_persistence_disk: false
