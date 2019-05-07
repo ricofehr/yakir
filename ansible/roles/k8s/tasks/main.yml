@@ -100,6 +100,22 @@
   become: yes
   when: is_cloud == '1'
 
+- name: cloud ssl certificate file
+  copy:
+    src: "{{ cloud_crt_path }}"
+    dest: /usr/local/share/ca-certificates/cloud.crt
+  become: yes
+  when:
+    - is_cloud == '1'
+    - cloud_crt_path != ''
+
+- name: add cloud cert to certificates store
+  shell: update-ca-certificates
+  become: yes
+  when:
+    - is_cloud == '1'
+    - cloud_crt_path != ''
+
 - name: Kubelet cloud arguments
   shell: |
     sed -i "s/cgroup-driver=systemd/cgroup-driver=cgroupfs/g" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf

@@ -8,3 +8,4 @@ cloud_tenant_name: tenant0
 cloud_domain_name: Default
 cloud_subnet_id: 3e8a056a-cd24-40da-8720-2b9e91d702dc
 cloud_floatingnetwork_id: 94061fac-b246-479c-8845-4e70aeb7f180
+cloud_crt_path: ''

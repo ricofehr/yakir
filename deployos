@@ -15,6 +15,7 @@ LINUXIMAGE="bionic"
 SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
 FLOATINGIPID=""
 SUBNETID=""
+OSCERTPATH=""
 
 # Help function
 deployhelp() {
@@ -29,6 +30,7 @@ Usage: $0 [options]
 -fm xxxx     openstack flavor for master instance, default is large
 -fn xxxx     openstack flavor for nodes instance, default is xlarge
 -fip xxxx    openstack floatingip network id, no default
+-oscrt xxxx  openstack ssl certificate path
 -s xxxx      openstack tenant security group, default is k8s
 -snet xxxx   openstack subnet id, no default
 -o xxxx      openstack operating system image, default is bionic
@@ -79,6 +81,11 @@ while (($# > 0)); do
     -fn)
       shift
       FLAVORNODES="$1"
+      shift
+      ;;
+    -oscrt)
+      shift
+      OSCERTPATH="${1}"
       shift
       ;;
     -s)
@@ -214,6 +221,6 @@ ansible-playbook -i tfinventory \
 --extra-vars "cloud_username=$OSUSER" --extra-vars "cloud_password=$OSPASSWORD" \
 --extra-vars "cloud_authurl=$OSAUTHURL" --extra-vars "cloud_tenant_name=$OSTENANT" \
 --extra-vars "cloud_subnet_id=$SUBNETID" --extra-vars "cloud_floatingnetwork_id=$FLOATINGIPID" \
---extra-vars "global_ci_install=1" --extra-vars "global_persistence_disk=1"
+--extra-vars "global_ci_install=1" --extra-vars "global_persistence_disk=1" --extra-vars "cloud_crt_path=$OSCERTPATH"
 
 popd > /dev/null
