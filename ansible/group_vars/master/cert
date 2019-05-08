@@ -1,0 +1,6 @@
+---
+
+cert_path: "{{ global_cert_path }}"
+cert_key: "{{ global_cert_key }}"
+cert_csr: "{{ global_cert_csr }}"
+cert_domain: "*.{{ global_domain }}"

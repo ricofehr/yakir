@@ -306,10 +306,10 @@ service:
     ## TLS configuration.
     ## Secrets must be manually created in the namespace.
     ##
-    # tls:
-    #   - secretName: gogs-tls
-    #     hosts:
-    #       - gogs.domain.com
+    tls:
+      - secretName: {{ ingress_cert_name }}
+        hosts:
+          - {{ gogs_domain }}
 
   ## Service annotations.
   ## Allows attaching metadata to services for kubernetes components to act on.

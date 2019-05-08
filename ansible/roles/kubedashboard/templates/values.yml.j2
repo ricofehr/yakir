@@ -54,7 +54,7 @@ affinity: {}
 
 
 service:
-  type: ClusterIP
+  type: NodePort
   externalPort: 80
 
   ## This allows an override of the heapster service name
@@ -91,7 +91,7 @@ ingress:
   ##
   annotations:
     kubernetes.io/ingress.class: nginx
-    kubernetes.io/tls-acme: 'false'
+    kubernetes.io/tls-acme: '{{ dashboard_ssl }}'
   ## If you plan to use TLS backend with enableInsecureLogin set to false
   ## (default), you need to uncomment the below.
   ## If you use ingress-nginx < 0.21.0
@@ -115,10 +115,10 @@ ingress:
   ## Kubernetes Dashboard Ingress TLS configuration
   ## Secrets must be manually created in the namespace
   ##
-  # tls:
-  #   - secretName: kubernetes-dashboard-tls
-  #     hosts:
-  #       - kubernetes-dashboard.domain.com
+  tls:
+    - secretName: {{ ingress_cert_name }}
+      hosts:
+        - {{ dashboard_domain }}
 
 rbac:
   # Specifies whether RBAC resources should be created

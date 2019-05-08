@@ -8,6 +8,8 @@
   roles:
     - role: systemd_dns
     - role: base
+    - role: cert
+      when: inventory_hostname == 'k8s-master1'
     - role: docker
       become: true
     - role: docker_postinstall

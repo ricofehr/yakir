@@ -43,11 +43,10 @@ ingress:
   # labels:
   #  traffic-type: external
   #  traffic-type: internal
-  tls: {}
-  # Secrets must be manually created in the namespace.
-  # - secretName: chart-example-tls
-  #   hosts:
-  #     - chart-example.local
+  tls:
+    - secretName: {{ ingress_cert_name }}
+      hosts:
+        - {{ sonar_domain }}
 
 # Affinity for pod assignment
 # Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity

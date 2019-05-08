@@ -1,0 +1,26 @@
+---
+
+- name: Install pip
+  apt: name=python3-pip state=present update_cache=true
+  become: yes
+
+- name: Install pyOpenSSL
+  pip: name=pyOpenSSL version=18.0.0
+  become: yes
+
+- name: Generate an OpenSSL private key.
+  openssl_privatekey:
+    path: "{{ cert_key }}"
+
+- name: Generate an OpenSSL CSR.
+  openssl_csr:
+    path: "{{ cert_csr }}"
+    privatekey_path: "{{ cert_key }}"
+    common_name: "*.{{ cert_domain }}"
+
+- name: Generate a Self Signed OpenSSL certificate
+  openssl_certificate:
+    path: "{{ cert_path }}"
+    privatekey_path: "{{ cert_key }}"
+    csr_path: "{{ cert_csr }}"
+    provider: selfsigned

@@ -1,0 +1,6 @@
+---
+
+cert_key: /etc/ssl/certs/cert.pem
+cert_csr: /etc/ssl/certs/cert.csr
+cert_path: /etc/ssl/certs/cert.crt
+cert_domain: '*.domain.local'

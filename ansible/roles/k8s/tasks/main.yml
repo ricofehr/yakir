@@ -71,7 +71,6 @@
   become: yes
 
 - name: Remove Swap from fstab
-  become: yes
   lineinfile:
     dest: /etc/fstab
     regexp: '^.*swap.*$'

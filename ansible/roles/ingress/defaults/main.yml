@@ -1,0 +1,5 @@
+---
+
+ingress_cert_name: ingress-certificate
+ingress_cert_path: /etc/ssl/certs/k8s-ingress.crt
+ingress_cert_key: /etc/ssl/certs/k8s-ingress.pem

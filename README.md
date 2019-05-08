@@ -51,7 +51,10 @@ Usage: ./deployos [options]
 -r xxxx      openstack region, default is RegionOne
 -fm xxxx     openstack flavor for master instance, default is large
 -fn xxxx     openstack flavor for nodes instance, default is xlarge
+-fip xxxx    openstack floatingip network id, no default
+-oscrt xxxx  openstack ssl certificate path
 -s xxxx      openstack tenant security group, default is k8s
+-snet xxxx   openstack subnet id, no default
 -o xxxx      openstack operating system image, default is bionic
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
 ```

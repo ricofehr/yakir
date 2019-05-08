@@ -1,0 +1,4 @@
+---
+
+ingress_cert_path: "{{ global_cert_path }}"
+ingress_cert_key: "{{ global_cert_key }}"
