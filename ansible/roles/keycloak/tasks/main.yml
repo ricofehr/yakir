@@ -1,0 +1,18 @@
+---
+
+- name: Ensure helm-values folder is present
+  file:
+    path: helm-values
+    state: directory
+    mode: 0755
+
+- name: Values parameters file
+  template:
+    src: templates/values.yml.j2
+    dest: helm-values/keycloak.yml
+
+- name: Add codecentric repo
+  shell: helm repo add codecentric https://codecentric.github.io/helm-charts
+
+- name: launch keycloack
+  shell: helm install --name keycloak -f helm-values/keycloak.yml codecentric/keycloak

@@ -16,9 +16,6 @@
     - role: kubernetes
       become: true
     - role: k8s
-  pre_tasks:
-    - name: Ensure gitmodules update
-      local_action: command git submodule update --init --recursive
 
 - hosts:
     - master
@@ -28,6 +25,8 @@
   roles:
     - role: helm
     - role: ingress
+    - role: keycloak
+      when: global_ci_install == '1'
     - role: gogs
       when: global_ci_install == '1'
     - role: registry
@@ -37,6 +36,3 @@
     - role: sonar
       when: global_ci_install == '1'
     - role: kubedashboard
-  pre_tasks:
-    - name: Ensure gitmodules update
-      local_action: command git submodule update --init --recursive
