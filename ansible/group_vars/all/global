@@ -3,6 +3,7 @@
 global_domain: k8s.local
 global_ci_install: 0
 global_persistence_disk: false
-global_cert_path: k8s-ingress.crt
-global_cert_key: k8s-ingress.pem
-global_cert_csr: k8s-ingress.csr
+global_certs_folder: "{{ ansible_env.HOME }}/k8scerts"
+global_cert_path: "{{ global_certs_folder }}/k8s-ingress.crt"
+global_cert_key: "{{ global_certs_folder }}/k8s-ingress.pem"
+global_cert_csr: "{{ global_certs_folder }}/k8s-ingress.csr"

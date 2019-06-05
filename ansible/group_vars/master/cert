@@ -1,5 +1,6 @@
 ---
 
+certs_folder: "{{ global_certs_folder }}"
 cert_path: "{{ global_cert_path }}"
 cert_key: "{{ global_cert_key }}"
 cert_csr: "{{ global_cert_csr }}"

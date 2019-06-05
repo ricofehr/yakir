@@ -8,6 +8,13 @@
   pip: name=pyOpenSSL version=18.0.0
   become: yes
 
+- name: Certificates folder
+  file:
+    path: "{{ certs_folder }}"
+    owner: "{{ ansible_user }}"
+    state: directory
+    mode: 0755
+
 - name: Generate an OpenSSL private key.
   openssl_privatekey:
     path: "{{ cert_key }}"
