@@ -13,6 +13,7 @@ PUBLICNETWORK="public"
 SECURITYGROUP="k8s"
 LINUXIMAGE="bionic"
 SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
+ANSIBLEPATH="/usr/bin/ansible-playbook"
 FLOATINGIPID=""
 SUBNETID=""
 OSCERTPATH=""
@@ -120,6 +121,14 @@ while (($# > 0)); do
 done
 
 # Ensure prerequisites parameters
+if [[ ! -f "$ANSIBLEPATH" ]]; then
+  ANSIBLEPATH="/usr/local/bin/ansible-playbook"
+  if [[ ! -f "$ANSIBLEPATH" ]]; then
+    echo "No ansible binary detected"
+    exit 1
+  fi
+fi
+
 if [[ -z "$OSAUTHURL" ]]; then
   echo "-a openstack auth url paremeter is missing"
   deployhelp
@@ -214,7 +223,7 @@ echo "k8s-node2 ansible_host=${K8SNODE2_IP} ansible_user=ubuntu ansible_ssh_priv
 export ANSIBLE_NOCOWS=1
 
 # Install one K8S master and two K8S nodes
-ansible-playbook -i tfinventory \
+$ANSIBLEPATH -i tfinventory \
 --ssh-extra-args "-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
 --extra-vars "k8s_master_ip=$K8SMASTER_PRIVATE_IP" --extra-vars "k8s_node1_ip=$K8SNODE1_PRIVATE_IP" \
 --extra-vars "k8s_node2_ip=$K8SNODE2_PRIVATE_IP" --extra-vars "is_cloud=1" \
