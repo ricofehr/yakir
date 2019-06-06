@@ -87,8 +87,8 @@ keycloak:
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
             matchLabels:
-              app:  {{ template "keycloak.name" . }}
-              release: "{{ .Release.Name }}"
+              app:  {{ '{{' }} template "keycloak.name" . }}
+              release: "{{ '{{' }} .Release.Name }}"
             matchExpressions:
               - key: role
                 operator: NotIn
@@ -100,8 +100,8 @@ keycloak:
           podAffinityTerm:
             labelSelector:
               matchLabels:
-                app:  {{ template "keycloak.name" . }}
-                release: "{{ .Release.Name }}"
+                app:  {{ '{{' }} template "keycloak.name" . }}
+                release: "{{ '{{' }} .Release.Name }}"
               matchExpressions:
                 - key: role
                   operator: NotIn
@@ -139,19 +139,19 @@ keycloak:
   ## executed on server startup.
   cli:
     nodeIdentifier: |
-      {{ .Files.Get "scripts/node-identifier.cli" }}
+      {{ '{{' }} .Files.Get "scripts/node-identifier.cli" }}
 
     logging: |
-      {{ .Files.Get "scripts/logging.cli" }}
+      {{ '{{' }} .Files.Get "scripts/logging.cli" }}
 
     reverseProxy: |
-      {{ .Files.Get "scripts/reverse-proxy.cli" }}
+      {{ '{{' }} .Files.Get "scripts/reverse-proxy.cli" }}
 
     ha: |
-      {{ .Files.Get "scripts/ha.cli" }}
+      {{ '{{' }} .Files.Get "scripts/ha.cli" }}
 
     datasource: |
-      {{ .Files.Get "scripts/datasource.cli" }}
+      {{ '{{' }} .Files.Get "scripts/datasource.cli" }}
 
     # Custom CLI script
     custom: |
