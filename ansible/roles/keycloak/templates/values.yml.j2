@@ -1,7 +1,7 @@
 init:
   image:
-    repository: alpine
-    tag: 3.8
+    repository: busybox
+    tag: 1.31
     pullPolicy: IfNotPresent
 
 clusterDomain: cluster.local
@@ -11,7 +11,7 @@ keycloak:
 
   image:
     repository: jboss/keycloak
-    tag: 5.0.0
+    tag: 7.0.0
     pullPolicy: IfNotPresent
 
     ## Optionally specify an array of imagePullSecrets.
@@ -40,9 +40,6 @@ keycloak:
   ## Additional sidecar containers, e. g. for a database proxy, such as Google's cloudsql-proxy
   extraContainers: |
 
-  ## Custom script that is run before Keycloak is started.
-  preStartScript:
-
   ## lifecycleHooks defines the container lifecycle hooks
   lifecycleHooks: |
     # postStart:
@@ -64,6 +61,13 @@ keycloak:
 
   # The key in the existing secret that stores the password
   existingSecretKey: password
+
+  ## jGroups configuration (only for HA deployment)
+  jgroups:
+    discoveryProtocol: dns.DNS_PING
+    discoveryProperties: >
+      "dns_query={{ '{{' }} template "keycloak.fullname" . }}-headless.{{ '{{' }} .Release.Namespace }}.svc.{{ '{{' }} .Values.clusterDomain }}"
+
 
   ## Allows the specification of additional environment variables for Keycloak
   extraEnv: |
@@ -120,10 +124,16 @@ keycloak:
   ## Extra Annotations to be added to pod
   podAnnotations: {}
 
-  livenessProbe:
+  livenessProbe: |
+    httpGet:
+      path: {{ '{{' }} if ne .Values.keycloak.basepath "" }}/{{ '{{' }} .Values.keycloak.basepath }}{{ '{{' }} end }}/
+      port: http
     initialDelaySeconds: 120
     timeoutSeconds: 5
-  readinessProbe:
+  readinessProbe: |
+    httpGet:
+      path: {{ '{{' }} if ne .Values.keycloak.basepath "" }}/{{ '{{' }} .Values.keycloak.basepath }}{{ '{{' }} end }}/realms/master
+      port: http
     initialDelaySeconds: 30
     timeoutSeconds: 1
 
@@ -138,6 +148,7 @@ keycloak:
   ## WildFly CLI configurations. They all end up in the file 'keycloak.cli' configured in the configmap which is
   ## executed on server startup.
   cli:
+    enabled: true
     nodeIdentifier: |
       {{ '{{' }} .Files.Get "scripts/node-identifier.cli" }}
 
