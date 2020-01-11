@@ -1,0 +1,15 @@
+---
+
+- name: Ensure helm-values folder is present
+  file:
+    path: helm-values
+    state: directory
+    mode: 0755
+
+- name: Values parameters file
+  template:
+    src: templates/values.yml.j2
+    dest: helm-values/borgmon.yml
+
+- name: launch prometheus
+  shell: helm install --name borgmon -f helm-values/borgmon.yml stable/prometheus

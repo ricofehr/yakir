@@ -1,0 +1,8 @@
+---
+
+grafana_cert_path: /etc/ssl/certs/grafana.crt
+grafana_domain: grafana.k8s.local
+grafana_prometheus_domain: prometheus.k8s.local
+grafana_proto_url: https
+grafana_ssl: true
+grafana_persistence_disk: true

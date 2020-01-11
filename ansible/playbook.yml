@@ -36,3 +36,5 @@
     - role: sonar
       when: global_ci_install == '1'
     - role: kubedashboard
+    - role: prometheus
+    - role: grafana
