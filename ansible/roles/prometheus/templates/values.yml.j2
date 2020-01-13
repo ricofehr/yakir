@@ -295,7 +295,7 @@ alertmanager:
     servicePort: 80
     # nodePort: 30000
     sessionAffinity: None
-    type: ClusterIP
+    type: NodePort
 
 ## Monitors ConfigMap changes and POSTs to a URL
 ## Ref: https://github.com/jimmidyson/configmap-reload
