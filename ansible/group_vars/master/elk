@@ -1,0 +1,7 @@
+---
+
+elk_cert_path: "{{ ingress_cert_path }}"
+elk_kibana_domain: kibana.{{ global_domain }}
+elk_proto_url: https
+elk_ssl: true
+elk_persistence_disk: "{{ global_persistence_disk }}"

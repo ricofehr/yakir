@@ -1,0 +1,42 @@
+---
+
+- name: Ensure helm-values folder is present
+  file:
+    path: helm-values
+    state: directory
+    mode: 0755
+
+- name: Add elastic repo to helm
+  shell: helm repo add elastic https://helm.elastic.co
+
+- name: Elasticsearch Values parameters file
+  template:
+    src: templates/elasticsearch.yml.j2
+    dest: helm-values/elasticsearch.yml
+
+- name: launch elasticsearch
+  shell: helm install --name elastcisearch -f helm-values/elasticsearch.yml elastic/elasticsearch
+
+- name: Kibana Values parameters file
+  template:
+    src: templates/kibana.yml.j2
+    dest: helm-values/kibana.yml
+
+- name: launch kibana
+  shell: helm install --name kibana -f helm-values/kibana.yml elastic/kibana
+
+# - name: Logstash Values parameters file
+#   template:
+#     src: templates/logstash.yml.j2
+#     dest: helm-values/logstash.yml
+#
+# - name: launch logstash
+#   shell: helm install --name logstash -f helm-values/logstash.yml elastic/logstash
+
+- name: Metricbeat Values parameters file
+  template:
+    src: templates/metricbeat.yml.j2
+    dest: helm-values/metricbeat.yml
+
+- name: launch metricbeat
+  shell: helm install --name metricbeat -f helm-values/metricbeat.yml elastic/metricbeat

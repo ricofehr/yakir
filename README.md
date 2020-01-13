@@ -33,7 +33,7 @@ http://192.168.78.10:8001/api/v1/namespaces/kube-system/services/https:dashboard
 
 ## CI Tools
 
-Install some CI Tools into the k8s cluster
+Install some CI Tools (git, sonar, concourse, prometheus/grafana, elk, ...) into the k8s cluster
 ```
 CI_INSTALL=1 vagrant up
 ```

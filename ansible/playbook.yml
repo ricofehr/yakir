@@ -38,3 +38,4 @@
     - role: kubedashboard
     - role: prometheus
     - role: grafana
+    - role: elk
