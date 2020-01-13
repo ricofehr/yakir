@@ -24,6 +24,10 @@
   lineinfile: dest=/etc/hosts regexp='k8s-node2$' line='{{ k8s_node2_ip }} k8s-node2' owner=root group=root mode=0644
   become: yes
 
+- name: Update /etc/hosts - Ensure private ip for k8s-node3 resolved hosts
+  lineinfile: dest=/etc/hosts regexp='k8s-node3$' line='{{ k8s_node3_ip }} k8s-node3' owner=root group=root mode=0644
+  become: yes
+
 - name: K8s ip routed by public master1
   shell: route -n | grep 10.96.0.1 || route add 10.96.0.1 gw {{ k8s_master_ip }}
   args:

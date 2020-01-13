@@ -3,3 +3,4 @@
 k8s_master_ip: "{{ hostvars['k8s-master1']['ansible_host'] }}"
 k8s_node1_ip: "{{ hostvars['k8s-node1']['ansible_host'] }}"
 k8s_node2_ip: "{{ hostvars['k8s-node2']['ansible_host'] }}"
+k8s_node3_ip: "{{ hostvars['k8s-node3']['ansible_host'] }}"

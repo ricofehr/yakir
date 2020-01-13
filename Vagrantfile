@@ -6,7 +6,8 @@ masters = {
 # k8s nodes
 nodes = {
     "k8s-node1" => "192.168.78.20",
-    "k8s-node2" => "192.168.78.21"
+    "k8s-node2" => "192.168.78.21",
+    "k8s-node3" => "192.168.78.22"
 }
 
 Vagrant.configure("2") do |config|
@@ -36,11 +37,11 @@ Vagrant.configure("2") do |config|
         machine.vm.network :private_network, ip: ip
         machine.vm.provider :virtualbox do |v|
           v.name = name
-          v.memory = 4096
+          v.memory = 8192
           v.cpus = 4
         end
 
-        if name == "k8s-node2"
+        if name == "k8s-node3"
           machine.vm.provision "ansible" do |ansible|
             ansible.playbook = "ansible/playbook.yml"
             ansible.inventory_path = "ansible/inventory"
