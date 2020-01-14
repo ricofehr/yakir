@@ -79,6 +79,27 @@ resource "openstack_compute_floatingip_associate_v2" "floatip_node2" {
   instance_id = "${openstack_compute_instance_v2.k8s_node2.id}"
 }
 
+resource "openstack_networking_floatingip_v2" "floatip_node3" {
+  pool = "${var.public_network_name}"
+}
+
+resource "openstack_compute_instance_v2" "k8s_node3" {
+  name            = "k8s-node3"
+  image_name      = "${var.image}"
+  flavor_name     = "${var.flavor_node}"
+  key_pair        = "k8s-keypair"
+  security_groups = ["${var.security_group}"]
+
+  network {
+    name = "${var.private_network_name}"
+  }
+}
+
+resource "openstack_compute_floatingip_associate_v2" "floatip_node3" {
+  floating_ip = "${openstack_networking_floatingip_v2.floatip_node3.address}"
+  instance_id = "${openstack_compute_instance_v2.k8s_node3.id}"
+}
+
 output "k8s-master1-ip" {
   value = "${openstack_networking_floatingip_v2.floatip_master1.address}"
 }
@@ -101,4 +122,12 @@ output "k8s-node2-ip" {
 
 output "k8s-node2-private-ip" {
   value = "${openstack_compute_instance_v2.k8s_node2.network.0.fixed_ip_v4}"
+}
+
+output "k8s-node3-ip" {
+  value = "${openstack_networking_floatingip_v2.floatip_node3.address}"
+}
+
+output "k8s-node3-private-ip" {
+  value = "${openstack_compute_instance_v2.k8s_node3.network.0.fixed_ip_v4}"
 }
