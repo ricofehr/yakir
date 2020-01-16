@@ -47,12 +47,12 @@ healthCheckPath: "/app/kibana"
 
 # Allows you to add any config files in /usr/share/kibana/config/
 # such as kibana.yml
-kibanaConfig: {}
-#   kibana.yml: |
-#     key:
-#       nestedkey: value
-
-# If Pod Security Policy in use it may be required to specify security context as well as service account
+kibanaConfig:
+  kibana.yml: |
+      server.name: kibana
+      server.host: "0"
+      elasticsearch.hosts: http://elasticsearch-master:9200
+      xpack.monitoring.ui.container.elasticsearch.enabled: true
 
 podSecurityContext:
   fsGroup: 1000
