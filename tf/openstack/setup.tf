@@ -100,34 +100,44 @@ resource "openstack_compute_floatingip_associate_v2" "floatip_node3" {
   instance_id = "${openstack_compute_instance_v2.k8s_node3.id}"
 }
 
-output "k8s-master1-ip" {
-  value = "${openstack_networking_floatingip_v2.floatip_master1.address}"
+resource "openstack_networking_floatingip_v2" "floatip_node4" {
+  pool = "${var.public_network_name}"
 }
 
-output "k8s-master1-private-ip" {
-  value = "${openstack_compute_instance_v2.k8s_master1.network.0.fixed_ip_v4}"
+resource "openstack_compute_instance_v2" "k8s_node4" {
+  name            = "k8s-node4"
+  image_name      = "${var.image}"
+  flavor_name     = "${var.flavor_node}"
+  key_pair        = "k8s-keypair"
+  security_groups = ["${var.security_group}"]
+
+  network {
+    name = "${var.private_network_name}"
+  }
 }
 
-output "k8s-node1-ip" {
-  value = "${openstack_networking_floatingip_v2.floatip_node1.address}"
+resource "openstack_compute_floatingip_associate_v2" "floatip_node4" {
+  floating_ip = "${openstack_networking_floatingip_v2.floatip_node4.address}"
+  instance_id = "${openstack_compute_instance_v2.k8s_node4.id}"
 }
 
-output "k8s-node1-private-ip" {
-  value = "${openstack_compute_instance_v2.k8s_node1.network.0.fixed_ip_v4}"
+resource "openstack_networking_floatingip_v2" "floatip_node5" {
+  pool = "${var.public_network_name}"
 }
 
-output "k8s-node2-ip" {
-  value = "${openstack_networking_floatingip_v2.floatip_node2.address}"
+resource "openstack_compute_instance_v2" "k8s_node5" {
+  name            = "k8s-node5"
+  image_name      = "${var.image}"
+  flavor_name     = "${var.flavor_node}"
+  key_pair        = "k8s-keypair"
+  security_groups = ["${var.security_group}"]
+
+  network {
+    name = "${var.private_network_name}"
+  }
 }
 
-output "k8s-node2-private-ip" {
-  value = "${openstack_compute_instance_v2.k8s_node2.network.0.fixed_ip_v4}"
-}
-
-output "k8s-node3-ip" {
-  value = "${openstack_networking_floatingip_v2.floatip_node3.address}"
-}
-
-output "k8s-node3-private-ip" {
-  value = "${openstack_compute_instance_v2.k8s_node3.network.0.fixed_ip_v4}"
+resource "openstack_compute_floatingip_associate_v2" "floatip_node5" {
+  floating_ip = "${openstack_networking_floatingip_v2.floatip_node5.address}"
+  instance_id = "${openstack_compute_instance_v2.k8s_node5.id}"
 }
