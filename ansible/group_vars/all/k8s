@@ -2,14 +2,15 @@
 
 k8s_master_ip: "{{ hostvars['k8s-master1']['ansible_host'] }}"
 
+k8s_node1_ip: "{{ hostvars['k8s-node1']['ansible_host'] }}"
+k8s_node2_ip: "{{ hostvars['k8s-node2']['ansible_host'] }}"
+k8s_node3_ip: "{{ hostvars['k8s-node3']['ansible_host'] }}"
+k8s_node4_ip: "{{ hostvars['k8s-node4']['ansible_host'] }}"
+k8s_node5_ip: "{{ hostvars['k8s-node5']['ansible_host'] }}"
+
 k8s_nodes:
-  - name: k8s_node1
-    ip: "{{ hostvars['k8s-node1']['ansible_host'] }}"
-  - name: k8s_node2
-    ip: "{{ hostvars['k8s-node2']['ansible_host'] }}"
-  - name: k8s_node3
-    ip: "{{ hostvars['k8s-node3']['ansible_host'] }}"
-  - name: k8s_node4
-    ip: "{{ hostvars['k8s-node4']['ansible_host'] }}"
-  - name: k8s_node5
-    ip: "{{ hostvars['k8s-node5']['ansible_host'] }}"
+  - { name: "k8s_node1", ip: "{{ k8s_node1_ip }}" }
+  - { name: "k8s_node2", ip: "{{ k8s_node2_ip }}" }
+  - { name: "k8s_node3", ip: "{{ k8s_node3_ip }}" }
+  - { name: "k8s_node4", ip: "{{ k8s_node4_ip }}" }
+  - { name: "k8s_node5", ip: "{{ k8s_node5_ip }}" }

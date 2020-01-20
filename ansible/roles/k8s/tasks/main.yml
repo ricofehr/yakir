@@ -18,20 +18,26 @@
 
 - name: Update /etc/hosts - Ensure private ip for k8s-node1 resolved hosts
   lineinfile: dest=/etc/hosts regexp='{{ item.name }}$' line='{{ item.ip }} {{ item.name }}' owner=root group=root mode=0644
-  loop: k8s_nodes
+  loop: "{{ k8s_nodes }}"
   become: yes
 
 - name: K8s ip routed by public master1
   shell: |
-    route -n | grep 10.96.0.1
-    (($? != 0)) && route add 10.96.0.1 gw {{ k8s_master_ip }}
+    /sbin/route -n | grep 10.96.0.1
+    (($? == 0)) && exit 0
+    route add 10.96.0.1 gw {{ k8s_master_ip }}
+  args:
+    executable: /bin/bash
   become: yes
   when: kubernetes_node_type == 'worker'
 
 - name: Dns ip routed by public master1
   shell: |
     route -n | grep 10.96.0.10
-    (($? != 0)) && route add 10.96.0.10 gw {{ k8s_master_ip }}
+    (($? == 0)) && exit 0
+    route add 10.96.0.10 gw {{ k8s_master_ip }}
+  args:
+    executable: /bin/bash
   become: yes
   when: kubernetes_node_type == 'worker'
 
@@ -152,7 +158,7 @@
 - name: "init {{ ansible_user }} env"
   shell: >
     mkdir -p /home/{{ ansible_user }}/.kube;
-    sudo cp -i /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config;
+    sudo cp -f /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config;
     sudo chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config;
   run_once: true
   when: kubernetes_node_type == 'admin'
