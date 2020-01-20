@@ -17,50 +17,35 @@
   become: yes
 
 - name: Update /etc/hosts - Ensure private ip for k8s-node1 resolved hosts
-  lineinfile: dest=/etc/hosts regexp='k8s-node1$' line='{{ k8s_node1_ip }} k8s-node1' owner=root group=root mode=0644
+  lineinfile: dest=/etc/hosts regexp='{{ item.name }}$' line='{{ item.ip }} {{ item.name }}' owner=root group=root mode=0644
+  loop: k8s_nodes
   become: yes
 
-- name: Update /etc/hosts - Ensure private ip for k8s-node2 resolved hosts
-  lineinfile: dest=/etc/hosts regexp='k8s-node2$' line='{{ k8s_node2_ip }} k8s-node2' owner=root group=root mode=0644
+- name: K8s ip routed by public master1
+  shell: |
+    route -n | grep 10.96.0.1
+    (($? != 0)) && route add 10.96.0.1 gw {{ k8s_master_ip }}
   become: yes
+  when: kubernetes_node_type == 'worker'
 
-- name: Update /etc/hosts - Ensure private ip for k8s-node3 resolved hosts
-  lineinfile: dest=/etc/hosts regexp='k8s-node3$' line='{{ k8s_node3_ip }} k8s-node3' owner=root group=root mode=0644
+- name: Dns ip routed by public master1
+  shell: |
+    route -n | grep 10.96.0.10
+    (($? != 0)) && route add 10.96.0.10 gw {{ k8s_master_ip }}
   become: yes
+  when: kubernetes_node_type == 'worker'
 
-- name: Update /etc/hosts - Ensure private ip for k8s-node4 resolved hosts
-  lineinfile: dest=/etc/hosts regexp='k8s-node4$' line='{{ k8s_node4_ip }} k8s-node4' owner=root group=root mode=0644
+- name: K8s ip route at start
+  copy:
+    content: |
+             #!/bin/bash
+             route add 10.96.0.1 gw {{ k8s_master_ip }}
+             route add 10.96.0.10 gw {{ k8s_master_ip }}
+    dest: /etc/network/if-up.d/routemaster
+    owner: root
+    mode: 0755
   become: yes
-
-- name: Update /etc/hosts - Ensure private ip for k8s-node5 resolved hosts
-  lineinfile: dest=/etc/hosts regexp='k8s-node5$' line='{{ k8s_node5_ip }} k8s-node5' owner=root group=root mode=0644
-  become: yes
-
-# - name: K8s ip routed by public master1
-#   shell: route -n | grep 10.96.0.1 || route add 10.96.0.1 gw {{ k8s_master_ip }}
-#   args:
-#     creates: /home/{{ ansible_user }}/.k8sinstall
-#   become: yes
-#   when: kubernetes_node_type == 'worker'
-#
-# - name: Dns ip routed by public master1
-#   shell: route -n | grep 10.96.0.10 || route add 10.96.0.10 gw {{ k8s_master_ip }}
-#   args:
-#     creates: /home/{{ ansible_user }}/.k8sinstall
-#   become: yes
-#   when: kubernetes_node_type == 'worker'
-#
-# - name: K8s ip route at start
-#   copy:
-#     content: |
-#              #!/bin/bash
-#              route add 10.96.0.1 gw {{ k8s_master_ip }}
-#              route add 10.96.0.10 gw {{ k8s_master_ip }}
-#     dest: /etc/network/if-up.d/routemaster
-#     owner: root
-#     mode: 0755
-#   become: yes
-#   when: kubernetes_node_type == 'worker'
+  when: kubernetes_node_type == 'worker'
 
 - name: Restart kubeproxy at reboot
   copy:
