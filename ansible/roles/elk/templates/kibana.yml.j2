@@ -99,7 +99,7 @@ ingress:
   hosts:
     - {{ elk_kibana_domain }}
   tls:
-    - secretName: {{ elk_cert_path }}
+    - secretName: {{ elk_secret_cert_name }}
       hosts:
         - {{ elk_kibana_domain }}
 

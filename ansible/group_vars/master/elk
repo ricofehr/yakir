@@ -1,6 +1,6 @@
 ---
 
-elk_cert_path: "{{ ingress_cert_path }}"
+elk_secret_cert_name: "{{ ingress_cert_name }}"
 elk_kibana_domain: kibana.{{ global_domain }}
 elk_proto_url: https
 elk_ssl: true
