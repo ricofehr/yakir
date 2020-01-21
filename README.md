@@ -2,7 +2,7 @@
 
 A base k8s install with Vagrant (Bento/Ubuntu boxes)
 - 1 Master (4 Go RAM)
-- 3 Nodes (8 Go RAM)
+- 5 Nodes (5 Go RAM)
 - Network: Weave
 - Addons: Heapster, Influxdb, Dashboard
 
@@ -14,7 +14,7 @@ The k8s cluster installed by Ansible on Local with Vagrant
 ## Requirements
 
 Resources
-- 28 Go RAM
+- 29 Go RAM
 - 6 cpu cores
 
 Prerequisites
