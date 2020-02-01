@@ -43,7 +43,7 @@ Vagrant.configure("2") do |config|
           v.cpus = 4
         end
 
-        if name == "k8s-node3"
+        if name == "k8s-node5"
           machine.vm.provision "ansible" do |ansible|
             ansible.playbook = "ansible/playbook.yml"
             ansible.inventory_path = "ansible/inventory"
