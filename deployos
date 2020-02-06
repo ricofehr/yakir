@@ -193,6 +193,7 @@ fi
 # Create k8s vms
 pushd tf/openstack > /dev/null
 terraform init
+set +e
 terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 -var provider_password="$OSPASSWORD" -var provider_auth_url="$OSAUTHURL" \
 -var provider_region="$OSREGION" -var flavor_master="$FLAVORMASTERS" \
@@ -200,6 +201,19 @@ terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 -var public_network_name="$PUBLICNETWORK" -var security_group="$SECURITYGROUP" \
 -var image="$LINUXIMAGE" -var keypair_sshkey="$(cat $SSHKEYFILE | tr -d "\n")" -auto-approve
 
+# weird tf bug since more nodes added, relaunch one tf cmd if error
+if (($? != 0)); then
+  sleep 20
+  terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
+  -var provider_password="$OSPASSWORD" -var provider_auth_url="$OSAUTHURL" \
+  -var provider_region="$OSREGION" -var flavor_master="$FLAVORMASTERS" \
+  -var flavor_node="$FLAVORNODES" -var private_network_name="$PRIVATENETWORK" \
+  -var public_network_name="$PUBLICNETWORK" -var security_group="$SECURITYGROUP" \
+  -var image="$LINUXIMAGE" -var keypair_sshkey="$(cat $SSHKEYFILE | tr -d "\n")" -auto-approve
+  (($? != 0)) && exit 1
+fi
+
+set -e
 sleep 60
 
 # get private and public vm ips
