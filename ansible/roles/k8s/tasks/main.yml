@@ -21,38 +21,6 @@
   loop: "{{ k8s_nodes }}"
   become: yes
 
-- name: K8s ip routed by public master1
-  shell: |
-    /sbin/route -n | grep 10.96.0.1
-    (($? == 0)) && exit 0
-    route add 10.96.0.1 gw {{ k8s_master_ip }}
-  args:
-    executable: /bin/bash
-  become: yes
-  when: kubernetes_node_type == 'worker'
-
-- name: Dns ip routed by public master1
-  shell: |
-    route -n | grep 10.96.0.10
-    (($? == 0)) && exit 0
-    route add 10.96.0.10 gw {{ k8s_master_ip }}
-  args:
-    executable: /bin/bash
-  become: yes
-  when: kubernetes_node_type == 'worker'
-
-- name: K8s ip route at start
-  copy:
-    content: |
-             #!/bin/bash
-             route add 10.96.0.1 gw {{ k8s_master_ip }}
-             route add 10.96.0.10 gw {{ k8s_master_ip }}
-    dest: /etc/network/if-up.d/routemaster
-    owner: root
-    mode: 0755
-  become: yes
-  when: kubernetes_node_type == 'worker'
-
 - name: Restart kubeproxy at reboot
   copy:
     content: |
@@ -87,6 +55,46 @@
     state: directory
     mode: 0755
   become: yes
+
+- name: Install route package
+  apt:
+    name: net-tools
+    state: present
+    update_cache: true
+    force: yes
+  become: yes
+
+- name: K8s ip routed by public master1
+  shell: |
+    /sbin/route -n | grep 10.96.0.1
+    (($? == 0)) && exit 0
+    route add 10.96.0.1 gw {{ k8s_master_ip }}
+  args:
+    executable: /bin/bash
+  become: yes
+  when: kubernetes_node_type == 'worker'
+
+- name: Dns ip routed by public master1
+  shell: |
+    route -n | grep 10.96.0.10
+    (($? == 0)) && exit 0
+    route add 10.96.0.10 gw {{ k8s_master_ip }}
+  args:
+    executable: /bin/bash
+  become: yes
+  when: kubernetes_node_type == 'worker'
+
+- name: K8s ip route at start
+  copy:
+    content: |
+             #!/bin/bash
+             route add 10.96.0.1 gw {{ k8s_master_ip }}
+             route add 10.96.0.10 gw {{ k8s_master_ip }}
+    dest: /etc/network/if-up.d/routemaster
+    owner: root
+    mode: 0755
+  become: yes
+  when: kubernetes_node_type == 'worker'
 
 - name: generate cloud.conf
   template:
@@ -179,27 +187,6 @@
 
 - name: grant dashboard permissions
   shell: kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard
-  args:
-    creates: ~/.k8sinstall
-  run_once: true
-  when: kubernetes_node_type == 'admin'
-
-- name: clone heapster
-  shell: git clone https://github.com/kubernetes/heapster
-  args:
-    creates: ~/.k8sinstall
-  run_once: true
-  when: kubernetes_node_type == 'admin'
-
-- name: launch influxdb
-  shell: kubectl apply -f heapster/deploy/kube-config/influxdb/
-  args:
-    creates: ~/.k8sinstall
-  run_once: true
-  when: kubernetes_node_type == 'admin'
-
-- name: launch heapster
-  shell: kubectl apply -f heapster/deploy/kube-config/rbac/heapster-rbac.yaml
   args:
     creates: ~/.k8sinstall
   run_once: true

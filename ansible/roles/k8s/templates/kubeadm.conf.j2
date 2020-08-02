@@ -10,9 +10,9 @@ localAPIEndpoint:
   advertiseAddress: "{{ k8s_master_ip }}"
   bindPort: 443
 ---
-apiVersion: kubeadm.k8s.io/v1beta1
+apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
-kubernetesVersion: v1.14.1
+kubernetesVersion: v1.18.6
 apiServer:
   extraArgs:
     cloud-provider: "openstack"
