@@ -1,0 +1,10 @@
+---
+
+- name: Download istioctl
+  shell: |
+    istioctl : curl -L https://istio.io/downloadIstio | sh -
+
+
+- name: Install istio with default profile
+  shell: |
+    istioctl manifest apply --set profile=demo

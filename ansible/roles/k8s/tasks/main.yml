@@ -192,6 +192,13 @@
   run_once: true
   when: kubernetes_node_type == 'admin'
 
+- name: Add metrics addon
+  shell: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.7/components.yaml
+  args:
+    creates: ~/.k8sinstall
+  run_once: true
+  when: kubernetes_node_type == 'admin'
+
 - name: Add k8snode
   shell: "kubeadm join --token {{ hostvars['k8s-master1']['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} {{ k8s_master_ip }}:443"
   args:
