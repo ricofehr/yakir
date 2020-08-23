@@ -100,6 +100,7 @@
   template:
     src: templates/cloud.conf.j2
     dest: /etc/kubernetes/cloud.conf
+    mode: 0644
   become: yes
   when: is_cloud == '1'
 
@@ -107,6 +108,7 @@
   template:
     src: templates/kubeadm.conf.j2
     dest: /etc/kubernetes/kubeadm.conf
+    mode: 0644
   become: yes
   when: is_cloud == '1'
 
@@ -223,6 +225,7 @@
   template:
     src: templates/cinder-sc.yml.j2
     dest: /etc/kubernetes/cinder-sc.yml
+    mode: 0644
   become: yes
   when:
     - kubernetes_node_type == 'admin'
