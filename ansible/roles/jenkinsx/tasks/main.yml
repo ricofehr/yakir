@@ -1,0 +1,15 @@
+---
+
+- name: Ensure helm-values folder is present
+  file:
+    path: helm-values
+    state: directory
+    mode: 0755
+
+- name: Values parameters file
+  template:
+    src: templates/values.yml.j2
+    dest: helm-values/jenkinsx.yml
+
+- name: launch jenkinsx
+  shell: helm install --name jenkinsx -f helm-values/jenkinsx.yml stable/jenkins

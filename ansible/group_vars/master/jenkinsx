@@ -1,0 +1,4 @@
+---
+
+jenkinsx_domain: jenkinsx.{{ global_domain }}
+jenkinsx_persistence_disk: "{{ global_persistence_disk }}"

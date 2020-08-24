@@ -25,18 +25,18 @@
   roles:
     - role: helm
     - role: ingress
+    - role: istio
     # - role: keycloak
     #   when: global_ci_install == '1'
-    # - role: gogs
-    #   when: global_ci_install == '1'
+    - role: gogs
+      when: global_ci_install == '1'
     - role: registry
       when: global_ci_install == '1'
-    # - role: concourse
-    #   when: global_ci_install == '1'
-    # - role: sonar
-    #   when: global_ci_install == '1'
+    - role: jenkinsx
+      when: global_ci_install == '1'
+    - role: sonar
+      when: global_ci_install == '1'
     - role: kubedashboard
-    - role: istio
-    # - role: prometheus
-    # - role: grafana
-    # - role: elk
+    #- role: prometheus
+    #- role: grafana
+    - role: elk
