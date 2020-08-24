@@ -1,0 +1,17 @@
+---
+
+- name: Ensure helm-values folder is present
+  file:
+    path: helm-values
+    state: directory
+    mode: 0755
+
+- name: Values parameters file
+  template:
+    src: templates/values.yaml.j2
+    dest: helm-values/gitea.yml
+
+- name: launch gogs
+  shell: |
+    helm repo add novum-rgi-helm https://novumrgi.github.io/helm/
+    helm install --name gitea -f helm-values/gitea.yml novum-rgi-helm/gitea

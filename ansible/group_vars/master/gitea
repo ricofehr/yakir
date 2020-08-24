@@ -1,0 +1,4 @@
+---
+
+gitea_domain: gitea.{{ global_domain }}
+gitea_persistence_disk: "{{ global_persistence_disk }}"

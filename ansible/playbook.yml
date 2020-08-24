@@ -28,7 +28,7 @@
     - role: istio
     # - role: keycloak
     #   when: global_ci_install == '1'
-    - role: gogs
+    - role: gitea
       when: global_ci_install == '1'
     - role: registry
       when: global_ci_install == '1'
