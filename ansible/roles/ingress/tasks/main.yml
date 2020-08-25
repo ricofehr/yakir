@@ -4,4 +4,4 @@
   shell: kubectl create secret tls {{ ingress_cert_name }} --key {{ ingress_cert_key }} --cert {{ ingress_cert_path }}
 
 - name: launch nginx ingress
-  shell: helm install stable/nginx-ingress
+  shell: helm install ingress stable/nginx-ingress

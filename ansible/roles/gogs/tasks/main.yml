@@ -12,4 +12,4 @@
     dest: helm-values/gogs.yml
 
 - name: launch gogs
-  shell: helm install --name gogs -f helm-values/gogs.yml incubator/gogs
+  shell: helm install gogs -f helm-values/gogs.yml incubator/gogs

@@ -12,4 +12,4 @@
     dest: helm-values/concourse.yml
 
 - name: launch concourse
-  shell: helm install --name concourse -f helm-values/concourse.yml stable/concourse
+  shell: helm install concourse -f helm-values/concourse.yml stable/concourse

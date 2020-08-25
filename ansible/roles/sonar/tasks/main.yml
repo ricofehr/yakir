@@ -12,4 +12,4 @@
     dest: helm-values/sonar.yml
 
 - name: launch sonar
-  shell: helm install --name sonar -f helm-values/sonar.yml stable/sonarqube
+  shell: helm install sonar -f helm-values/sonar.yml stable/sonarqube

@@ -12,4 +12,4 @@
     dest: helm-values/grafana.yml
 
 - name: launch grafana
-  shell: helm install --name grafana -f helm-values/grafana.yml stable/grafana
+  shell: helm install grafana -f helm-values/grafana.yml stable/grafana

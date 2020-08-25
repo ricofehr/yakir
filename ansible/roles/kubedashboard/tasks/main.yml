@@ -34,7 +34,7 @@
     dest: helm-values/dashboard.yml
 
 - name: launch dashboard
-  shell: helm install --name dashboard --namespace kube-system -f helm-values/dashboard.yml stable/kubernetes-dashboard
+  shell: helm install dashboard --namespace kube-system -f helm-values/dashboard.yml stable/kubernetes-dashboard
 
 - name: url dashboard
   debug:

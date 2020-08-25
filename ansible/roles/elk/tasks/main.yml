@@ -15,7 +15,7 @@
     dest: helm-values/elasticsearch.yml
 
 - name: launch elasticsearch
-  shell: helm install --name elastcisearch -f helm-values/elasticsearch.yml elastic/elasticsearch
+  shell: helm install elastcisearch -f helm-values/elasticsearch.yml elastic/elasticsearch
 
 - name: Kibana Values parameters file
   template:
@@ -23,7 +23,7 @@
     dest: helm-values/kibana.yml
 
 - name: launch kibana
-  shell: helm install --name kibana -f helm-values/kibana.yml elastic/kibana
+  shell: helm install kibana -f helm-values/kibana.yml elastic/kibana
 
 # - name: Logstash Values parameters file
 #   template:
@@ -39,4 +39,4 @@
     dest: helm-values/metricbeat.yml
 
 - name: launch metricbeat
-  shell: helm install --name metricbeat -f helm-values/metricbeat.yml elastic/metricbeat
+  shell: helm install metricbeat -f helm-values/metricbeat.yml elastic/metricbeat

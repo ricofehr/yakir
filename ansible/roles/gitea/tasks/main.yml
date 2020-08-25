@@ -14,4 +14,4 @@
 - name: launch gogs
   shell: |
     helm repo add novum-rgi-helm https://novumrgi.github.io/helm/
-    helm install --name gitea -f helm-values/gitea.yml novum-rgi-helm/gitea
+    helm install gitea -f helm-values/gitea.yml novum-rgi-helm/gitea

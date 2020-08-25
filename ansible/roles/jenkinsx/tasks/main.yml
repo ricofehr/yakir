@@ -12,4 +12,4 @@
     dest: helm-values/jenkinsx.yml
 
 - name: launch jenkinsx
-  shell: helm install --name jenkinsx -f helm-values/jenkinsx.yml stable/jenkins
+  shell: helm install jenkinsx -f helm-values/jenkinsx.yml stable/jenkins
