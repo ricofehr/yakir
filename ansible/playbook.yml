@@ -25,9 +25,6 @@
   roles:
     - role: helm
     - role: ingress
-    - role: istio
-    # - role: keycloak
-    #   when: global_ci_install == '1'
     - role: gitea
       when: global_ci_install == '1'
     - role: registry
@@ -37,6 +34,4 @@
     - role: sonar
       when: global_ci_install == '1'
     - role: kubedashboard
-    #- role: prometheus
-    #- role: grafana
     - role: elk
