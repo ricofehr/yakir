@@ -7,6 +7,4 @@
 
 - name: Install istio with default profile
   shell: |
-    bin/./istioctl manifest install --set profile=demo
-  args:
-    chdir: ~/istio-1.7.0
+    yes | istio-*/bin/./istioctl manifest install --set profile=demo
