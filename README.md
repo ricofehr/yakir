@@ -4,7 +4,7 @@ A base k8s install with Vagrant (Bento/Ubuntu boxes)
 - 1 Master (4 Go RAM)
 - 5 Nodes (5 Go RAM)
 - Network: Weave
-- Addons: Heapster, Influxdb, Dashboard
+- Addons: Dashboard
 
 ## The cluster
 
@@ -29,11 +29,11 @@ $ vagrant up
 
 Once setup done
 - Dashboard is reached here
-http://192.168.78.10:8001/api/v1/namespaces/kube-system/services/https:dashboard-kubernetes-dashboard:https/proxy/
+http://192.168.78.10:8001/api/v1/namespaces/kube-system/services/http:dashboard-kubernetes-dashboard:http/proxy/
 
 ## CI Tools
 
-Install some CI Tools (git, sonar, concourse, prometheus/grafana, elk, ...) into the k8s cluster
+Install some CI Tools (git, sonar, jenkinsx, and other in next releases) into the k8s cluster
 ```
 CI_INSTALL=1 vagrant up
 ```
