@@ -214,7 +214,7 @@ if (($? != 0)); then
 fi
 
 set -e
-sleep 60
+sleep 240
 
 # get private and public vm ips
 K8SMASTER_IP="$(terraform output k8s-master1-ip)"
