@@ -36,6 +36,7 @@ Usage: $0 [options]
 -snet xxxx   openstack subnet id, no default
 -o xxxx      openstack operating system image, default is bionic
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
+-w xxxx	     override ansible path
 EOF
 
 exit 1
@@ -109,6 +110,11 @@ while (($# > 0)); do
       SSHKEYFILE="$1"
       shift
       ;;
+    -w)
+      shift
+      ANSIBLEPATH="$1"
+      shift
+      ;;
     -h)
       shift
       deployhelp
@@ -119,15 +125,6 @@ while (($# > 0)); do
       ;;
   esac
 done
-
-# Ensure prerequisites parameters
-if [[ ! -f "$ANSIBLEPATH" ]]; then
-  ANSIBLEPATH="/usr/local/bin/ansible-playbook"
-  if [[ ! -f "$ANSIBLEPATH" ]]; then
-    echo "No ansible binary detected"
-    exit 1
-  fi
-fi
 
 if [[ -z "$OSAUTHURL" ]]; then
   echo "-a openstack auth url paremeter is missing"
@@ -214,7 +211,7 @@ if (($? != 0)); then
 fi
 
 set -e
-sleep 240
+sleep 90
 
 # get private and public vm ips
 K8SMASTER_IP="$(terraform output k8s-master1-ip)"
