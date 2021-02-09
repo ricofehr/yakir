@@ -1,11 +1,9 @@
 ---
 
-- name: Install pip
-  apt: name=python3-pip state=present update_cache=true
-  become: yes
-
-- name: Install pyOpenSSL
-  pip: name=pyOpenSSL version=18.0.0
+- name: Ensure cryptography python library is preset
+  apt:
+    name: python3-cryptography
+    state: present
   become: yes
 
 - name: Certificates folder
