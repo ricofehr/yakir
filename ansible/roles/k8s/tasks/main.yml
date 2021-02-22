@@ -12,11 +12,11 @@
   lineinfile: dest=/etc/hosts regexp='^127\.0\.0\.1' line='127.0.0.1 localhost' owner=root group=root mode=0644
   become: yes
 
-- name: Update /etc/hosts - Ensure private ip for k8s-master1 resolved hosts
-  lineinfile: dest=/etc/hosts regexp='k8s-master1$' line='{{ k8s_master_ip }} k8s-master1' owner=root group=root mode=0644
+- name: Update /etc/hosts - Ensure private ip for master1 resolved hosts
+  lineinfile: dest=/etc/hosts regexp='{{ k8s_master_hostname }}$' line='{{ k8s_master_ip }} {{ k8s_master_hostname }}' owner=root group=root mode=0644
   become: yes
 
-- name: Update /etc/hosts - Ensure private ip for k8s-node1 resolved hosts
+- name: Update /etc/hosts - Ensure private ip for k8s nodes resolved hosts
   lineinfile: dest=/etc/hosts regexp='{{ item.name }}$' line='{{ item.ip }} {{ item.name }}' owner=root group=root mode=0644
   loop: "{{ k8s_nodes }}"
   become: yes
@@ -170,6 +170,8 @@
     mkdir -p /home/{{ ansible_user }}/.kube;
     sudo cp -f /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config;
     sudo chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config;
+  args:
+    warn: no
   run_once: true
   when: kubernetes_node_type == 'admin'
 
@@ -202,7 +204,7 @@
   when: kubernetes_node_type == 'admin'
 
 - name: Add k8snode
-  shell: "kubeadm join --token {{ hostvars['k8s-master1']['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} {{ k8s_master_ip }}:443"
+  shell: "kubeadm join --token {{ hostvars[groups['master'][0]]['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} {{ k8s_master_ip }}:443"
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   become: yes
@@ -216,10 +218,6 @@
   when:
     - kubernetes_node_type == 'admin'
     - is_cloud == '0'
-
-- name: Ensure k8s is running and ready
-  pause:
-    minutes: 2
 
 - name: Cinder storage class file
   template:

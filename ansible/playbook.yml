@@ -2,36 +2,53 @@
 - hosts:
     - master
     - nodes
-  serial: 1
-  become: false
   strategy: linear
   roles:
-    - role: systemd_dns
     - role: base
-    - role: cert
-      when: inventory_hostname == 'k8s-master1'
     - role: docker
       become: true
-    - role: docker_postinstall
     - role: kubernetes
       become: true
+
+- hosts:
+    - master
+  serial: 1
+  strategy: linear
+  vars_files:
+    - sizing_vars.yml
+  roles:
+    - role: cert
+    - role: docker_postinstall
+    - role: k8s
+
+- hosts:
+    - nodes
+  strategy: linear
+  vars_files:
+    - sizing_vars.yml
+  roles:
+    - role: docker_postinstall
     - role: k8s
 
 - hosts:
     - master
   serial: 1
-  become: false
   strategy: linear
+  vars_files:
+    - sizing_vars.yml
   roles:
     - role: helm
     - role: ingress
     - role: istio
+      when: global_istio_deploy == 1
     - role: gitea
-      when: global_ci_install == '1'
+      when: global_gitea_deploy == 1
     - role: registry
-      when: global_ci_install == '1'
+      when: global_registry_deploy == 1
     - role: jenkinsx
-      when: global_ci_install == '1'
+      when: global_jenkinsx_deploy == 1
     - role: sonar
-      when: global_ci_install == '1'
+      when: global_sonar_deploy == 1
     - role: kubedashboard
+      when: global_dashboard_deploy == 1
+

@@ -1,9 +1,17 @@
 ---
 
 global_domain: k8s.local
-global_ci_install: 0
 global_persistence_disk: false
 global_certs_folder: "{{ ansible_env.HOME }}/k8scerts"
 global_cert_path: "{{ global_certs_folder }}/k8s-ingress.crt"
 global_cert_key: "{{ global_certs_folder }}/k8s-ingress.pem"
 global_cert_csr: "{{ global_certs_folder }}/k8s-ingress.csr"
+global_k8s_nodes: "{{ sizing_k8s_nodes }}"
+
+global_dashboard_deploy: "{{ sizing_dashboard_deploy }}"
+global_gitea_deploy: "{{ sizing_gitea_deploy }}"
+global_registry_deploy: "{{ sizing_registry_deploy }}"
+global_sonar_deploy: "{{ sizing_sonar_deploy }}"
+global_jenkinsx_deploy: "{{ sizing_jenkinsx_deploy }}"
+global_istio_deploy: "{{ sizing_istio_deploy }}"
+

@@ -1,5 +1,6 @@
 # Vagrant folder
 /.vagrant
+Vagrantfile
 
 # tmp folder
 /tmp
@@ -10,8 +11,16 @@ ansible/group_vars/master/passwords
 # ansible retry file
 ansible/playbook.retry
 
-# ansible tf inventory
+# ansible inventory
+ansible/inventory
 ansible/tfinventory
+
+# env files
+ansible/sizing_vars.yml
+
+# tf files
+tf/openstack/setup.tf
+tf/openstack/output.tf
 
 #  Local .terraform directories
 **/.terraform/*

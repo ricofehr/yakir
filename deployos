@@ -8,6 +8,7 @@ OSTENANT="tenant0"
 OSREGION="RegionOne"
 FLAVORMASTERS="large"
 FLAVORNODES="xlarge"
+NODES_EXTRA_VARS=""
 PRIVATENETWORK="private"
 PUBLICNETWORK="public"
 SECURITYGROUP="k8s"
@@ -17,6 +18,7 @@ ANSIBLEPATH="/usr/bin/ansible-playbook"
 FLOATINGIPID=""
 SUBNETID=""
 OSCERTPATH=""
+SIZING="small"
 
 # Help function
 deployhelp() {
@@ -28,11 +30,12 @@ Usage: $0 [options]
 -p xxxx      openstack password, default is tenant0
 -t xxxx      openstack tenant, default is tenant0
 -r xxxx      openstack region, default is RegionOne
+-s xxxx      deployment sizing, choices are small / medium / large, default is small
 -fm xxxx     openstack flavor for master instance, default is large
 -fn xxxx     openstack flavor for nodes instance, default is xlarge
 -fip xxxx    openstack floatingip network id, no default
 -oscrt xxxx  openstack ssl certificate path
--s xxxx      openstack tenant security group, default is k8s
+-secgrp xxxx      openstack tenant security group, default is k8s
 -snet xxxx   openstack subnet id, no default
 -o xxxx      openstack operating system image, default is bionic
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
@@ -70,6 +73,11 @@ while (($# > 0)); do
       OSREGION="$1"
       shift
       ;;
+    -s)
+      shift
+      SIZING="$1"
+      shift
+      ;;
     -fip)
       shift
       FLOATINGIPID="$1"
@@ -90,7 +98,7 @@ while (($# > 0)); do
       OSCERTPATH="${1}"
       shift
       ;;
-    -s)
+    -secgrp)
       shift
       SECURITYGROUP="$1"
       shift
@@ -186,11 +194,18 @@ if [[ -z "$SUBNETID" ]]; then
   deployhelp
 fi
 
+# Ensure valid sizing
+[[ -f ansible/sizing_vars/sizing_vars_${SIZING}.yml ]] || SIZING=small
+
 
 # Create k8s vms
 pushd tf/openstack > /dev/null
+
+# Prepare setup and output
+ln -sf setups/setup_${SIZING} setup.tf
+ln -sf outputs/output_${SIZING} output.tf
+
 terraform init
-set +e
 terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 -var provider_password="$OSPASSWORD" -var provider_auth_url="$OSAUTHURL" \
 -var provider_region="$OSREGION" -var flavor_master="$FLAVORMASTERS" \
@@ -198,20 +213,7 @@ terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 -var public_network_name="$PUBLICNETWORK" -var security_group="$SECURITYGROUP" \
 -var image="$LINUXIMAGE" -var keypair_sshkey="$(cat $SSHKEYFILE | tr -d "\n")" -auto-approve
 
-# weird tf bug since more nodes added, relaunch one tf cmd if error
-if (($? != 0)); then
-  sleep 20
-  terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
-  -var provider_password="$OSPASSWORD" -var provider_auth_url="$OSAUTHURL" \
-  -var provider_region="$OSREGION" -var flavor_master="$FLAVORMASTERS" \
-  -var flavor_node="$FLAVORNODES" -var private_network_name="$PRIVATENETWORK" \
-  -var public_network_name="$PUBLICNETWORK" -var security_group="$SECURITYGROUP" \
-  -var image="$LINUXIMAGE" -var keypair_sshkey="$(cat $SSHKEYFILE | tr -d "\n")" -auto-approve
-  (($? != 0)) && exit 1
-fi
-
-set -e
-sleep 90
+sleep 60
 
 # get private and public vm ips
 K8SMASTER_IP="$(terraform output k8s-master1-ip)"
@@ -220,15 +222,24 @@ K8SNODE1_IP="$(terraform output k8s-node1-ip)"
 K8SNODE1_PRIVATE_IP="$(terraform output k8s-node1-private-ip)"
 K8SNODE2_IP="$(terraform output k8s-node2-ip)"
 K8SNODE2_PRIVATE_IP="$(terraform output k8s-node2-private-ip)"
-K8SNODE3_IP="$(terraform output k8s-node3-ip)"
-K8SNODE3_PRIVATE_IP="$(terraform output k8s-node3-private-ip)"
-K8SNODE4_IP="$(terraform output k8s-node4-ip)"
-K8SNODE4_PRIVATE_IP="$(terraform output k8s-node4-private-ip)"
-K8SNODE5_IP="$(terraform output k8s-node5-ip)"
-K8SNODE5_PRIVATE_IP="$(terraform output k8s-node5-private-ip)"
+
+if [[ "$SIZING" != "small" ]]; then
+  K8SNODE3_IP="$(terraform output k8s-node3-ip)"
+  K8SNODE3_PRIVATE_IP="$(terraform output k8s-node3-private-ip)"
+
+  if [[ "$SIZING" != "medium" ]]; then
+    K8SNODE4_IP="$(terraform output k8s-node4-ip)"
+    K8SNODE4_PRIVATE_IP="$(terraform output k8s-node4-private-ip)"
+    K8SNODE5_IP="$(terraform output k8s-node5-ip)"
+    K8SNODE5_PRIVATE_IP="$(terraform output k8s-node5-private-ip)"
+  fi
+fi
+
 popd > /dev/null
 
 pushd ansible > /dev/null
+
+ln -sf sizing_vars/sizing_vars_${SIZING}.yml sizing_vars.yml
 
 # Prepare inventory
 echo "[master]" > tfinventory
@@ -236,22 +247,26 @@ echo "k8s-master1 ansible_host=${K8SMASTER_IP} ansible_user=ubuntu ansible_ssh_p
 echo "[nodes]" >> tfinventory
 echo "k8s-node1 ansible_host=${K8SNODE1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
 echo "k8s-node2 ansible_host=${K8SNODE2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-echo "k8s-node3 ansible_host=${K8SNODE3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-echo "k8s-node4 ansible_host=${K8SNODE4_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-echo "k8s-node5 ansible_host=${K8SNODE5_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-
+NODES_EXTRA_VARS="--extra-vars \"sizing_k8s_node1_ip=$K8SNODE1_PRIVATE_IP\" --extra-vars=\"sizing_k8s_node2_ip=$K8SNODE2_PRIVATE_IP\""
+if [[ "$SIZING" != "small" ]]; then
+  NODES_EXTRA_VARS="$NODES_EXTRA_VARS --extra-vars \"sizing_k8s_node3_ip=$K8SNODE3_PRIVATE_IP\""
+  echo "k8s-node3 ansible_host=${K8SNODE3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+  if [[ "$SIZING" != "medium" ]]; then
+    NODES_EXTRA_VARS="$NODES_EXTRA_VARS --extra-vars \"sizing_k8s_node4_ip=$K8SNODE4_PRIVATE_IP\" --extra-vars \"sizing_k8s_node5_ip=$K8SNODE5_PRIVATE_IP\""
+    echo "k8s-node4 ansible_host=${K8SNODE4_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+    echo "k8s-node5 ansible_host=${K8SNODE5_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+  fi
+fi
 # Disable cowsay ansible output
 export ANSIBLE_NOCOWS=1
 
 # Install one K8S master and two K8S nodes
 $ANSIBLEPATH -i tfinventory \
 --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
---extra-vars="k8s_master_ip=$K8SMASTER_PRIVATE_IP" --extra-vars "k8s_node1_ip=$K8SNODE1_PRIVATE_IP" \
---extra-vars="k8s_node2_ip=$K8SNODE2_PRIVATE_IP" --extra-vars="k8s_node3_ip=$K8SNODE3_PRIVATE_IP" \
---extra-vars="k8s_node4_ip=$K8SNODE4_PRIVATE_IP" --extra-vars="k8s_node5_ip=$K8SNODE5_PRIVATE_IP" --extra-vars "is_cloud=1" \
+--extra-vars="k8s_master_ip=$K8SMASTER_PRIVATE_IP" $NODES_EXTRA_VARS --extra-vars "is_cloud=1" \
 --extra-vars="cloud_username=$OSUSER" --extra-vars "cloud_password=$OSPASSWORD" \
 --extra-vars="cloud_authurl=$OSAUTHURL" --extra-vars "cloud_tenant_name=$OSTENANT" \
 --extra-vars="cloud_subnet_id=$SUBNETID" --extra-vars "cloud_floatingnetwork_id=$FLOATINGIPID" \
---extra-vars="global_ci_install=1" --extra-vars "global_persistence_disk=1" --extra-vars "cloud_crt_path=$OSCERTPATH"
+--extra-vars "global_persistence_disk=1" --extra-vars "cloud_crt_path=$OSCERTPATH"
 
 popd > /dev/null
