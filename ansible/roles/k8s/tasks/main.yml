@@ -72,29 +72,22 @@
   args:
     executable: /bin/bash
   become: yes
-  when: kubernetes_node_type == 'worker'
-
-- name: Dns ip routed by public master1
-  shell: |
-    route -n | grep 10.96.0.10
-    (($? == 0)) && exit 0
-    route add 10.96.0.10 gw {{ k8s_master_ip }}
-  args:
-    executable: /bin/bash
-  become: yes
-  when: kubernetes_node_type == 'worker'
+  when:
+    - kubernetes_node_type == 'worker'
+    - is_cloud == '0'
 
 - name: K8s ip route at start
   copy:
     content: |
              #!/bin/bash
              route add 10.96.0.1 gw {{ k8s_master_ip }}
-             route add 10.96.0.10 gw {{ k8s_master_ip }}
     dest: /etc/network/if-up.d/routemaster
     owner: root
     mode: 0755
   become: yes
-  when: kubernetes_node_type == 'worker'
+  when:
+    - kubernetes_node_type == 'worker'
+    - is_cloud == '0'
 
 - name: generate cloud.conf
   template:
@@ -128,22 +121,43 @@
     - is_cloud == '1'
     - cloud_crt_path != ''
 
+- name: Resolv.conf on k8s dns pod
+  lineinfile:
+    dest: /etc/systemd/resolved.conf
+    regexp: "{{ item.regex }}"
+    line: "{{ item.line }}"
+  loop:
+    - regex: '^#DNS='
+      line: 'DNS=10.96.0.10'
+    - regex: '^#Domains='
+      line: 'Domains=svc.cluster.local'
+  become: yes
+
+- name: Restart resolved service
+  systemd:
+    name: systemd-resolved
+    state: restarted
+  become: yes
+
 - name: Kubelet cloud arguments
-  shell: |
-    sed -i "s/cgroup-driver=systemd/cgroup-driver=cgroupfs/g" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-    sed -i -E 's/(.*)KUBELET_KUBECONFIG_ARGS=(.*)$/\1KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=\/etc\/kubernetes\/cloud.conf \2/' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-    systemctl daemon-reload
-    systemctl restart kubelet
+  lineinfile:
+    dest: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+    regexp: "^Environment=\"KUBELET_KUBECONFIG_ARGS\".*$"
+    line: "Environment=\"KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=/etc/kubernetes/cloud.conf --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf\""
   become: yes
   when: is_cloud == '1'
 
-- name: Ensure kubelet.service
-  service: name=kubelet state=started enabled=yes
+- name: Restart kubelet service
+  systemd:
+    name: kubelet
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
   become: yes
 
 - name: Ensure kubelet is running and ready
   pause:
-    seconds: 120
+    seconds: 90
 
 - name: init master
   shell: kubeadm init --apiserver-advertise-address {{ k8s_master_ip }} --apiserver-bind-port 443 --node-name {{ inventory_hostname }}
