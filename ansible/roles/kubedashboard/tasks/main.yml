@@ -11,11 +11,19 @@
     src: templates/values.yml.j2
     dest: helm-values/dashboard.yml
 
-- name: add helm repo for dashboard
-  shell: helm repo add k8s-dashboard https://kubernetes.github.io/dashboard
+- name: Add dashboard chart repo
+  community.kubernetes.helm_repository:
+    name: k8s-dashboard
+    repo_url: "https://kubernetes.github.io/dashboard"
 
-- name: launch dashboard
-  shell: helm install dashboard --namespace kube-system -f helm-values/dashboard.yml k8s-dashboard/kubernetes-dashboard --version 3.0.2
+- name: Deploy Dashboard
+  community.kubernetes.helm:
+    name: dashboard
+    chart_ref: k8s-dashboard/kubernetes-dashboard
+    chart_version: 3.0.2
+    release_namespace: kube-system
+    values_files:
+      - helm-values/dashboard.yml
 
 - name: url dashboard
   debug:

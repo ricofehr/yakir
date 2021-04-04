@@ -11,7 +11,16 @@
     src: templates/values.yaml.j2
     dest: helm-values/gitea.yml
 
-- name: launch gogs
-  shell: |
-    helm repo add novum-rgi-helm https://novumrgi.github.io/helm/
-    helm install gitea -f helm-values/gitea.yml novum-rgi-helm/gitea
+- name: Add gogs chart repo
+  community.kubernetes.helm_repository:
+    name: novum-rgi-helm
+    repo_url: "https://novumrgi.github.io/helm/"
+
+- name: Deploy gitea
+  community.kubernetes.helm:
+    name: gitea
+    chart_ref: novum-rgi-helm/gitea
+    release_namespace: default
+    values_files:
+      - helm-values/gitea.yml
+

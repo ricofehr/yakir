@@ -11,5 +11,11 @@
     src: templates/values.yml.j2
     dest: helm-values/registry.yml
 
-- name: launch docker registry
-  shell: helm install registry -f helm-values/registry.yml stable/docker-registry
+- name: Deploy docker registry
+  community.kubernetes.helm:
+    name: registry
+    chart_ref: stable/docker-registry
+    release_namespace: default
+    values_files:
+      - helm-values/registry.yml
+

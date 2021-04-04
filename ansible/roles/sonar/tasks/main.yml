@@ -11,5 +11,11 @@
     src: templates/values.yml.j2
     dest: helm-values/sonar.yml
 
-- name: launch sonar
-  shell: helm install sonar -f helm-values/sonar.yml stable/sonarqube
+- name: Deploy Sonar
+  community.kubernetes.helm:
+    name: sonar
+    chart_ref: stable/sonarqube
+    release_namespace: default
+    values_files:
+      - helm-values/sonar.yml
+

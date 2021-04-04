@@ -1,0 +1,7 @@
+---
+
+istio_version: 1.9.2
+istio_repo_url: "https://github.com/istio/istio"
+istio_repo_chart_path:
+  base: manifests/charts/base
+  control: manifests/charts/istio-control/istio-discovery

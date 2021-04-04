@@ -1,10 +1,22 @@
 ---
 
-- name: Download and install istioctl
-  shell: |
-    curl -L https://istio.io/downloadIstio | sh -
+- name: Clone istio git repo
+  git:
+    repo: "{{ istio_repo_url }}"
+    dest: ~/istio
+    version: "{{ istio_version }}"
 
+- name: Deploy Istio Base
+  community.kubernetes.helm:
+    name: istio-base
+    chart_ref: ~/istio/{{ istio_repo_chart_path.base }}
+    release_namespace: istio-system
+    create_namespace: yes
 
-- name: Install istio with default profile
-  shell: |
-    yes | istio-*/bin/./istioctl manifest install --set profile=demo
+- name: Deploy Istio Control Plane (Istiod)
+  community.kubernetes.helm:
+    name: istio-control
+    chart_ref: ~/istio/{{ istio_repo_chart_path.control }}
+    release_namespace: istio-system
+    create_namespace: yes
+

@@ -11,5 +11,9 @@
     src: templates/values.yml.j2
     dest: helm-values/jenkinsx.yml
 
-- name: launch jenkinsx
-  shell: helm install jenkinsx -f helm-values/jenkinsx.yml stable/jenkins
+- name: Deploy jenkinsx
+  community.kubernetes.helm:
+    name: jenkinsx
+    chart_ref: stable/jenkins
+    release_namespace: default
+

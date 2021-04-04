@@ -3,6 +3,10 @@
 - name: import ssl certificate
   shell: kubectl create secret tls {{ ingress_cert_name }} --key {{ ingress_cert_key }} --cert {{ ingress_cert_path }}
 
-- name: launch nginx ingress
-  shell: helm install ingress stable/nginx-ingress
+- name: Deploy nginx ingress chart
+  community.kubernetes.helm:
+    name: ingress
+    chart_ref: stable/nginx-ingress
+    release_namespace: kube-system
+    state: present
 
