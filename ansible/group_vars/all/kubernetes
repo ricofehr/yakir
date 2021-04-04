@@ -1,5 +1,5 @@
 # The ID of the APT key for the Kubernetes repository
-kubernetes_apt_key_id: 6A030B21BA07F4FB
+kubernetes_apt_key_id: 7F92E05B31093BEF5A3C2D38FEEA9169307EA071
 
 kubernetes_version: '1.20*'
 
