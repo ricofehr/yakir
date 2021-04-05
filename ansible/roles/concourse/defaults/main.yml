@@ -1,6 +1,0 @@
----
-
-concourse_domain: concourse.k8s.local
-concourse_proto_url: https
-concourse_ssl: true
-concourse_persistence_disk: false

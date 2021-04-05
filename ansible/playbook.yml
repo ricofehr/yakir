@@ -41,6 +41,8 @@
     - role: ingress
     - role: istio
       when: global_istio_deploy == 1
+    - role: keycloak
+      when: global_keycloak_deploy == 1
     - role: gitea
       when: global_gitea_deploy == 1
     - role: registry
@@ -51,4 +53,10 @@
       when: global_sonar_deploy == 1
     - role: kubedashboard
       when: global_dashboard_deploy == 1
+    - role: elk
+      when: global_elk_deploy == 1
+    - role: prometheus
+      when: global_monit_deploy == 1
+    - role: grafana
+      when: global_monit_deploy == 1
 

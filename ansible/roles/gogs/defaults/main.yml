@@ -1,6 +1,0 @@
----
-
-gogs_domain: gogs.k8s.local
-gogs_proto_url: https
-gogs_ssl: true
-gogs_persistence_disk: false

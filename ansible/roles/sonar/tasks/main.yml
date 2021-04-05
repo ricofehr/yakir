@@ -11,11 +11,18 @@
     src: templates/values.yml.j2
     dest: helm-values/sonar.yml
 
-- name: Deploy Sonar
+- name: Add sonar chart repo
+  community.kubernetes.helm_repository:
+    name: sonarqube
+    repo_url: "https://oteemo.github.io/charts"
+
+- name: Deploy SonarQube
   community.kubernetes.helm:
-    name: sonar
-    chart_ref: stable/sonarqube
-    release_namespace: default
+    name: sonarqube
+    chart_ref: sonarqube/sonarqube
+    chart_version: 9.6.0
+    release_namespace: k8s
+    create_namespace: yes
     values_files:
       - helm-values/sonar.yml
 

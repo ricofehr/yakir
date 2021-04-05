@@ -15,7 +15,8 @@
   community.kubernetes.helm:
     name: registry
     chart_ref: stable/docker-registry
-    release_namespace: default
+    release_namespace: k8s
+    create_namespace: yes
     values_files:
       - helm-values/registry.yml
 

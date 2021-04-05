@@ -6,37 +6,39 @@
     state: directory
     mode: 0755
 
-- name: Add elastic repo to helm
-  shell: helm repo add elastic https://helm.elastic.co
+- name: Add elastic chart repo
+  community.kubernetes.helm_repository:
+    name: elastic
+    repo_url: "https://helm.elastic.co"
 
 - name: Elasticsearch Values parameters file
   template:
     src: templates/elasticsearch.yml.j2
     dest: helm-values/elasticsearch.yml
 
-- name: launch elasticsearch
-  shell: helm install elastcisearch -f helm-values/elasticsearch.yml elastic/elasticsearch
+- name: Deploy Elasticsearch
+  community.kubernetes.helm:
+    name: elasticsearch
+    chart_ref: elastic/elasticsearch
+    chart_version: 7.12.0
+    release_namespace: k8s
+    create_namespace: yes
+    values_files:
+      - helm-values/elasticsearch.yml
 
-- name: Kibana Values parameters file
-  template:
-    src: templates/kibana.yml.j2
-    dest: helm-values/kibana.yml
+- name: Deploy Kibana
+  community.kubernetes.helm:
+    name: kibana
+    chart_ref: elastic/kibana
+    chart_version: 7.12.0
+    release_namespace: k8s
+    create_namespace: yes
 
-- name: launch kibana
-  shell: helm install kibana -f helm-values/kibana.yml elastic/kibana
+- name: Deploy MetricBeat
+  community.kubernetes.helm:
+    name: metricbeat
+    chart_ref: elastic/metricbeat
+    chart_version: 7.12.0
+    release_namespace: k8s
+    create_namespace: yes
 
-# - name: Logstash Values parameters file
-#   template:
-#     src: templates/logstash.yml.j2
-#     dest: helm-values/logstash.yml
-#
-# - name: launch logstash
-#   shell: helm install --name logstash -f helm-values/logstash.yml elastic/logstash
-
-- name: Metricbeat Values parameters file
-  template:
-    src: templates/metricbeat.yml.j2
-    dest: helm-values/metricbeat.yml
-
-- name: launch metricbeat
-  shell: helm install metricbeat -f helm-values/metricbeat.yml elastic/metricbeat

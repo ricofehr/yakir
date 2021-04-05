@@ -11,5 +11,18 @@
     src: templates/values.yml.j2
     dest: helm-values/borgmon.yml
 
-- name: launch prometheus
-  shell: helm install borgmon -f helm-values/borgmon.yml stable/prometheus
+- name: Add prometheus chart repo
+  community.kubernetes.helm_repository:
+    name: prometheus
+    repo_url: "https://prometheus-community.github.io/helm-charts"
+
+- name: Deploy Prometheus
+  community.kubernetes.helm:
+    name: prometheus
+    chart_ref: prometheus/prometheus
+    chart_version: 13.6.0
+    release_namespace: k8s
+    create_namespace: yes
+    values_files:
+      - helm-values/borgmon.yml
+

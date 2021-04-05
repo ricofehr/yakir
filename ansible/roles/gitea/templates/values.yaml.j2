@@ -4,22 +4,34 @@
 
 replicaCount: 1
 
+clusterDomain: cluster.local
+
 image:
   repository: gitea/gitea
-  version: 1.12.3
+  tag: 1.13.5
   pullPolicy: Always
 
 imagePullSecrets: []
+
+securityContext: {}
 
 service:
   http:
     type: ClusterIP
     port: 3000
+    clusterIP: None
+    #loadBalancerIP:
+    #nodePort:
+    annotations:
   ssh:
     type: ClusterIP
     port: 22
+    clusterIP: None
     #loadBalancerIP:
     #nodePort:
+    #externalTrafficPolicy:
+    #externalIPs:
+    loadBalancerSourceRanges: []
     annotations:
 
 ingress:
@@ -53,15 +65,48 @@ tolerations: []
 affinity: {}
 
 statefulset:
+  env: []
+    # - name: VARIABLE
+    #   value: my-value
   terminationGracePeriodSeconds: 60
+  labels: {}
 
 persistence:
-  enabled: true
+  enabled: {{ gitea_persistence_disk }}
   # existingClaim:
+{% if gitea_persistence_disk == 'True' %}
   size: 10Gi
   accessModes:
     - ReadWriteOnce
   storageClass: standard
+{% endif %}
+  labels: {}
+  annotations: {}
+
+# additional volumes to add to the Gitea statefulset.
+extraVolumes:
+# - name: postgres-ssl-vol
+#   secret:
+#     secretName: gitea-postgres-ssl
+
+
+# additional volumes to mount, both to the init container and to the main
+# container. As an example, can be used to mount a client cert when connecting
+# to an external Postgres server.
+extraVolumeMounts:
+# - name: postgres-ssl-vol
+#   readOnly: true
+#   mountPath: "/pg-ssl"
+
+# bash shell script copied verbatim to the start of the init-container.
+initPreScript: ""
+#
+# initPreScript: |
+#   mkdir -p /data/git/.postgresql
+#   cp /pg-ssl/* /data/git/.postgresql/
+#   chown -R git:git /data/git/.postgresql/
+#   chmod 400 /data/git/.postgresql/postgresql.key
+
 
 gitea:
   admin:
@@ -69,19 +114,39 @@ gitea:
     password: r8sA8CPHD9!bt6d
     email: "gitea@local.domain"
 
+  metrics:
+    enabled: false
+    serviceMonitor:
+      enabled: false
+      # prometheusSelector: default
+
   ldap:
     enabled: false
-    name: ""
-    securityProtocol: ""
-    host: ""
-    port: ""
-    userSearchBase: ""
-    userFilter: ""
-    adminFilter: ""
-    emailAttribute: ""
-    bindDn: ""
-    bindPassword: ""
-    usernameAttribute: ""
+    #name: 
+    #securityProtocol: 
+    #host: 
+    #port: 
+    #userSearchBase: 
+    #userFilter: 
+    #adminFilter: 
+    #emailAttribute: 
+    #bindDn: 
+    #bindPassword: 
+    #usernameAttribute: 
+    #sshPublicKeyAttribute:
+
+  oauth:
+    enabled: false
+    #name:
+    #provider:
+    #key: 
+    #secret: 
+    #autoDiscoverUrl:
+    #useCustomUrls:
+    #customAuthUrl:
+    #customTokenUrl:
+    #customProfileUrl:
+    #customEmailUrl:
 
   config: {}
   #  APP_NAME: "Gitea: Git with a cup of tea"
@@ -93,16 +158,66 @@ gitea:
   #  security:
   #    PASSWORD_COMPLEXITY: spec
 
+  podAnnotations: {}
+
   database:
     builtIn:
       postgresql:
         enabled: true
       mysql:
         enabled: false
+      mariadb:
+        enabled: false
 
   cache:
     builtIn:
       enabled: true
+
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 200
+    timeoutSeconds: 1
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 10
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    timeoutSeconds: 1
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 10
+
+  # customLivenessProbe:
+  #   httpGet:
+  #     path: /user/login
+  #     port: http
+  #   initialDelaySeconds: 60
+  #   periodSeconds: 10
+  #   successThreshold: 1
+  #   failureThreshold: 10
+  # customReadinessProbe:
+  #   httpGet:
+  #     path: /user/login
+  #     port: http
+  #   initialDelaySeconds: 5
+  #   periodSeconds: 10
+  #   successThreshold: 1
+  #   failureThreshold: 3
+  # customStartupProbe:
+  #   httpGet:
+  #     path: /user/login
+  #     port: http
+  #   initialDelaySeconds: 60
+  #   periodSeconds: 10
+  #   successThreshold: 1
+  #   failureThreshold: 10
 
 memcached:
   service:
@@ -116,7 +231,13 @@ postgresql:
       postgresqlPassword: gitea
       servicePort: 5432
   persistence:
+    enabled: {{ gitea_persistence_disk }}
+{% if gitea_persistence_disk == 'True' %}
     size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    storageClass: standard
+{% endif %}
 
 mysql:
   root:
@@ -128,4 +249,29 @@ mysql:
   service:
     port: 3306
   persistence:
+    enabled: {{ gitea_persistence_disk }}
+{% if gitea_persistence_disk == 'True' %}
     size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    storageClass: standard
+{% endif %}
+
+mariadb:
+  auth:
+    database: gitea
+    username: gitea
+    password: gitea
+    rootPassword: gitea
+  primary:
+    service:
+      port: 3306
+    persistence:
+    enabled: {{ gitea_persistence_disk }}
+{% if gitea_persistence_disk == 'True' %}
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    storageClass: standard
+{% endif %}
+
