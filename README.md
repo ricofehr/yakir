@@ -5,7 +5,8 @@ A base k8s install with Vagrant (Bento/Ubuntu boxes)
   - small: 1 Master and 2 Nodes (fit to 16Go RAM Laptop with 2 cpu cores)
   - medium : 1 Master and 3 Nodes (fit to 24Go RAM Laptop with 4 cpu cores)
   - large : 1 Master and 5 Nodes (fit to 32Go RAM Laptop with 6 cpu cores)
-- CI Tools : git, sonar, jenkinsx
+- CI Tools : gitea, sonar, jenkinsx, docker-registry
+- Monitoring tools and logging (wip)
 - Istio implementation (wip)
 
 ## The cluster
