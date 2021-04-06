@@ -11,7 +11,7 @@ provider "openstack" {
   insecure = true
 }
 
-resource "openstack_compute_keypair_v2" "k8s-keypair" {
+resource "openstack_compute_keypair_v2" "k8s_keypair" {
   name = "k8s-keypair"
   public_key = "${var.keypair_sshkey}"
 }
@@ -24,7 +24,7 @@ resource "openstack_compute_instance_v2" "k8s_master1" {
   name            = "k8s-master1"
   image_name      = "${var.image}"
   flavor_name     = "${var.flavor_master}"
-  key_pair        = "k8s-keypair"
+  key_pair        = "${openstack_compute_keypair_v2.k8s_keypair.name}"
   security_groups = ["${var.security_group}"]
 
   network {
@@ -45,7 +45,7 @@ resource "openstack_compute_instance_v2" "k8s_node1" {
   name            = "k8s-node1"
   image_name      = "${var.image}"
   flavor_name     = "${var.flavor_node}"
-  key_pair        = "k8s-keypair"
+  key_pair        = "${openstack_compute_keypair_v2.k8s_keypair.name}"
   security_groups = ["${var.security_group}"]
 
   network {
@@ -66,7 +66,7 @@ resource "openstack_compute_instance_v2" "k8s_node2" {
   name            = "k8s-node2"
   image_name      = "${var.image}"
   flavor_name     = "${var.flavor_node}"
-  key_pair        = "k8s-keypair"
+  key_pair        = "${openstack_compute_keypair_v2.k8s_keypair.name}"
   security_groups = ["${var.security_group}"]
 
   network {
@@ -87,7 +87,7 @@ resource "openstack_compute_instance_v2" "k8s_node3" {
   name            = "k8s-node3"
   image_name      = "${var.image}"
   flavor_name     = "${var.flavor_node}"
-  key_pair        = "k8s-keypair"
+  key_pair        = "${openstack_compute_keypair_v2.k8s_keypair.name}"
   security_groups = ["${var.security_group}"]
 
   network {
@@ -108,7 +108,7 @@ resource "openstack_compute_instance_v2" "k8s_node4" {
   name            = "k8s-node4"
   image_name      = "${var.image}"
   flavor_name     = "${var.flavor_node}"
-  key_pair        = "k8s-keypair"
+  key_pair        = "${openstack_compute_keypair_v2.k8s_keypair.name}"
   security_groups = ["${var.security_group}"]
 
   network {
@@ -129,7 +129,7 @@ resource "openstack_compute_instance_v2" "k8s_node5" {
   name            = "k8s-node5"
   image_name      = "${var.image}"
   flavor_name     = "${var.flavor_node}"
-  key_pair        = "k8s-keypair"
+  key_pair        = "${openstack_compute_keypair_v2.k8s_keypair.name}"
   security_groups = ["${var.security_group}"]
 
   network {
