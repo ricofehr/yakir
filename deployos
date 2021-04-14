@@ -267,6 +267,6 @@ $ANSIBLEPATH -i tfinventory \
 --extra-vars="cloud_username=$OSUSER" --extra-vars "cloud_password=$OSPASSWORD" \
 --extra-vars="cloud_authurl=$OSAUTHURL" --extra-vars "cloud_tenant_name=$OSTENANT" \
 --extra-vars="cloud_subnet_id=$SUBNETID" --extra-vars "cloud_floatingnetwork_id=$FLOATINGIPID" \
---extra-vars "global_persistence_disk=1" --extra-vars "cloud_crt_path=$OSCERTPATH"
+--extra-vars "global_persistence_disk=true" --extra-vars "cloud_crt_path=$OSCERTPATH"
 
 popd > /dev/null

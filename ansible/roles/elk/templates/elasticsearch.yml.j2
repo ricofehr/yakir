@@ -128,7 +128,7 @@ podSecurityPolicy:
 
 persistence:
   enabled: {{ elk_persistence_disk }}
-{% if elk_persistence_disk == 'True' %}
+{% if elk_persistence_disk | bool %}
   labels:
     # Add default labels for the volumeClaimTemplate of the StatefulSet
     enabled: false

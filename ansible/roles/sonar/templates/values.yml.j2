@@ -218,7 +218,7 @@ persistence:
   ##   GKE, AWS & OpenStack)
   ##
   # storageClass: "-"
-{% if sonar_persistence_disk == 'True' %}
+{% if sonar_persistence_disk | bool %}
   accessMode: "ReadWriteOnce"
   size: "10Gi"
   storageClass: standard
@@ -284,7 +284,7 @@ postgresql:
       memory: 200Mi
   persistence:
     enabled: {{ sonar_persistence_disk }}
-{% if sonar_persistence_disk == 'True' %}
+{% if sonar_persistence_disk | bool %}
     accessMode: ReadWriteOnce
     size: 2Gi
     storageClass: standard

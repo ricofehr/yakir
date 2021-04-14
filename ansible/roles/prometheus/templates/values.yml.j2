@@ -177,7 +177,7 @@ alertmanager:
     ##
     enabled: {{ prometheus_persistence_disk }}
 
-{% if prometheus_persistence_disk == 'True' %}
+{% if prometheus_persistence_disk | bool %}
     ## alertmanager data Persistent Volume access modes
     ## Must match those of existing PV or dynamic provisioner
     ## Ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
@@ -816,7 +816,7 @@ server:
     ##
     enabled: {{ prometheus_persistence_disk }}
 
-{% if prometheus_persistence_disk == 'True' %}
+{% if prometheus_persistence_disk | bool %}
 
     ## Prometheus server data Persistent Volume access modes
     ## Must match those of existing PV or dynamic provisioner
@@ -1194,7 +1194,7 @@ pushgateway:
     ##
     enabled: {{ prometheus_persistence_disk }}
 
-{% if prometheus_persistence_disk == 'True' %}
+{% if prometheus_persistence_disk | bool %}
  
     ## pushgateway data Persistent Volume access modes
     ## Must match those of existing PV or dynamic provisioner

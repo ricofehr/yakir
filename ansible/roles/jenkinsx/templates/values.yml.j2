@@ -213,7 +213,7 @@ controller:
   # Enable to initialize the Jenkins controller only once on initial installation.
   # Without this, whenever the controller gets restarted (Evicted, etc.) it will fetch plugin updates which has the potential to cause breakage.
   # Note that for this to work, `persistence.enabled` needs to be set to `true`
-  initializeOnce: false
+  initializeOnce: {{ jenkinsx_persistence_disk }}
 
   # Enable to always override the installed plugins with the values of 'controller.installPlugins' on upgrade or redeployment.
   # overwritePlugins: true
@@ -665,11 +665,11 @@ additionalAgents: {}
 
 persistence:
   enabled: {{ jenkinsx_persistence_disk }}
-{% if jenkinsx_persistence_disk == 'True' %}
+{% if jenkinsx_persistence_disk | bool %}
   ## A manually managed Persistent Volume and Claim
   ## Requires persistence.enabled: true
   ## If defined, PVC must be created manually before volume will be bound
-  existingClaim:
+  #existingClaim: jenkins-pvc
   ## jenkins data Persistent Volume Storage Class
   ## If defined, storageClassName: <storageClass>
   ## If set to "-", storageClassName: "", which disables dynamic provisioning
@@ -678,13 +678,13 @@ persistence:
   ##   GKE, AWS & OpenStack)
   ##
   storageClass: standard
-  annotations: {}
+  #annotations: {}
   accessMode: "ReadWriteOnce"
-  size: "8Gi"
-  volumes:
+  size: "4Gi"
+  #volumes:
   #  - name: nothing
   #    emptyDir: {}
-  mounts:
+  #mounts:
   #  - mountPath: /var/nothing
   #    name: nothing
   #    readOnly: true

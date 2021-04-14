@@ -20,6 +20,7 @@
   community.kubernetes.helm:
     name: gitea
     chart_ref: gitea-charts/gitea
+    chart_version: 2.2.3
     release_namespace: k8s
     create_namespace: yes
     values_files:

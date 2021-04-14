@@ -26,6 +26,11 @@
     values_files:
       - helm-values/elasticsearch.yml
 
+- name: Kibana Values parameters file
+  template:
+    src: templates/kibana.yml.j2
+    dest: helm-values/kibana.yml
+
 - name: Deploy Kibana
   community.kubernetes.helm:
     name: kibana
@@ -33,6 +38,8 @@
     chart_version: 7.12.0
     release_namespace: k8s
     create_namespace: yes
+    values_files:
+      - helm-values/kibana.yml
 
 - name: Deploy MetricBeat
   community.kubernetes.helm:
