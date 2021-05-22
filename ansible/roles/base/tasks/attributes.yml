@@ -1,0 +1,39 @@
+---
+
+- name: Set default system language
+  shell: locale-gen "{{ base_locale }}"
+  when: base_locale is defined
+  become: yes
+
+- name: set timezone to "{{ base_timezone }}"
+  timezone:
+    name: "{{ base_timezone }}"
+  when: base_timezone is defined
+  become: yes
+
+- name: Set the hostname
+  hostname:
+    name: "{{ inventory_hostname }}"
+  become: yes
+
+- name: Ssh config strict hostkey
+  lineinfile: dest=/etc/ssh/ssh_config line='StrictHostKeyChecking no'
+  become: yes
+
+- name: Ssh config userknown
+  lineinfile: dest=/etc/ssh/ssh_config line='UserKnownHostsFile /dev/null'
+  become: yes
+
+- name: Ensure low swappiness value
+  sysctl:
+    name: vm.swappiness
+    value: '5'
+    state: present
+  become: yes
+
+- name: Playbooks touch files folder
+  file:
+    path: ~/.playbooks
+    owner: "{{ ansible_user }}"
+    state: directory
+    mode: 0755

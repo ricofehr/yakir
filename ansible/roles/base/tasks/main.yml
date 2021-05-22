@@ -1,0 +1,9 @@
+---
+
+- import_tasks: attributes.yml
+
+- import_tasks: packages.yml
+
+- import_tasks: user.yml
+
+- import_tasks: endbase.yml

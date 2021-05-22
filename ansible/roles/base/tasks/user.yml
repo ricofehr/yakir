@@ -1,0 +1,28 @@
+---
+
+- name: Ensure admin group is present
+  group:
+    name: admin
+    state: present
+  become: yes
+
+- name: Add ansible user to admn group
+  user:
+    append: yes
+    name: "{{ ansible_user }}"
+    groups:
+      - admin
+  become: yes
+
+- name: No passwd for admin group on sudo
+  lineinfile:
+    path: /etc/sudoers
+    state: present
+    regexp: '^%ADMIN ALL='
+    line: '%ADMIN ALL=(ALL) NOPASSWD: ALL'
+    validate: '/usr/sbin/visudo -cf %s'
+  become: yes
+ 
+- name: Unlock ansible account and disable password auth
+  shell: usermod -p '*' {{ ansible_user }}
+  become: yes

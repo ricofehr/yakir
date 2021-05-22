@@ -23,36 +23,52 @@ variable "provider_region" {
   default = "RegionOne"
 }
 
-variable "flavor_master" {
-  description = "Flavor to use with k8s-master vm"
-  default = "large"
-}
-
-variable "flavor_node" {
-  description = "Flavor to use with k8s-node vms"
-  default = "xlarge"
-}
-
-variable "private_network_name" {
-  description = "Openstack private internal network name"
-  default = "private"
-}
-
-variable "public_network_name" {
-  description = "Openstack provider external network name (floating ips)"
-  default = "public"
-}
-
-variable "security_group" {
-  description = "Openstack security group"
-  default = "k8s"
-}
-
-variable "image" {
-  description = "OS-Image Name to use with k8s vms"
-  default = "bionic"
+variable "keypair_name" {
+  description = "SSH keypair name"
+  default = "k8s-keypair"
 }
 
 variable "keypair_sshkey" {
-  description = "Rsa ssh key, no default value"
+  description = "Public SSH keypair content"
 }
+
+variable "public_network_name" {
+  description = "External openstack subnet"
+  default = "public"
+}
+
+variable "private_network_name" {
+  description = "Internal openstack subnet"
+  default = "private"
+}
+
+variable "image" {
+  description      = "OS Glance Image"
+  default = "focal"
+}
+
+variable "security_group" {
+  description      = "Openstack security group"
+  default          = "k8s"
+}
+
+variable "k8s_master_name" {
+  description      = "Vm names"
+  default = "k8s-master"
+}
+
+variable "k8s_node_name" {
+  description      = "Vm names"
+  default = "k8s-node"
+}
+
+variable "k8s_master_flavor" {
+  description      = "Vm Sizing Label"
+  default = "large"
+}
+
+variable "k8s_node_flavor" {
+  description      = "Vm Sizing Label"
+  default = "xlarge"
+}
+
