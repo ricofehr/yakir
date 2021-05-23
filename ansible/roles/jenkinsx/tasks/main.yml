@@ -20,7 +20,7 @@
   community.kubernetes.helm:
     name: jenkins
     chart_ref: jenkins/jenkins
-    chart_version: 3.3.2
+    chart_version: 3.3.17
     release_namespace: k8s
     create_namespace: yes
     values_files:
