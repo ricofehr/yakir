@@ -7,14 +7,14 @@
     version: "{{ istio_version }}"
 
 - name: Deploy Istio Base
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: istio-base
     chart_ref: ~/istio/{{ istio_repo_chart_path.base }}
     release_namespace: istio-system
     create_namespace: yes
 
 - name: Deploy Istio Control Plane (Istiod)
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: istio-control
     chart_ref: ~/istio/{{ istio_repo_chart_path.control }}
     release_namespace: istio-system

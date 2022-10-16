@@ -12,7 +12,7 @@
     dest: helm-values/registry.yml
 
 - name: Deploy docker registry
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: registry
     chart_ref: stable/docker-registry
     release_namespace: k8s

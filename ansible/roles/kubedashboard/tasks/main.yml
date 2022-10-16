@@ -12,12 +12,12 @@
     dest: helm-values/dashboard.yml
 
 - name: Add dashboard chart repo
-  community.kubernetes.helm_repository:
+  kubernetes.core.helm_repository:
     name: k8s-dashboard
     repo_url: "https://kubernetes.github.io/dashboard"
 
 - name: Deploy Dashboard
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: dashboard
     chart_ref: k8s-dashboard/kubernetes-dashboard
     chart_version: 3.0.2

@@ -12,12 +12,12 @@
     dest: helm-values/sonar.yml
 
 - name: Add sonar chart repo
-  community.kubernetes.helm_repository:
+  kubernetes.core.helm_repository:
     name: sonarqube
     repo_url: "https://oteemo.github.io/charts"
 
 - name: Deploy SonarQube
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: sonarqube
     chart_ref: sonarqube/sonarqube
     chart_version: 9.6.0

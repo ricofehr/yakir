@@ -9,15 +9,19 @@
     creates: ~/.ingress_cert_secret
 
 - name: Add nginx ingress chart repo
-  community.kubernetes.helm_repository:
+  kubernetes.core.helm_repository:
     name: ingress-nginx
     repo_url: "https://kubernetes.github.io/ingress-nginx"
 
 - name: Deploy Nginx Ingress
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: ingress-nginx
     chart_ref: ingress-nginx/ingress-nginx
     chart_version: 3.26.0
     release_namespace: k8s
     create_namespace: yes
+
+- name: Ensure ingress is ready
+  pause:
+    seconds: 150
 

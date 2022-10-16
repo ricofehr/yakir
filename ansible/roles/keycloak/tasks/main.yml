@@ -12,12 +12,12 @@
     dest: helm-values/keycloak.yml
 
 - name: Add codecentric keycloak chart repo
-  community.kubernetes.helm_repository:
+  kubernetes.core.helm_repository:
     name: codecentric
     repo_url: "https://codecentric.github.io/helm-charts"
 
 - name: Deploy Keycloak
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: keycloak
     chart_ref: codecentric/keycloak
     chart_version: 10.1.0

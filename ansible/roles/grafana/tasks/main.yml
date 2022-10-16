@@ -12,12 +12,12 @@
     dest: helm-values/grafana.yml
 
 - name: Add grafana chart repo
-  community.kubernetes.helm_repository:
+  kubernetes.core.helm_repository:
     name: grafana
     repo_url: "https://grafana.github.io/helm-charts"
 
 - name: Deploy Grafana
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: grafana
     chart_ref: grafana/grafana
     chart_version: 6.7.2

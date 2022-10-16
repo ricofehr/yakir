@@ -41,7 +41,7 @@ Usage: ./up [options]
 
 An openstack deployment is setted with Terraform, use 'deployos' script for managed this
 ```
-Usage: ./deployos [options]
+Usage: ./deploy-to-openstack [options]
 -h           this is some help text.
 -a xxxx      openstack auth url, default is http://172.29.236.101:5000/v3
 -u xxxx      openstack user, default is tenant0

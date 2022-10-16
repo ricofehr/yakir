@@ -7,7 +7,7 @@
     mode: 0755
 
 - name: Add elastic chart repo
-  community.kubernetes.helm_repository:
+  kubernetes.core.helm_repository:
     name: elastic
     repo_url: "https://helm.elastic.co"
 
@@ -17,7 +17,7 @@
     dest: helm-values/elasticsearch.yml
 
 - name: Deploy Elasticsearch
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: elasticsearch
     chart_ref: elastic/elasticsearch
     chart_version: 7.12.0
@@ -32,7 +32,7 @@
     dest: helm-values/kibana.yml
 
 - name: Deploy Kibana
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: kibana
     chart_ref: elastic/kibana
     chart_version: 7.12.0
@@ -42,7 +42,7 @@
       - helm-values/kibana.yml
 
 - name: Deploy MetricBeat
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: metricbeat
     chart_ref: elastic/metricbeat
     chart_version: 7.12.0
