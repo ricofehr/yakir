@@ -20,7 +20,7 @@
   kubernetes.core.helm:
     name: dashboard
     chart_ref: k8s-dashboard/kubernetes-dashboard
-    chart_version: 3.0.2
+    chart_version: 5.10.0
     release_namespace: kube-system
     values_files:
       - helm-values/dashboard.yml

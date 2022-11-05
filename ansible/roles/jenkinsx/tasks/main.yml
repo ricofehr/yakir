@@ -20,7 +20,7 @@
   kubernetes.core.helm:
     name: jenkins
     chart_ref: jenkins/jenkins
-    chart_version: 3.3.17
+    chart_version: 4.2.10
     release_namespace: k8s
     create_namespace: yes
     values_files:

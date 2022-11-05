@@ -1,12 +1,12 @@
 ---
 
-- name: Add current user to docker group
-  user:
-    append: yes
-    name: "{{ ansible_user }}"
-    groups:
-      - docker
-  become: yes
+#- name: Add current user to docker group
+#  user:
+#    append: yes
+#    name: "{{ ansible_user }}"
+#    groups:
+#      - docker
+#  become: yes
 
 - name: Update /etc/hosts - Remove hostname to 127.0.0.1 resolved hosts
   lineinfile: dest=/etc/hosts regexp='^127\.0\.0\.1' line='127.0.0.1 localhost' owner=root group=root mode=0644
@@ -160,7 +160,7 @@
     seconds: 90
 
 - name: init master
-  shell: kubeadm init --apiserver-advertise-address {{ k8s_master_ip }} --apiserver-bind-port 443 --node-name {{ inventory_hostname }}
+  shell: kubeadm init --apiserver-advertise-address {{ k8s_master_ip }} --apiserver-bind-port 443 --node-name {{ inventory_hostname }} --pod-network-cidr=10.244.0.0/16 --cri-socket=unix:///var/run/crio/crio.sock
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   run_once: true
@@ -170,7 +170,7 @@
     - is_cloud == '0'
 
 - name: init master
-  shell: kubeadm init --config /etc/kubernetes/kubeadm.conf
+  shell: kubeadm init --pod-network-cidr=10.244.0.0/16 --cri-socket=unix:///var/run/crio/crio.sock --config /etc/kubernetes/kubeadm.conf
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   run_once: true
@@ -196,8 +196,23 @@
   become: yes
   when: kubernetes_node_type == 'admin'
 
-- name: launch weave
-  shell: kubectl apply -f "https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml"
+#- name: launch weave
+#  shell: kubectl apply -f "https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml"
+#  args:
+#    creates: ~/.k8sinstall
+#  run_once: true
+#  when: kubernetes_node_type == 'admin'
+
+- name: generate flannel manifest
+  template:
+    src: templates/kube-flannel.yml.j2
+    dest: kube-flannel.yml
+    mode: 0644
+  when: kubernetes_node_type == 'admin'
+
+- name: Flannel CNI
+  shell: |
+    kubectl apply -f kube-flannel.yml
   args:
     creates: ~/.k8sinstall
   run_once: true
@@ -211,14 +226,14 @@
   when: kubernetes_node_type == 'admin'
 
 - name: Add metrics addon
-  shell: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.7/components.yaml
+  shell: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.1/components.yaml
   args:
     creates: ~/.k8sinstall
   run_once: true
   when: kubernetes_node_type == 'admin'
 
 - name: Add k8snode
-  shell: "kubeadm join --token {{ hostvars[groups['master'][0]]['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} {{ k8s_master_ip }}:443"
+  shell: "kubeadm join --token {{ hostvars[groups['master'][0]]['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_master_ip }}:443"
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   become: yes
@@ -268,6 +283,17 @@
     state: present
     key: "{{ authkey.stdout }}"
   become: yes
+
+#- name: Ensure flannel is starting
+#  pause:
+#    seconds: 60
+#
+#- name: Delete default cni0 interface (conflict with Flannel)
+#  shell: |
+#    ip link delete cni0
+#  args:
+#    creates: ~/.k8sinstall
+#  become: yes
 
 - name: end install
   file:

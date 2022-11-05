@@ -2,13 +2,13 @@
 
 - name: Download helm binary
   get_url:
-    url: https://get.helm.sh/helm-v3.4.2-linux-amd64.tar.gz
-    dest: /tmp/helm-v3.4.2-linux-amd64.tar.gz
+    url: https://get.helm.sh/helm-v3.10.0-linux-amd64.tar.gz
+    dest: /tmp/helm-v3.10.0-linux-amd64.tar.gz
     mode: 0755
 
 - name: Extract helm binary
   shell: |
-    tar xvfz helm-v3.4.2-linux-amd64.tar.gz
+    tar xvfz helm-v3.10.0-linux-amd64.tar.gz
     chmod +x linux-amd64/helm
     mv linux-amd64/helm /usr/local/bin/
     rm -rf linux-amd64

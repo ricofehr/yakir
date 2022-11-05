@@ -17,7 +17,7 @@
   kubernetes.core.helm:
     name: ingress-nginx
     chart_ref: ingress-nginx/ingress-nginx
-    chart_version: 3.26.0
+    chart_version: 4.3.0
     release_namespace: k8s
     create_namespace: yes
 
@@ -25,3 +25,5 @@
   pause:
     seconds: 150
 
+- name: Delete ingress admission webhook
+  shell: kubectl delete -A ValidatingWebhookConfiguration ingress-nginx-admission

@@ -19,7 +19,7 @@ Vagrant.configure("2") do |config|
     check_guest_additions = false
     functional_vboxsf = false
 
-    config.vm.box = "bento/ubuntu-20.04"
+    config.vm.box = "bento/ubuntu-22.04"
 
     masters.each do |name, ip|
       config.vm.define name do |machine|

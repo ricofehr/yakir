@@ -5,8 +5,7 @@
   strategy: linear
   roles:
     - role: base
-    - role: docker
-      become: true
+    - role: crio
     - role: kubernetes
       become: true
 
@@ -18,16 +17,15 @@
     - sizing_vars.yml
   roles:
     - role: cert
-    - role: docker_postinstall
     - role: k8s
 
 - hosts:
     - nodes
+  serial: 1
   strategy: linear
   vars_files:
     - sizing_vars.yml
   roles:
-    - role: docker_postinstall
     - role: k8s
 
 - hosts:
@@ -37,6 +35,7 @@
   vars_files:
     - sizing_vars.yml
   roles:
+    - role: k8s_postinstall
     - role: helm
     - role: ingress
     - role: istio
@@ -45,18 +44,16 @@
       when: global_keycloak_deploy == 1
     - role: gitea
       when: global_gitea_deploy == 1
-    - role: registry
-      when: global_registry_deploy == 1
     - role: jenkinsx
       when: global_jenkinsx_deploy == 1
     - role: sonar
       when: global_sonar_deploy == 1
     - role: kubedashboard
       when: global_dashboard_deploy == 1
-    - role: elk
-      when: global_elk_deploy == 1
-    - role: prometheus
-      when: global_monit_deploy == 1
-    - role: grafana
-      when: global_monit_deploy == 1
+#    - role: elk
+#      when: global_elk_deploy == 1
+#    - role: prometheus
+#      when: global_monit_deploy == 1
+#    - role: grafana
+#      when: global_monit_deploy == 1
 

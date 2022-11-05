@@ -20,7 +20,7 @@
   kubernetes.core.helm:
     name: gitea
     chart_ref: gitea-charts/gitea
-    chart_version: 6.0.1
+    chart_version: 6.0.3
     release_namespace: k8s
     create_namespace: yes
     values_files:

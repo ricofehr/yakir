@@ -1,0 +1,13 @@
+---
+
+- name: Ensure flannel and kube-proxy is starting
+  pause:
+    seconds: 300
+
+#- name: Delete default cni0 interface (conflict with Flannel)
+#  shell: |
+#    ip link delete cni0
+#  args:
+#    creates: ~/.k8sinstall
+#  become: yes
+
