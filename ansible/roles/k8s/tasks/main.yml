@@ -1,13 +1,5 @@
 ---
 
-#- name: Add current user to docker group
-#  user:
-#    append: yes
-#    name: "{{ ansible_user }}"
-#    groups:
-#      - docker
-#  become: yes
-
 - name: Update /etc/hosts - Remove hostname to 127.0.0.1 resolved hosts
   lineinfile: dest=/etc/hosts regexp='^127\.0\.0\.1' line='127.0.0.1 localhost' owner=root group=root mode=0644
   become: yes
@@ -99,7 +91,15 @@
 
 - name: generate kubeadm.conf
   template:
-    src: templates/kubeadm.conf.j2
+    src: templates/nocloud-kubeadm.conf.j2
+    dest: /etc/kubernetes/kubeadm.conf
+    mode: 0644
+  become: yes
+  when: is_cloud == '0'
+
+- name: generate kubeadm.conf
+  template:
+    src: templates/cloud-kubeadm.conf.j2
     dest: /etc/kubernetes/kubeadm.conf
     mode: 0644
   become: yes
@@ -160,7 +160,7 @@
     seconds: 90
 
 - name: init master
-  shell: kubeadm init --apiserver-advertise-address {{ k8s_master_ip }} --apiserver-bind-port 443 --node-name {{ inventory_hostname }} --pod-network-cidr=10.244.0.0/16 --cri-socket=unix:///var/run/crio/crio.sock
+  shell: kubeadm init --node-name {{ inventory_hostname }} --config /etc/kubernetes/kubeadm.conf
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   run_once: true
@@ -170,7 +170,7 @@
     - is_cloud == '0'
 
 - name: init master
-  shell: kubeadm init --pod-network-cidr=10.244.0.0/16 --cri-socket=unix:///var/run/crio/crio.sock --config /etc/kubernetes/kubeadm.conf
+  shell: kubeadm init --config /etc/kubernetes/kubeadm.conf
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   run_once: true
@@ -195,13 +195,6 @@
   run_once: true
   become: yes
   when: kubernetes_node_type == 'admin'
-
-#- name: launch weave
-#  shell: kubectl apply -f "https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml"
-#  args:
-#    creates: ~/.k8sinstall
-#  run_once: true
-#  when: kubernetes_node_type == 'admin'
 
 - name: generate flannel manifest
   template:
@@ -283,17 +276,6 @@
     state: present
     key: "{{ authkey.stdout }}"
   become: yes
-
-#- name: Ensure flannel is starting
-#  pause:
-#    seconds: 60
-#
-#- name: Delete default cni0 interface (conflict with Flannel)
-#  shell: |
-#    ip link delete cni0
-#  args:
-#    creates: ~/.k8sinstall
-#  become: yes
 
 - name: end install
   file:

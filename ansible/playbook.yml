@@ -21,7 +21,6 @@
 
 - hosts:
     - nodes
-  serial: 1
   strategy: linear
   vars_files:
     - sizing_vars.yml
@@ -32,6 +31,7 @@
     - master
   serial: 1
   strategy: linear
+  run_once: yes
   vars_files:
     - sizing_vars.yml
   roles:

@@ -1,6 +1,8 @@
 # k8s master
 masters = {
-    "k8s-master1" => "192.168.58.10"
+    "k8s-master1" => "192.168.58.10",
+    "k8s-master2" => "192.168.58.11",
+    "k8s-master3" => "192.168.58.12"
 }
 
 # k8s nodes

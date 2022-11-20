@@ -16,7 +16,7 @@ Vagrant.configure("2") do |config|
     check_guest_additions = false
     functional_vboxsf = false
 
-    config.vm.box = "bento/ubuntu-22.04"
+    config.vm.box = "generic/ubuntu2204"
 
     masters.each do |name, ip|
       config.vm.define name do |machine|
@@ -26,6 +26,13 @@ Vagrant.configure("2") do |config|
           v.name = name
           v.memory = 4096
           v.cpus = 2
+        end
+        machine.vm.provider :libvirt do |v|
+          v.memory = 8192
+          v.cpus = 6
+          v.driver = 'kvm'
+          v.cpu_mode = "host-model"
+          v.cpu_feature :name => 'vmx', :policy => 'require'
         end
       end
     end
@@ -38,6 +45,13 @@ Vagrant.configure("2") do |config|
           v.name = name
           v.memory = 5120
           v.cpus = 4
+        end
+        machine.vm.provider :libvirt do |v|
+          v.memory = 8192
+          v.cpus = 6
+          v.driver = 'kvm'
+          v.cpu_mode = "host-model"
+          v.cpu_feature :name => 'vmx', :policy => 'require'
         end
       end
     end
