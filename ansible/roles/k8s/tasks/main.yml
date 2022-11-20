@@ -196,12 +196,23 @@
   become: yes
   when: kubernetes_node_type == 'admin'
 
+- name: Weave CNI
+  shell: kubectl apply -f "https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml"
+  args:
+    creates: ~/.k8sinstall
+  run_once: true
+  when:
+    - kubernetes_node_type == 'admin'
+    - k8s_cni == 'weave'
+
 - name: generate flannel manifest
   template:
     src: templates/kube-flannel.yml.j2
     dest: kube-flannel.yml
     mode: 0644
-  when: kubernetes_node_type == 'admin'
+  when:
+    - kubernetes_node_type == 'admin'
+    - k8s_cni == 'flannel'
 
 - name: Flannel CNI
   shell: |
@@ -209,7 +220,29 @@
   args:
     creates: ~/.k8sinstall
   run_once: true
-  when: kubernetes_node_type == 'admin'
+  when:
+    - kubernetes_node_type == 'admin'
+    - k8s_cni == 'flannel'
+
+- name: generate calico manifest
+  template:
+    src: templates/calico-custom-resources.yml.j2
+    dest: calico-custom-resources.yml
+    mode: 0644
+  when:
+    - kubernetes_node_type == 'admin'
+    - k8s_cni == 'calico'
+
+- name: Calico CNI
+  shell: |
+    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/tigera-operator.yaml
+    kubectl apply -f calico-custom-resources.yml
+  args:
+    creates: ~/.k8sinstall
+  run_once: true
+  when:
+    - kubernetes_node_type == 'admin'
+    - k8s_cni == 'calico'
 
 - name: grant dashboard permissions
   shell: kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard
