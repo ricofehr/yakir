@@ -212,7 +212,7 @@ terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 -var public_network_name="$PUBLICNETWORK" -var security_group="$SECURITYGROUP" \
 -var image="$LINUXIMAGE" -var keypair_sshkey="$(cat $SSHKEYFILE | tr -d "\n")" -auto-approve
 
-sleep 40
+sleep 150
 
 # get private and public vm ips
 K8SMASTER_IP="$(terraform output -json master_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
