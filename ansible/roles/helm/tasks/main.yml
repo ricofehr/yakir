@@ -14,7 +14,6 @@
     rm -rf linux-amd64
   args:
     chdir: /tmp
-    warn: no
   become: yes
 
 - name: Add google stable/incubator repos

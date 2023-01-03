@@ -60,7 +60,7 @@ fi
 # Launch vagrant vms
 ln -sf vagrantfiles/Vagrantfile_${SIZING} Vagrantfile
 vagrant up --provider=$PROVIDER
-sleep 10
+sleep 30
 
 # Disable cowsay ansible output
 export ANSIBLE_NOCOWS=1

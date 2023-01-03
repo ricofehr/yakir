@@ -184,8 +184,6 @@
     mkdir -p /home/{{ ansible_user }}/.kube;
     sudo cp -f /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config;
     sudo chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config;
-  args:
-    warn: no
   run_once: true
   when: kubernetes_node_type == 'admin'
 
