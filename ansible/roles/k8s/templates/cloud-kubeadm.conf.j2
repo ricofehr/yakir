@@ -5,8 +5,8 @@ nodeRegistration:
   kubeletExtraArgs:
     cloud-provider: "openstack"
     cloud-config: "/etc/kubernetes/cloud.conf"
-    cgroup-driver: "cgroupfs"
-  criSocket: /var/run/crio/crio.sock
+    cgroup-driver: "systemd"
+  criSocket: unix:///var/run/crio/crio.sock
 localAPIEndpoint:
   advertiseAddress: "{{ k8s_master_ip }}"
   bindPort: 443
@@ -38,3 +38,4 @@ controllerManager:
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 serverTLSBootstrap: true
+cgroupDriver: systemd

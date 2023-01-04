@@ -4,7 +4,10 @@ localAPIEndpoint:
   advertiseAddress: "{{ k8s_master_ip }}"
   bindPort: 443
 nodeRegistration:
-  criSocket: /var/run/crio/crio.sock
+  name: "{{ inventory_hostname }}"
+  kubeletExtraArgs:
+    cgroup-driver: "systemd"
+  criSocket: unix:///var/run/crio/crio.sock
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
@@ -16,3 +19,4 @@ networking:
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 serverTLSBootstrap: true
+cgroupDriver: systemd

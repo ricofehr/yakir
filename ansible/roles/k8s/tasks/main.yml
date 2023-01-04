@@ -160,24 +160,15 @@
     seconds: 90
 
 - name: init master
-  shell: kubeadm init --node-name {{ inventory_hostname }} --config /etc/kubernetes/kubeadm.conf
+  shell: |
+    kubeadm reset -f
+    kubeadm init --config /etc/kubernetes/kubeadm.conf
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   run_once: true
   become: yes
   when:
     - kubernetes_node_type == 'admin'
-    - is_cloud == '0'
-
-- name: init master
-  shell: kubeadm init --config /etc/kubernetes/kubeadm.conf
-  args:
-    creates: /home/{{ ansible_user }}/.k8sinstall
-  run_once: true
-  become: yes
-  when:
-    - kubernetes_node_type == 'admin'
-    - is_cloud == '1'
 
 - name: "init {{ ansible_user }} env"
   shell: >

@@ -1,5 +1,12 @@
 ---
 
+- name: Ensure csr are generated
+  pause:
+    seconds: 30
+
+- name: Sign pending certificates
+  shell: kubectl get csr | sed "s/ .*$//" | while read CSR;do kubectl certificate approve $CSR;done
+
 - name: Ensure CNI and kube-proxy is starting
   pause:
     seconds: 300
