@@ -1,7 +1,0 @@
----
-
-elk_secret_cert_name: elk_crt
-elk_kibana_domain: kibana.k8s.local
-elk_proto_url: https
-elk_ssl: true
-elk_persistence_disk: true

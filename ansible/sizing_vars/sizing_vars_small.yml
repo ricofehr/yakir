@@ -1,15 +1,5 @@
 ---
 
-sizing_dashboard_deploy: 1
-sizing_gitea_deploy: 1
-sizing_registry_deploy: 1
-sizing_sonar_deploy: 1
-sizing_keycloak_deploy: 0 
-sizing_jenkinsx_deploy: 0
-sizing_istio_deploy: 0
-sizing_elk_deploy: 0 
-sizing_monit_deploy: 0
-
 sizing_k8s_node1_ip: "{{ hostvars[groups['nodes'][0]]['ansible_host'] }}"
 sizing_k8s_node2_ip: "{{ hostvars[groups['nodes'][1]]['ansible_host'] }}"
 

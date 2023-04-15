@@ -1,7 +1,0 @@
----
-
-keycloak_domain: keycloak.k8s.local
-keycloak_proto_url: https
-keycloak_ssl: true
-keycloak_persistence_disk: false
-keycloak_admin_password: keypass

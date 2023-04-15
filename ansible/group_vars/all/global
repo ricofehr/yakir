@@ -8,13 +8,3 @@ global_cert_key: "{{ global_certs_folder }}/k8s-ingress.pem"
 global_cert_csr: "{{ global_certs_folder }}/k8s-ingress.csr"
 global_k8s_nodes: "{{ sizing_k8s_nodes }}"
 
-global_dashboard_deploy: "{{ sizing_dashboard_deploy }}"
-global_gitea_deploy: "{{ sizing_gitea_deploy }}"
-global_registry_deploy: "{{ sizing_registry_deploy }}"
-global_sonar_deploy: "{{ sizing_sonar_deploy }}"
-global_keycloak_deploy: "{{ sizing_keycloak_deploy }}"
-global_jenkinsx_deploy: "{{ sizing_jenkinsx_deploy }}"
-global_istio_deploy: "{{ sizing_istio_deploy }}"
-global_elk_deploy: "{{ sizing_elk_deploy }}"
-global_monit_deploy: "{{ sizing_monit_deploy }}"
-

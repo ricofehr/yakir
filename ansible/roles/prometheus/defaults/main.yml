@@ -1,7 +1,0 @@
----
-
-prometheus_cert_path: /etc/ssl/certs/borgmon.crt
-prometheus_domain: borgmon.k8s.local
-prometheus_proto_url: https
-prometheus_ssl: true
-prometheus_persistence_disk: true

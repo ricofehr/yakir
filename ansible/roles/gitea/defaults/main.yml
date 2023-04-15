@@ -1,6 +1,0 @@
----
-
-gitea_domain: gitea.k8s.local
-gitea_proto_url: https
-gitea_ssl: true
-gitea_persistence_disk: false

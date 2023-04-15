@@ -1,6 +1,0 @@
----
-
-jenkinsx_domain: jenkinsx.k8s.local
-jenkinsx_proto_url: https
-jenkinsx_ssl: true
-jenkinsx_persistence_disk: false
