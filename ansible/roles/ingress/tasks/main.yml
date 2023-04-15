@@ -21,9 +21,21 @@
     release_namespace: k8s
     create_namespace: yes
 
-- name: Ensure ingress is ready
-  pause:
-    seconds: 150
+- name: Wait for ingress become created
+  shell: "kubectl get po --namespace=k8s --selector app.kubernetes.io/name=ingress-nginx --output=jsonpath='{.items[*].metadata.name}'"
+  register: ingress_pods_created
+  until: item in ingress_pods_created.stdout
+  retries: 30
+  delay: 10
+  with_items:
+    - ingress-nginx-controller
+
+- name: Wait for ingress pods become ready
+  shell: "kubectl wait --namespace=k8s --for=condition=Ready pods --selector app.kubernetes.io/name=ingress-nginx --timeout=600s"
+
+#- name: Ensure ingress is ready
+#  pause:
+#    seconds: 150
 
 - name: Delete ingress admission webhook
   shell: kubectl delete -A ValidatingWebhookConfiguration ingress-nginx-admission

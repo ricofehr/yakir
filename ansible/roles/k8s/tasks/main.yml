@@ -155,9 +155,19 @@
     daemon_reload: yes
   become: yes
 
-- name: Ensure kubelet is running and ready
-  pause:
-    seconds: 90
+- name: Ensure kubelet is in a running state
+  service:
+    name: kubelet
+    state: started
+  register: kubelet_details
+  until: kubelet_details.status.ActiveState == "active"
+  retries: 15
+  delay: 20
+  become: yes
+
+#- name: Ensure kubelet is running and ready
+#  pause:
+#    seconds: 90
 
 - name: init master
   shell: |
@@ -225,6 +235,7 @@
 - name: Calico CNI
   shell: |
     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/tigera-operator.yaml
+    sleep 5
     kubectl apply -f calico-custom-resources.yml
   args:
     creates: ~/.k8sinstall

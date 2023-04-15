@@ -7,7 +7,53 @@
 - name: Sign pending certificates
   shell: kubectl get csr | sed "s/ .*$//" | while read CSR;do kubectl certificate approve $CSR;done
 
-- name: Ensure CNI and kube-proxy is starting
-  pause:
-    seconds: 300
+- name: Wait for control-plane pods become created
+  shell: "kubectl get po --namespace=kube-system --selector tier=control-plane --output=jsonpath='{.items[*].metadata.name}'"
+  register: control_plane_pods_created
+  until: item in control_plane_pods_created.stdout
+  retries: 10
+  delay: 30
+  with_items:
+    - etcd
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
 
+- name: Wait for control-plane pods become ready
+  shell: "kubectl wait --namespace=kube-system --for=condition=Ready pods --selector tier=control-plane --timeout=600s"
+
+- name: Wait for kube-proxy become created
+  shell: "kubectl get po --namespace=kube-system --selector k8s-app=kube-proxy --output=jsonpath='{.items[*].metadata.name}'"
+  register: kube_proxy_pods_created
+  until: item in kube_proxy_pods_created.stdout
+  retries: 30
+  delay: 10
+  with_items:
+    - kube-proxy
+
+- name: Wait for kube-proxy pods become ready
+  shell: "kubectl wait --namespace=kube-system --for=condition=Ready pods --selector k8s-app=kube-proxy --timeout=600s"
+
+- name: Wait for CNI pods become created
+  shell: "kubectl get po --namespace=calico-system --selector k8s-app=calico-node --output=jsonpath='{.items[*].metadata.name}'"
+  register: cni_pods_created
+  until: item in cni_pods_created.stdout
+  retries: 30
+  delay: 10
+  with_items:
+    - calico-node
+  when:
+    - k8s_cni == 'calico'
+
+- name: Wait for cni pods become ready
+  shell: "kubectl wait --namespace=calico-system --for=condition=Ready pods --selector k8s-app=calico-node --timeout=600s"
+  when:
+    - k8s_cni == 'calico'
+
+
+#- name: wait for CNI and kube-proxy pods
+#  shell: kubectl get pods -o json -A
+#  register: kubectl_get_pods
+#  until: kubectl_get_pods.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+#  retries: 30
+#  delay: 10
