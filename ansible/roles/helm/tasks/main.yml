@@ -1,22 +1,30 @@
 ---
 
-- name: Download helm binary
-  get_url:
-    url: https://get.helm.sh/helm-v3.10.0-linux-amd64.tar.gz
-    dest: /tmp/helm-v3.10.0-linux-amd64.tar.gz
-    mode: 0755
-
-- name: Extract helm binary
-  shell: |
-    tar xvfz helm-v3.10.0-linux-amd64.tar.gz
-    chmod +x linux-amd64/helm
-    mv linux-amd64/helm /usr/local/bin/
-    rm -rf linux-amd64
-  args:
-    chdir: /tmp
+- name: Add helm apt key
+  apt_key:
+    url: https://baltocdn.com/helm/signing.asc
+    state: present
   become: yes
 
-- name: Add google stable/incubator repos
-  shell: |
-    helm repo add stable https://charts.helm.sh/stable
-    helm repo add incubator https://charts.helm.sh/incubator
+- name: Add helm apt repository
+  apt_repository:
+    repo: deb https://baltocdn.com/helm/stable/debian/ all main
+    state: present
+  become: yes
+
+- name: Install helm package
+  apt:
+    name: helm
+    update_cache: yes
+  become: yes
+
+- name: Add stable repository
+  kubernetes.core.helm_repository:
+    name: stable
+    repo_url: https://charts.helm.sh/stable
+
+- name: Add incubator repository
+  kubernetes.core.helm_repository:
+    name: incubator
+    repo_url: https://charts.helm.sh/incubator
+

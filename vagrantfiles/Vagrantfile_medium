@@ -10,6 +10,11 @@ nodes = {
     "k8s-node3" => "192.168.58.22"
 }
 
+def running_rosetta()
+  puts !`sysctl -in sysctl.proc_translated`.strip().to_i.zero?
+  !`sysctl -in sysctl.proc_translated`.strip().to_i.zero?
+end
+
 Vagrant.configure("2") do |config|
     config.ssh.insert_key = false
     config.ssh.forward_agent = true
@@ -17,7 +22,13 @@ Vagrant.configure("2") do |config|
     check_guest_additions = false
     functional_vboxsf = false
 
-    config.vm.box = "bento/ubuntu-22.04"
+    arch = `arch`.strip()
+    if arch == 'arm64' || (arch == 'i386' && running_rosetta())
+      config.vm.box = "bento/ubuntu-22.04-arm64"
+      puts "ARM Machine !"
+    else
+      config.vm.box = "bento/ubuntu-22.04"
+    end
 
     masters.each do |name, ip|
       config.vm.define name do |machine|
@@ -25,6 +36,10 @@ Vagrant.configure("2") do |config|
         machine.vm.network :private_network, ip: ip
         machine.vm.provider :virtualbox do |v|
           v.name = name
+          v.memory = 4096
+          v.cpus = 2
+        end
+        machine.vm.provider :parallels do |v|
           v.memory = 4096
           v.cpus = 2
         end
@@ -40,7 +55,10 @@ Vagrant.configure("2") do |config|
           v.memory = 5120
           v.cpus = 4
         end
-
+        machine.vm.provider :parallels do |v|
+          v.memory = 5120
+          v.cpus = 4
+        end
       end
     end
 end
