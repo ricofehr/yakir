@@ -15,7 +15,6 @@ nodes = {
 }
 
 def running_rosetta()
-  puts !`sysctl -in sysctl.proc_translated`.strip().to_i.zero?
   !`sysctl -in sysctl.proc_translated`.strip().to_i.zero?
 end
 
@@ -29,7 +28,6 @@ Vagrant.configure("2") do |config|
     arch = `arch`.strip()
     if arch == 'arm64' || (arch == 'i386' && running_rosetta())
       config.vm.box = "bento/ubuntu-22.04-arm64"
-      puts "ARM Machine !"
     else
       config.vm.box = "bento/ubuntu-22.04"
     end
