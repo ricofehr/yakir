@@ -18,3 +18,4 @@ base_packages:
     - nmap
     - tcpdump
     - zsh
+    - python3-pip

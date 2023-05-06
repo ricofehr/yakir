@@ -1,6 +1,11 @@
 ---
 
-dashboard_domain: dashboard.k8s.local
-dashboard_proto_url: https
-dashboard_ssl: true
-dashboard_persistence_disk: false
+kubedashboard_domain: dashboard.k8s.local
+kubedashboard_proto_url: https
+kubedashboard_ssl: true
+kubedashboard_persistence_disk: false
+
+kubedashboard_namespace: kube-dashboard
+kubedashboard_sa: cluster-developer
+kubedashboard_role: cluster-developer
+kubedashboard_rolebinding: cluster-developer

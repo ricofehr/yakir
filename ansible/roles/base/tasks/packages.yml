@@ -20,3 +20,8 @@
     update_cache: true
     force: yes
   become: yes
+
+- name: Install kubernetes python package
+  ansible.builtin.pip:
+    name: kubernetes
+

@@ -16,12 +16,24 @@
     name: k8s-dashboard
     repo_url: "https://kubernetes.github.io/dashboard"
 
+- name: Create dashboard namespace
+  kubernetes.core.k8s:
+    name: "{{ kubedashboard_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Create a limited user for dashboard access with sa, roles, and rolebinding
+  kubernetes.core.k8s:
+    state: present
+    template: user.yml.j2
+
 - name: Deploy Dashboard
   kubernetes.core.helm:
     name: dashboard
     chart_ref: k8s-dashboard/kubernetes-dashboard
     chart_version: 5.10.0
-    release_namespace: kube-system
+    release_namespace: "{{ kubedashboard_namespace }}"
     values_files:
       - helm-values/dashboard.yml
 
