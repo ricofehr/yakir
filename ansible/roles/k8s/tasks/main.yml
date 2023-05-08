@@ -155,20 +155,6 @@
     daemon_reload: yes
   become: yes
 
-- name: Ensure kubelet is in a running state
-  service:
-    name: kubelet
-    state: started
-  register: kubelet_details
-  until: kubelet_details.status.ActiveState == "active"
-  retries: 15
-  delay: 20
-  become: yes
-
-#- name: Ensure kubelet is running and ready
-#  pause:
-#    seconds: 90
-
 - name: init master
   shell: |
     kubeadm reset -f
@@ -194,6 +180,24 @@
   run_once: true
   become: yes
   when: kubernetes_node_type == 'admin'
+
+- name: Add k8snode
+  shell: "kubeadm join --token {{ hostvars[groups['master'][0]]['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_master_ip }}:443"
+  args:
+    creates: /home/{{ ansible_user }}/.k8sinstall
+  become: yes
+  when:
+    - kubernetes_node_type == 'worker'
+
+- name: Ensure kubelet is in a running state
+  service:
+    name: kubelet
+    state: started
+  register: kubelet_details
+  until: kubelet_details.status.ActiveState == "active"
+  retries: 25
+  delay: 20
+  become: yes
 
 - name: Weave CNI
   shell: kubectl apply -f "https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml"
@@ -234,7 +238,7 @@
 
 - name: Calico CNI
   shell: |
-    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/tigera-operator.yaml
+    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/tigera-operator.yaml
     sleep 5
     kubectl apply -f calico-custom-resources.yml
   args:
@@ -244,27 +248,12 @@
     - kubernetes_node_type == 'admin'
     - k8s_cni == 'calico'
 
-- name: grant dashboard permissions
-  shell: kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard
-  args:
-    creates: ~/.k8sinstall
-  run_once: true
-  when: kubernetes_node_type == 'admin'
-
 - name: Add metrics addon
   shell: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.1/components.yaml
   args:
     creates: ~/.k8sinstall
   run_once: true
   when: kubernetes_node_type == 'admin'
-
-- name: Add k8snode
-  shell: "kubeadm join --token {{ hostvars[groups['master'][0]]['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_master_ip }}:443"
-  args:
-    creates: /home/{{ ansible_user }}/.k8sinstall
-  become: yes
-  when:
-    - kubernetes_node_type == 'worker'
 
 - name: proxy master
   shell: nohup kubectl proxy --address={{ k8s_master_ip }} --accept-hosts='^.*$' &
