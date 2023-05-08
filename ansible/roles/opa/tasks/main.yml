@@ -1,0 +1,31 @@
+---
+
+- name: Add gatekeeper chart repo
+  kubernetes.core.helm_repository:
+    name: gatekeeper
+    repo_url: "https://open-policy-agent.github.io/gatekeeper/charts"
+
+- name: Create gatekeeper namespace
+  kubernetes.core.k8s:
+    name: "{{ opa_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Deploy Gatekeeper
+  kubernetes.core.helm:
+    name: gatekeeper
+    chart_ref: gatekeeper/gatekeeper
+    chart_version: 3.12.0
+    release_namespace: "{{ opa_namespace }}"
+
+- name: Create CRD opa templatess 
+  kubernetes.core.k8s:
+    state: present
+    template: opa-templates.yml.j2
+
+- name: Create CR opa rules 
+  kubernetes.core.k8s:
+    state: present
+    template: opa-rules.yml.j2
+

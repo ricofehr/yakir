@@ -39,4 +39,5 @@
     - role: helm
     - role: ingress
     - role: kubedashboard
+    - role: opa
 
