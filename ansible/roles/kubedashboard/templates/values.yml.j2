@@ -1,37 +1,3 @@
-image:
-  repository: kubernetesui/dashboard
-  tag: v2.1.0
-  pullPolicy: IfNotPresent
-  pullSecrets: []
-
-replicaCount: 1
-
-annotations: {}
-labels: {}
-
-protocolHttp: true
-podAnnotations:
-  seccomp.security.alpha.kubernetes.io/pod: 'runtime/default'
-nodeSelector: {}
-tolerations: []
-affinity: {}
-
-service:
-  type: NodePort
-  externalPort: 80
-
-  annotations: {}
-
-  labels: {}
-
-resources:
-  limits:
-    cpu: 100m
-    memory: 100Mi
-  requests:
-    cpu: 100m
-    memory: 100Mi
-
 ingress:
   enabled: true
 
@@ -57,25 +23,22 @@ rbac:
 
   # Specifies whether cluster-admin ClusterRole will be used for dashboard
   # ServiceAccount (NOT RECOMMENDED).
-  clusterAdminRole: true
+  clusterAdminRole: false
   clusterRoleMetrics: true
-  clusterReadOnlyRole: true
+  clusterReadOnlyRole: false
 
 serviceAccount:
   # Specifies whether a service account should be created
-  create: false
+  create: true
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: dashboard-kubernetes-dashboard
-
-livenessProbe:
-  # Number of seconds to wait before sending first probe
-  initialDelaySeconds: 30
-  # Number of seconds to wait for probe response
-  timeoutSeconds: 30
+  name: {{ kubedashboard_sa_admin }}
 
 containerSecurityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
   runAsUser: 1001
   runAsGroup: 2001
+
+#labels:
+#  pod-security.kubernetes.io/enforce: restricted  
