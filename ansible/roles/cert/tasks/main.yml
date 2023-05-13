@@ -1,10 +1,10 @@
 ---
 
 - name: Ensure cryptography python library is preset
+  become: yes
   apt:
     name: python3-cryptography
     state: present
-  become: yes
 
 - name: Certificates folder
   file:

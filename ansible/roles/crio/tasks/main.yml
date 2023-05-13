@@ -1,23 +1,24 @@
 ---
 
 - name: Enable ip forward
+  become: yes
   ansible.posix.sysctl:
     name: net.ipv4.ip_forward
     value: '1'
     sysctl_set: yes
     state: present
     reload: yes
-  become: yes
 
 - name: Add br_netfilter module
+  become: yes
   modprobe:
     name: br_netfilter
     state: present
-  become: yes
 
 - include_vars: "packages.yml"
 
 - name: Prepare deb repos
+  become: yes
   shell: |
     echo "deb [signed-by=/usr/share/keyrings/libcontainers-archive-keyring.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/{{ crio_os }}/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
     echo "deb [signed-by=/usr/share/keyrings/libcontainers-crio-archive-keyring.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ crio_version }}/{{ crio_os }}/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:{{ crio_version }}.list
@@ -25,25 +26,24 @@
     mkdir -p /usr/share/keyrings
     curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/{{ crio_os }}/Release.key | gpg --yes --dearmor -o /usr/share/keyrings/libcontainers-archive-keyring.gpg
     curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ crio_version }}/{{ crio_os }}/Release.key | gpg --yes --dearmor -o /usr/share/keyrings/libcontainers-crio-archive-keyring.gpg
-  become: yes
 
 - name: Install crio packages
+  become: yes
   apt:
     name: "{{ crio_packages }}"
     state: present
     update_cache: true
     force: yes
-  become: yes
 
 - name: Remove crio bridge
+  become: yes
   file:
     path: /etc/cni/net.d/100-crio-bridge.conf
     state: absent
-  become: yes
 
 - name: enable crio service
+  become: yes
   service:
     name: crio
     enabled: yes
     state: started
-  become: yes

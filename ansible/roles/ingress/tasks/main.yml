@@ -33,9 +33,5 @@
 - name: Wait for ingress pods become ready
   shell: "kubectl wait --namespace=k8s --for=condition=Ready pods --selector app.kubernetes.io/name=ingress-nginx --timeout=600s"
 
-#- name: Ensure ingress is ready
-#  pause:
-#    seconds: 150
-
 - name: Delete ingress admission webhook
   shell: kubectl delete -A ValidatingWebhookConfiguration ingress-nginx-admission

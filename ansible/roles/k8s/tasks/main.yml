@@ -1,19 +1,23 @@
 ---
 
 - name: Update /etc/hosts - Remove hostname to 127.0.0.1 resolved hosts
-  lineinfile: dest=/etc/hosts regexp='^127\.0\.0\.1' line='127.0.0.1 localhost' owner=root group=root mode=0644
   become: yes
+  lineinfile: dest=/etc/hosts regexp='^127\.0\.0\.1' line='127.0.0.1 localhost' owner=root group=root mode=0644
 
 - name: Update /etc/hosts - Ensure private ip for master1 resolved hosts
-  lineinfile: dest=/etc/hosts regexp='{{ k8s_master_hostname }}$' line='{{ k8s_master_ip }} {{ k8s_master_hostname }}' owner=root group=root mode=0644
   become: yes
+  lineinfile: dest=/etc/hosts regexp='{{ k8s_master_hostname }}$' line='{{ k8s_master_ip }} {{ k8s_master_hostname }}' owner=root group=root mode=0644
 
 - name: Update /etc/hosts - Ensure private ip for k8s nodes resolved hosts
+  become: yes
   lineinfile: dest=/etc/hosts regexp='{{ item.name }}$' line='{{ item.ip }} {{ item.name }}' owner=root group=root mode=0644
   loop: "{{ k8s_nodes }}"
-  become: yes
 
 - name: Restart kubeproxy at reboot
+  become: yes
+  when:
+    - kubernetes_node_type == 'admin'
+    - is_cloud == '0'
   copy:
     content: |
              #!/bin/bash
@@ -22,53 +26,53 @@
     dest: /etc/rc.local
     owner: root
     mode: 0755
-  become: yes
-  when:
-    - kubernetes_node_type == 'admin'
-    - is_cloud == '0'
 
 - name: swapoff
+  become: yes
   shell: swapoff -a
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
-  become: yes
 
 - name: Remove Swap from fstab
+  become: yes
   lineinfile:
     dest: /etc/fstab
     regexp: '^.*swap.*$'
     state: absent
-  become: yes
 
 - name: Ensure /etc/kubernetes folder is present
+  become: yes
   file:
     path: /etc/kubernetes
     owner: root
     state: directory
     mode: 0755
-  become: yes
 
 - name: Install route package
+  become: yes
   apt:
     name: net-tools
     state: present
     update_cache: true
     force: yes
-  become: yes
 
 - name: K8s ip routed by public master1
+  become: yes
+  when:
+    - kubernetes_node_type == 'worker'
+    - is_cloud == '0'
   shell: |
     /sbin/route -n | grep 10.96.0.1
     (($? == 0)) && exit 0
     route add 10.96.0.1 gw {{ k8s_master_ip }}
   args:
     executable: /bin/bash
+
+- name: K8s ip route at start
   become: yes
   when:
     - kubernetes_node_type == 'worker'
     - is_cloud == '0'
-
-- name: K8s ip route at start
   copy:
     content: |
              #!/bin/bash
@@ -76,52 +80,49 @@
     dest: /etc/network/if-up.d/routemaster
     owner: root
     mode: 0755
-  become: yes
-  when:
-    - kubernetes_node_type == 'worker'
-    - is_cloud == '0'
 
 - name: generate cloud.conf
+  become: yes
+  when: is_cloud == '1'
   template:
     src: templates/cloud.conf.j2
     dest: /etc/kubernetes/cloud.conf
     mode: 0644
-  become: yes
-  when: is_cloud == '1'
 
 - name: generate kubeadm.conf
+  become: yes
+  when: is_cloud == '0'
   template:
     src: templates/nocloud-kubeadm.conf.j2
     dest: /etc/kubernetes/kubeadm.conf
     mode: 0644
-  become: yes
-  when: is_cloud == '0'
 
 - name: generate kubeadm.conf
+  become: yes
+  when: is_cloud == '1'
   template:
     src: templates/cloud-kubeadm.conf.j2
     dest: /etc/kubernetes/kubeadm.conf
     mode: 0644
-  become: yes
-  when: is_cloud == '1'
 
 - name: cloud ssl certificate file
+  become: yes
+  when:
+    - is_cloud == '1'
+    - cloud_crt_path != ''
   copy:
     src: "{{ cloud_crt_path }}"
     dest: /usr/local/share/ca-certificates/cloud.crt
-  become: yes
-  when:
-    - is_cloud == '1'
-    - cloud_crt_path != ''
 
 - name: add cloud cert to certificates store
-  shell: update-ca-certificates
   become: yes
   when:
     - is_cloud == '1'
     - cloud_crt_path != ''
+  shell: update-ca-certificates
 
 - name: Resolv.conf on k8s dns pod
+  become: yes
   lineinfile:
     dest: /etc/systemd/resolved.conf
     regexp: "{{ item.regex }}"
@@ -131,65 +132,65 @@
       line: 'DNS=10.96.0.10'
     - regex: '^#Domains='
       line: 'Domains=svc.cluster.local'
-  become: yes
 
 - name: Restart resolved service
+  become: yes
   systemd:
     name: systemd-resolved
     state: restarted
-  become: yes
 
 - name: Kubelet cloud arguments
+  become: yes
+  when: is_cloud == '1'
   lineinfile:
     dest: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
     regexp: "^Environment=\"KUBELET_KUBECONFIG_ARGS\".*$"
     line: "Environment=\"KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=/etc/kubernetes/cloud.conf --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf\""
-  become: yes
-  when: is_cloud == '1'
 
 - name: Restart kubelet service
+  become: yes
   systemd:
     name: kubelet
     state: restarted
     enabled: yes
     daemon_reload: yes
-  become: yes
 
 - name: init master
+  become: yes
+  when:
+    - kubernetes_node_type == 'admin'
+  run_once: true
   shell: |
     kubeadm reset -f
     kubeadm init --config /etc/kubernetes/kubeadm.conf
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
-  run_once: true
-  become: yes
-  when:
-    - kubernetes_node_type == 'admin'
 
 - name: "init {{ ansible_user }} env"
+  when: kubernetes_node_type == 'admin'
+  run_once: true
   shell: >
     mkdir -p /home/{{ ansible_user }}/.kube;
     sudo cp -f /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config;
     sudo chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config;
-  run_once: true
-  when: kubernetes_node_type == 'admin'
 
 - name: get token
+  become: yes
+  run_once: true
+  when: kubernetes_node_type == 'admin'
   shell:  kubeadm token list | tail -n +2 | head -n 1 | sed "s; .*;;"
   register: master_token
-  run_once: true
-  become: yes
-  when: kubernetes_node_type == 'admin'
 
 - name: Add k8snode
-  shell: "kubeadm join --token {{ hostvars[groups['master'][0]]['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_master_ip }}:443"
-  args:
-    creates: /home/{{ ansible_user }}/.k8sinstall
   become: yes
   when:
     - kubernetes_node_type == 'worker'
+  shell: "kubeadm join --token {{ hostvars[groups['master'][0]]['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_master_ip }}:443"
+  args:
+    creates: /home/{{ ansible_user }}/.k8sinstall
 
 - name: Ensure kubelet is in a running state
+  become: yes
   service:
     name: kubelet
     state: started
@@ -197,107 +198,106 @@
   until: kubelet_details.status.ActiveState == "active"
   retries: 25
   delay: 20
-  become: yes
 
 - name: Weave CNI
-  shell: kubectl apply -f "https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml"
-  args:
-    creates: ~/.k8sinstall
   run_once: true
   when:
     - kubernetes_node_type == 'admin'
     - k8s_cni == 'weave'
+  shell: kubectl apply -f "https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml"
+  args:
+    creates: ~/.k8sinstall
 
 - name: generate flannel manifest
+  when:
+    - kubernetes_node_type == 'admin'
+    - k8s_cni == 'flannel'
   template:
     src: templates/kube-flannel.yml.j2
     dest: kube-flannel.yml
     mode: 0644
+
+- name: Flannel CNI
   when:
     - kubernetes_node_type == 'admin'
     - k8s_cni == 'flannel'
-
-- name: Flannel CNI
+  run_once: true
   shell: |
     kubectl apply -f kube-flannel.yml
   args:
     creates: ~/.k8sinstall
-  run_once: true
-  when:
-    - kubernetes_node_type == 'admin'
-    - k8s_cni == 'flannel'
 
 - name: generate calico manifest
+  when:
+    - kubernetes_node_type == 'admin'
+    - k8s_cni == 'calico'
   template:
     src: templates/calico-custom-resources.yml.j2
     dest: calico-custom-resources.yml
     mode: 0644
+
+- name: Calico CNI
   when:
     - kubernetes_node_type == 'admin'
     - k8s_cni == 'calico'
-
-- name: Calico CNI
+  run_once: true
   shell: |
     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/tigera-operator.yaml
     sleep 5
     kubectl apply -f calico-custom-resources.yml
   args:
     creates: ~/.k8sinstall
-  run_once: true
-  when:
-    - kubernetes_node_type == 'admin'
-    - k8s_cni == 'calico'
 
 - name: Add metrics addon
+  when: kubernetes_node_type == 'admin'
+  run_once: true
   shell: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.1/components.yaml
   args:
     creates: ~/.k8sinstall
-  run_once: true
-  when: kubernetes_node_type == 'admin'
 
 - name: proxy master
-  shell: nohup kubectl proxy --address={{ k8s_master_ip }} --accept-hosts='^.*$' &
-  args:
-    creates: ~/.k8sinstall
   when:
     - kubernetes_node_type == 'admin'
     - is_cloud == '0'
+  shell: nohup kubectl proxy --address={{ k8s_master_ip }} --accept-hosts='^.*$' &
+  args:
+    creates: ~/.k8sinstall
 
 - name: Cinder storage class file
-  template:
-    src: templates/cinder-sc.yml.j2
-    dest: /etc/kubernetes/cinder-sc.yml
-    mode: 0644
   become: yes
   when:
     - kubernetes_node_type == 'admin'
     - is_cloud == '1'
+  template:
+    src: templates/cinder-sc.yml.j2
+    dest: /etc/kubernetes/cinder-sc.yml
+    mode: 0644
 
 - name: Apply storage class
-  shell: kubectl apply -f /etc/kubernetes/cinder-sc.yml
   when:
     - kubernetes_node_type == 'admin'
     - is_cloud == '1'
+  shell: kubectl apply -f /etc/kubernetes/cinder-sc.yml
 
 - name: Resolv.conf on k8s dns pod
+  become: yes
   copy:
     content: |
              nameserver 10.96.0.10
              nameserver 8.8.8.8
              search svc.cluster.local
     dest: /etc/resolv.conf
-  become: yes
 
 - name: get contents of authkey
   command: cat /home/{{ ansible_user }}/.ssh/authorized_keys
   register: authkey
 
 - name: Set authorized key for root user
+  become: yes
   authorized_key:
     user: "root"
     state: present
     key: "{{ authkey.stdout }}"
-  become: yes
 
 - name: end install
   file:

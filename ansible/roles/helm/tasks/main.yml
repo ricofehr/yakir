@@ -1,22 +1,22 @@
 ---
 
 - name: Add helm apt key
+  become: yes
   apt_key:
     url: https://baltocdn.com/helm/signing.asc
     state: present
-  become: yes
 
 - name: Add helm apt repository
+  become: yes
   apt_repository:
     repo: deb https://baltocdn.com/helm/stable/debian/ all main
     state: present
-  become: yes
 
 - name: Install helm package
+  become: yes
   apt:
     name: helm
     update_cache: yes
-  become: yes
 
 - name: Add stable repository
   kubernetes.core.helm_repository:

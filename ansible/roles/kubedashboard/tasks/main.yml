@@ -44,6 +44,6 @@
       - helm-values/dashboard.yml
 
 - name: url dashboard
+  when: is_cloud == '0'
   debug:
     msg: "You can reach the dashboard with http://{{ ansible_host }}:8001/api/v1/namespaces/{{ kubedashboard_namespace }}/services/http:dashboard-kubernetes-dashboard:http/proxy/"
-  when: is_cloud == '0'

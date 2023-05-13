@@ -35,6 +35,8 @@
   shell: "kubectl wait --namespace=kube-system --for=condition=Ready pods --selector k8s-app=kube-proxy --timeout=600s"
 
 - name: Wait for CNI pods become created
+  when:
+    - k8s_cni == 'calico'
   shell: "kubectl get po --namespace=calico-system --selector k8s-app=calico-node --output=jsonpath='{.items[*].metadata.name}'"
   register: cni_pods_created
   until: item in cni_pods_created.stdout
@@ -42,18 +44,9 @@
   delay: 10
   with_items:
     - calico-node
-  when:
-    - k8s_cni == 'calico'
 
 - name: Wait for cni pods become ready
-  shell: "kubectl wait --namespace=calico-system --for=condition=Ready pods --selector k8s-app=calico-node --timeout=600s"
   when:
     - k8s_cni == 'calico'
+  shell: "kubectl wait --namespace=calico-system --for=condition=Ready pods --selector k8s-app=calico-node --timeout=600s"
 
-
-#- name: wait for CNI and kube-proxy pods
-#  shell: kubectl get pods -o json -A
-#  register: kubectl_get_pods
-#  until: kubectl_get_pods.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
-#  retries: 30
-#  delay: 10
