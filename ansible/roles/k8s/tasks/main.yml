@@ -81,12 +81,12 @@
     owner: root
     mode: 0755
 
-- name: generate cloud.conf
+- name: generate cloud-config
   become: yes
   when: is_cloud == '1'
   template:
     src: templates/cloud.conf.j2
-    dest: /etc/kubernetes/cloud.conf
+    dest: /etc/kubernetes/cloud-config
     mode: 0644
 
 - name: generate kubeadm.conf
@@ -145,7 +145,7 @@
   lineinfile:
     dest: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
     regexp: "^Environment=\"KUBELET_KUBECONFIG_ARGS\".*$"
-    line: "Environment=\"KUBELET_KUBECONFIG_ARGS=--cloud-provider=openstack --cloud-config=/etc/kubernetes/cloud.conf --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf\""
+    line: "Environment=\"KUBELET_KUBECONFIG_ARGS=--cloud-provider=external --cloud-config=/etc/kubernetes/cloud-config --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf\""
 
 - name: Restart kubelet service
   become: yes
