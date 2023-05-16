@@ -50,3 +50,6 @@
     - k8s_cni == 'calico'
   shell: "kubectl wait --namespace=calico-system --for=condition=Ready pods --selector k8s-app=calico-node --timeout=600s"
 
+- name: Wait for kube-system pods become ready
+  shell: "kubectl wait pod --all --namespace=kube-system --for=condition=Ready --timeout=600s"
+

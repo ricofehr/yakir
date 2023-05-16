@@ -1,5 +1,9 @@
 ---
 
+- name: Install kubernetes python package
+  ansible.builtin.pip:
+    name: kubernetes==26.1.0
+
 - name: Update /etc/hosts - Remove hostname to 127.0.0.1 resolved hosts
   become: yes
   lineinfile: dest=/etc/hosts regexp='^127\.0\.0\.1' line='127.0.0.1 localhost' owner=root group=root mode=0644
@@ -200,60 +204,92 @@
   delay: 20
 
 - name: Weave CNI
-  run_once: true
   when:
     - kubernetes_node_type == 'admin'
     - k8s_cni == 'weave'
-  shell: kubectl apply -f "https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml"
-  args:
-    creates: ~/.k8sinstall
-
-- name: generate flannel manifest
-  when:
-    - kubernetes_node_type == 'admin'
-    - k8s_cni == 'flannel'
-  template:
-    src: templates/kube-flannel.yml.j2
-    dest: kube-flannel.yml
-    mode: 0644
+  run_once: true
+  kubernetes.core.k8s:
+    state: present
+    src: "https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml"
 
 - name: Flannel CNI
   when:
     - kubernetes_node_type == 'admin'
     - k8s_cni == 'flannel'
   run_once: true
-  shell: |
-    kubectl apply -f kube-flannel.yml
-  args:
-    creates: ~/.k8sinstall
+  kubernetes.core.k8s:
+    state: present
+    template: templates/kube-flannel.yml.j2
 
-- name: generate calico manifest
-  when:
-    - kubernetes_node_type == 'admin'
-    - k8s_cni == 'calico'
-  template:
-    src: templates/calico-custom-resources.yml.j2
-    dest: calico-custom-resources.yml
-    mode: 0644
-
-- name: Calico CNI
+- name: Calico CNI Custom
   when:
     - kubernetes_node_type == 'admin'
     - k8s_cni == 'calico'
   run_once: true
-  shell: |
-    kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/tigera-operator.yaml
-    sleep 5
-    kubectl apply -f calico-custom-resources.yml
-  args:
-    creates: ~/.k8sinstall
+  kubernetes.core.k8s:
+    state: present
+    src: https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/tigera-operator.yaml
+
+- name: Calico CNI Custom Settings
+  when:
+    - kubernetes_node_type == 'admin'
+    - k8s_cni == 'calico'
+  kubernetes.core.k8s:
+    state: present
+    template: templates/calico-custom-resources.yml.j2
 
 - name: Add metrics addon
   when: kubernetes_node_type == 'admin'
   run_once: true
-  shell: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.1/components.yaml
-  args:
-    creates: ~/.k8sinstall
+  kubernetes.core.k8s:
+    state: present
+    src: https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.3/components.yaml
+
+- name: Create secret from cloud-config file for openstack controller manager
+  when:
+    - kubernetes_node_type == 'admin'
+    - is_cloud == '1'
+  run_once: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: cloud-generic
+        namespace: kube-system
+      type: Opaque
+      data:
+        cloud.conf: "{{ lookup('template', 'cloud.conf.j2') | b64encode }}"
+
+- name: Openstack controller manager
+  when:
+    - kubernetes_node_type == 'admin'
+    - is_cloud == '1'
+  run_once: true
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+  loop:
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/controller-manager/cloud-controller-manager-roles.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/controller-manager/cloud-controller-manager-role-bindings.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/controller-manager/openstack-cloud-controller-manager-ds.yaml
+
+- name: Openstack Cinder CSI Plugin
+  when:
+    - kubernetes_node_type == 'admin'
+    - is_cloud == '1'
+  run_once: true
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+  loop:
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/cinder-csi-plugin/cinder-csi-controllerplugin-rbac.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/cinder-csi-plugin/cinder-csi-controllerplugin.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/cinder-csi-plugin/cinder-csi-nodeplugin-rbac.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/cinder-csi-plugin/cinder-csi-nodeplugin.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/cinder-csi-plugin/csi-cinder-driver.yaml
+
 
 - name: proxy master
   when:
@@ -263,21 +299,14 @@
   args:
     creates: ~/.k8sinstall
 
-- name: Cinder storage class file
-  become: yes
+- name: Apply cinder storage class
   when:
     - kubernetes_node_type == 'admin'
     - is_cloud == '1'
-  template:
-    src: templates/cinder-sc.yml.j2
-    dest: /etc/kubernetes/cinder-sc.yml
-    mode: 0644
-
-- name: Apply storage class
-  when:
-    - kubernetes_node_type == 'admin'
-    - is_cloud == '1'
-  shell: kubectl apply -f /etc/kubernetes/cinder-sc.yml
+  run_once: true
+  kubernetes.core.k8s:
+    state: present
+    template: templates/cinder-sc.yml.j2
 
 - name: Resolv.conf on k8s dns pod
   become: yes
