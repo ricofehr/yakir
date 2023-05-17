@@ -2,7 +2,7 @@
 
 - name: Install kubernetes python package
   ansible.builtin.pip:
-    name: kubernetes==26.1.0
+    name: kubernetes=={{ k8s_kubernetes_python_version }}
 
 - name: Update /etc/hosts - Remove hostname to 127.0.0.1 resolved hosts
   become: yes
@@ -210,7 +210,7 @@
   run_once: true
   kubernetes.core.k8s:
     state: present
-    src: "https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml"
+    src: "https://github.com/weaveworks/weave/releases/download/{{ k8s_weave_version }}/weave-daemonset-k8s.yaml"
 
 - name: Flannel CNI
   when:
@@ -228,7 +228,7 @@
   run_once: true
   kubernetes.core.k8s:
     state: present
-    src: https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/tigera-operator.yaml
+    src: https://raw.githubusercontent.com/projectcalico/calico/{{ k8s_calico_version }}/manifests/tigera-operator.yaml
 
 - name: Calico CNI Custom Settings
   when:
@@ -243,7 +243,7 @@
   run_once: true
   kubernetes.core.k8s:
     state: present
-    src: https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.3/components.yaml
+    src: https://github.com/kubernetes-sigs/metrics-server/releases/download/{{ k8s_metric_server_version }}/components.yaml
 
 - name: Create secret from cloud-config file for openstack controller manager
   when:
@@ -271,9 +271,9 @@
     state: present
     src: "{{ item }}"
   loop:
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/controller-manager/cloud-controller-manager-roles.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/controller-manager/cloud-controller-manager-role-bindings.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/controller-manager/openstack-cloud-controller-manager-ds.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/controller-manager/cloud-controller-manager-roles.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/controller-manager/cloud-controller-manager-role-bindings.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/controller-manager/openstack-cloud-controller-manager-ds.yaml
 
 - name: Openstack Cinder CSI Plugin
   when:
@@ -284,11 +284,11 @@
     state: present
     src: "{{ item }}"
   loop:
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/cinder-csi-plugin/cinder-csi-controllerplugin-rbac.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/cinder-csi-plugin/cinder-csi-controllerplugin.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/cinder-csi-plugin/cinder-csi-nodeplugin-rbac.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/cinder-csi-plugin/cinder-csi-nodeplugin.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/v1.27.1/manifests/cinder-csi-plugin/csi-cinder-driver.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/cinder-csi-plugin/cinder-csi-controllerplugin-rbac.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/cinder-csi-plugin/cinder-csi-controllerplugin.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/cinder-csi-plugin/cinder-csi-nodeplugin-rbac.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/cinder-csi-plugin/cinder-csi-nodeplugin.yaml
+    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/cinder-csi-plugin/csi-cinder-driver.yaml
 
 
 - name: proxy master

@@ -1,5 +1,0 @@
----
-
-keycloak_domain: keycloak.{{ global_domain }}
-keycloak_persistence_disk: "{{ global_persistence_disk }}"
-keycloak_admin_password: keypass

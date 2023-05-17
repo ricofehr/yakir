@@ -1,6 +1,0 @@
----
-
-grafana_cert_path: "{{ ingress_cert_path }}"
-grafana_domain: grafana.{{ global_domain }}
-grafana_persistence_disk: "{{ global_persistence_disk }}"
-grafana_prometheus_domain: "borgmon-prometheus-server"

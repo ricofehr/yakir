@@ -2,6 +2,6 @@
 kubernetes_apt_key_id: A362B822F6DEDC652817EA46B53DC80D13EDEF05
 #7F92E05B31093BEF5A3C2D38FEEA9169307EA071
 
-kubernetes_version: '1.27.1-00'
+kubernetes_version: "{{ global_kubernetes_version }}-00"
 
-kubernetes_cni_version: '1.2.*'
+kubernetes_cni_version: "{{ global_kubernetes_cni_version }}"

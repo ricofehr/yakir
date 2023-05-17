@@ -1,5 +1,0 @@
----
-
-prometheus_cert_path: "{{ ingress_cert_path }}"
-prometheus_domain: borgmon.{{ global_domain }}
-prometheus_persistence_disk: "{{ global_persistence_disk }}"
