@@ -15,6 +15,7 @@ SECURITYGROUP="k8s"
 LINUXIMAGE="bionic"
 SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
 ANSIBLEPATH="/usr/bin/ansible-playbook"
+MIRROR_REGISTRY=""
 FLOATINGIPID=""
 SUBNETID=""
 OSCERTPATH=""
@@ -35,8 +36,9 @@ Usage: $0 [options]
 -fn xxxx     openstack flavor for nodes instance, default is xlarge
 -fip xxxx    openstack floatingip network id, no default
 -oscrt xxxx  openstack ssl certificate path
--secgrp xxxx      openstack tenant security group, default is k8s
+-secgrp xxxx openstack tenant security group, default is k8s
 -snet xxxx   openstack subnet id, no default
+-m xxxx      mirror registry for docker.io images
 -o xxxx      openstack operating system image, default is bionic
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
 -w xxxx	     override ansible path
@@ -106,6 +108,11 @@ while (($# > 0)); do
     -snet)
       shift
       SUBNETID="$1"
+      shift
+      ;;
+    -m)
+      shift
+      MIRROR_REGISTRY="$1"
       shift
       ;;
     -o)
@@ -194,6 +201,9 @@ if [[ -z "$SUBNETID" ]]; then
   deployhelp
 fi
 
+MIRROR_REGISTRY_PARAM=""
+[[ -n "MIRROR_REGISTRY" ]] && MIRROR_REGISTRY_PARAM="-e crio_mirror=$MIRROR_REGISTRY"
+
 # Ensure valid sizing
 [[ -f ansible/sizing_vars/sizing_vars_${SIZING}.yml ]] || SIZING=small
 
@@ -266,6 +276,6 @@ $ANSIBLEPATH -i tfinventory \
 -e "cloud_username=$OSUSER" -e "cloud_password=$OSPASSWORD" \
 -e "cloud_authurl=$OSAUTHURL" -e "cloud_tenant_name=$OSTENANT" \
 -e "cloud_subnet_id=$SUBNETID" -e "cloud_floatingnetwork_id=$FLOATINGIPID" \
--e "global_persistence_disk=true" -e "cloud_crt_path=$OSCERTPATH"
+-e "global_persistence_disk=true" -e "cloud_crt_path=$OSCERTPATH" $MIRROR_REGISTRY_PARAM
 
 popd > /dev/null

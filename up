@@ -12,7 +12,7 @@ Usage: $0 [options]
 -h           this is some help text.
 -d           destroy all previously provisioned vms
 -p xxxx      vagrant provider, default is virtualbox
--r xxxx      docker private mirror registry
+-m xxxx      docker private mirror registry
 -s xxxx      sizing deployment, default is small
               - small : 1 master and 2 nodes, host with 16Go ram / 2 cores
               - medium : 1 master and 3 nodes host with 24Go ram / 4 cores
@@ -29,7 +29,7 @@ while (($# > 0)); do
       shift
       ISDESTROY=1
       ;;
-    -r)
+    -m)
       shift
       MIRROR_REGISTRY=$1
       shift
