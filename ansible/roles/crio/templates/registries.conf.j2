@@ -1,0 +1,9 @@
+unqualified-search-registries = ["docker.io"]
+[[registry]]
+prefix = "docker.io"
+insecure = false
+blocked = false
+location = "docker.io"
+[[registry.mirror]]
+location = "{{ crio_mirror }}"
+insecure = {{ crio_mirror_insecure | lower }}

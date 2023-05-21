@@ -41,6 +41,22 @@
     path: /etc/cni/net.d/100-crio-bridge.conf
     state: absent
 
+- name: Ensure containers etc folder exist
+  become: yes
+  when: crio_mirror != ''
+  file:
+    path: /etc/containers/registries.conf.d
+    state: directory
+    mode: 0755
+
+- name: Registries config
+  become: yes
+  when: crio_mirror != ''
+  template:
+    src: templates/registries.conf.j2
+    dest: /etc/containers/registries.conf.d/001-dockerhub-mirror.conf
+    mode: 0644
+
 - name: enable crio service
   become: yes
   service:
