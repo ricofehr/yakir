@@ -1,0 +1,5 @@
+---
+
+crio_version: "{{ global_crio_version }}"
+
+...

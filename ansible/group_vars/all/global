@@ -1,11 +1,13 @@
 ---
 
-global_kubernetes_version: 1.27.1
+global_kubernetes_version: 1.27.2
 global_kubernetes_cni_version: 1.2.0-00
 global_kubernetes_python_version: 26.1.0
 global_weave_version: v2.8.1
 global_calico_version: v3.25.1
 global_metric_server_version: v0.6.3
+global_crio_version: 1.27
+global_gatekeeper_version: 3.12.0
 
 global_domain: k8s.local
 global_persistence_disk: false

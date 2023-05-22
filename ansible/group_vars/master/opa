@@ -1,0 +1,3 @@
+---
+
+opa_gatekeeper_version: "{{ global_gatekeeper_version }}"

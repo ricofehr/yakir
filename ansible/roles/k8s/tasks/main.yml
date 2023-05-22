@@ -60,31 +60,6 @@
     update_cache: true
     force: yes
 
-- name: K8s ip routed by public master1
-  become: yes
-  when:
-    - kubernetes_node_type == 'worker'
-    - is_cloud == '0'
-  shell: |
-    /sbin/route -n | grep 10.96.0.1
-    (($? == 0)) && exit 0
-    route add 10.96.0.1 gw {{ k8s_master_ip }}
-  args:
-    executable: /bin/bash
-
-- name: K8s ip route at start
-  become: yes
-  when:
-    - kubernetes_node_type == 'worker'
-    - is_cloud == '0'
-  copy:
-    content: |
-             #!/bin/bash
-             route add 10.96.0.1 gw {{ k8s_master_ip }}
-    dest: /etc/network/if-up.d/routemaster
-    owner: root
-    mode: 0755
-
 - name: generate cloud-config
   become: yes
   when: is_cloud == '1'
@@ -124,24 +99,6 @@
     - is_cloud == '1'
     - cloud_crt_path != ''
   shell: update-ca-certificates
-
-- name: Resolv.conf on k8s dns pod
-  become: yes
-  lineinfile:
-    dest: /etc/systemd/resolved.conf
-    regexp: "{{ item.regex }}"
-    line: "{{ item.line }}"
-  loop:
-    - regex: '^#DNS='
-      line: 'DNS=10.96.0.10'
-    - regex: '^#Domains='
-      line: 'Domains=svc.cluster.local'
-
-- name: Restart resolved service
-  become: yes
-  systemd:
-    name: systemd-resolved
-    state: restarted
 
 - name: Kubelet cloud arguments
   become: yes
@@ -307,15 +264,6 @@
   kubernetes.core.k8s:
     state: present
     template: templates/cinder-sc.yml.j2
-
-- name: Resolv.conf on k8s dns pod
-  become: yes
-  copy:
-    content: |
-             nameserver 10.96.0.10
-             nameserver 8.8.8.8
-             search svc.cluster.local
-    dest: /etc/resolv.conf
 
 - name: get contents of authkey
   command: cat /home/{{ ansible_user }}/.ssh/authorized_keys

@@ -35,10 +35,16 @@
     update_cache: true
     force: yes
 
-- name: Remove crio bridge
+- name: Remove crio bridge (conflict with calico)
   become: yes
   file:
-    path: /etc/cni/net.d/100-crio-bridge.conf
+    path: /etc/cni/net.d/100-crio-bridge.conflist
+    state: absent
+
+- name: Remove loopback cni (conflict with calico)
+  become: yes
+  file:
+    path: /etc/cni/net.d/200-loopback.conflist
     state: absent
 
 - name: Ensure containers etc folder exist

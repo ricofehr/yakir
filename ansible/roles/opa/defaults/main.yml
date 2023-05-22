@@ -1,3 +1,4 @@
 ---
 
 opa_namespace: kube-gatekeeper
+opa_gatekeeper_version: 3.12.0
