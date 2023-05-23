@@ -7,3 +7,21 @@ location = "docker.io"
 [[registry.mirror]]
 location = "{{ crio_mirror }}"
 insecure = {{ crio_mirror_insecure | lower }}
+
+[[registry]]
+prefix = "quay.io"
+insecure = false
+blocked = false
+location = "quay.io"
+[[registry.mirror]]
+location = "{{ crio_mirror }}"
+insecure = {{ crio_mirror_insecure | lower }}
+
+[[registry]]
+prefix = "registry.k8s.io"
+insecure = false
+blocked = false
+location = "registry.k8s.io"
+[[registry.mirror]]
+location = "{{ crio_mirror }}"
+insecure = {{ crio_mirror_insecure | lower }}
