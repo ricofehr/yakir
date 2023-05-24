@@ -1,6 +1,7 @@
 ---
 
 global_kubernetes_version: 1.27.2
+global_openstack_provider_version: v1.27.1
 global_kubernetes_cni_version: 1.2.0-00
 global_kubernetes_python_version: 26.1.0
 global_weave_version: v2.8.1
