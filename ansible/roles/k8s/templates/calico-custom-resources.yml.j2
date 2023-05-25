@@ -5,15 +5,11 @@ kind: Installation
 metadata:
   name: default
 spec:
-  # Configures Calico networking.
   calicoNetwork:
-    # Note: The ipPools section cannot be modified post-install.
-    bgp: Disabled
-    mtu: 1350
     ipPools:
     - blockSize: 26
       cidr: 10.244.0.0/16
-      encapsulation: VXLANCrossSubnet
+      encapsulation: IPIPCrossSubnet
       natOutgoing: Enabled
       nodeSelector: all()
 
