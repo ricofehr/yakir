@@ -4,6 +4,7 @@ PROVIDER="virtualbox"
 ISDESTROY=0
 SIZING=small
 MIRROR_REGISTRY=""
+CNI_PLUGIN="calico"
 
 # Help function
 deployhelp() {
@@ -11,6 +12,7 @@ deployhelp() {
 Usage: $0 [options]
 -h           this is some help text.
 -d           destroy all previously provisioned vms
+-c xxxx      CNI plugin, choices are weave, flannel, calico (default), cilium
 -p xxxx      vagrant provider, default is virtualbox
 -m xxxx      container private mirror registry
 -s xxxx      sizing deployment, default is small
@@ -28,6 +30,11 @@ while (($# > 0)); do
     -d)
       shift
       ISDESTROY=1
+      ;;
+    -c)
+      shift
+      CNI_PLUGIN=$1
+      shift
       ;;
     -m)
       shift
@@ -81,6 +88,6 @@ MIRROR_REGISTRY_PARAM=""
 pushd ansible >/dev/null
 ln -sf inventories/inventory_${SIZING} inventory
 ln -sf sizing_vars/sizing_vars_${SIZING}.yml sizing_vars.yml
-ansible-playbook --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" $MIRROR_REGISTRY_PARAM -i inventory playbook.yml 2>&1 | tee ../tmp/k8s-deploy.log
+ansible-playbook --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" $MIRROR_REGISTRY_PARAM -e k8s_cni="$CNI_PLUGIN" -i inventory playbook.yml 2>&1 | tee ../tmp/k8s-deploy.log
 popd >/dev/null
 

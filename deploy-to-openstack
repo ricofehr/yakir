@@ -272,7 +272,8 @@ export ANSIBLE_NOCOWS=1
 # Install one K8S master and two K8S nodes
 $ANSIBLEPATH -i tfinventory \
 --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
--e "k8s_master_ip=$K8SMASTER_PRIVATE_IP" $NODES_EXTRA_VARS -e "is_cloud=1" \
+-e "is_cloud=1" -e "k8s_cni=cilium" \
+-e "k8s_master_ip=$K8SMASTER_PRIVATE_IP" $NODES_EXTRA_VARS \
 -e "cloud_username=$OSUSER" -e "cloud_password=$OSPASSWORD" \
 -e "cloud_authurl=$OSAUTHURL" -e "cloud_tenant_name=$OSTENANT" \
 -e "cloud_subnet_id=$SUBNETID" -e "cloud_floatingnetwork_id=$FLOATINGIPID" \

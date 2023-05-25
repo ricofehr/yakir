@@ -150,6 +150,32 @@
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
 
+#- name: Wait until the file .kube/config is present before continuing
+#  ansible.builtin.wait_for:
+#    path: /home/{{ ansible_user }}/.kube/config
+#  delegate_to: "{{ k8s_master_hostname }}"
+#
+#- name: Wait until kubeconfig is well setted
+#  ansible.builtin.wait_for:
+#    path: /home/{{ ansible_user }}/.kube/config
+#    search_regex: "server: https://{{ k8s_master_ip }}:443"
+#  delegate_to: "{{ k8s_master_hostname }}"
+
+- name: Wait for kubernetes API is reachable
+  ansible.builtin.wait_for:
+    host: "{{ k8s_master_ip }}"
+    port: 443
+    delay: 5
+
+- name: Taint nodes for cilium purpose
+  when:
+    - k8s_cni == 'cilium'
+  shell: |
+    kubectl taint nodes {{ inventory_hostname }} {{ k8s_cilium_node_taints }}
+  args:
+    creates: /home/{{ ansible_user }}/.k8sinstall
+  delegate_to: "{{ k8s_master_hostname }}"
+
 - name: Ensure kubelet is in a running state
   become: yes
   service:
@@ -194,6 +220,34 @@
   kubernetes.core.k8s:
     state: present
     template: templates/calico-custom-resources.yml.j2
+
+- name: Add cilium chart repo
+  when:
+    - kubernetes_node_type == 'admin'
+    - k8s_cni == 'cilium'
+  kubernetes.core.helm_repository:
+    name: cilium-cni
+    repo_url: "{{ k8s_cilium_helm_repo }}"
+
+- name: Create cilium namespace
+  when:
+    - kubernetes_node_type == 'admin'
+    - k8s_cni == 'cilium'
+  kubernetes.core.k8s:
+    name: "{{ k8s_cilium_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Deploy Cilium
+  when:
+    - kubernetes_node_type == 'admin'
+    - k8s_cni == 'cilium'
+  kubernetes.core.helm:
+    name: cilium
+    chart_ref: "cilium-cni/cilium"
+    chart_version: "{{ k8s_cilium_version }}"
+    release_namespace: "{{ k8s_cilium_namespace }}"
 
 - name: Add metrics addon
   when: kubernetes_node_type == 'admin'

@@ -17,6 +17,7 @@
     - sizing_vars.yml
   roles:
     - role: cert
+    - role: helm
     - role: k8s
 
 - hosts:
@@ -36,7 +37,6 @@
     - sizing_vars.yml
   roles:
     - role: k8s_postinstall
-    - role: helm
     - role: ingress
     - role: kubedashboard
     - role: opa
