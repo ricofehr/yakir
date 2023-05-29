@@ -15,7 +15,7 @@ $ up
 
 Once setup done
 - Dashboard is reached here
-http://192.168.78.10:8001/api/v1/namespaces/kube-system/services/http:dashboard-kubernetes-dashboard:http/proxy/
+http://192.168.58.10:8001/api/v1/namespaces/kube-dashboard/services/https:dashboard-kubernetes-dashboard:https/proxy
 
 ## Options
 
@@ -23,6 +23,9 @@ http://192.168.78.10:8001/api/v1/namespaces/kube-system/services/http:dashboard-
 Usage: ./up [options]
 -h           this is some help text.
 -d           destroy all previously provisioned vms
+-c xxxx      CNI plugin, choices are weave, flannel, calico (default), cilium
+-p xxxx      vagrant provider, default is virtualbox
+-m xxxx      container private mirror registry
 -s xxxx      sizing deployment, default is small
               - small : 1 master and 2 nodes, host with 16Go ram / 2 cores
               - medium : 1 master and 3 nodes host with 24Go ram / 4 cores
@@ -45,10 +48,12 @@ Usage: ./deploy-to-openstack [options]
 -fn xxxx     openstack flavor for nodes instance, default is xlarge
 -fip xxxx    openstack floatingip network id, no default
 -oscrt xxxx  openstack ssl certificate path
--secgrp xxxx      openstack tenant security group, default is k8s
+-secgrp xxxx openstack tenant security group, default is k8s
 -snet xxxx   openstack subnet id, no default
+-m xxxx      mirror registry for docker.io images
 -o xxxx      openstack operating system image, default is bionic
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
+-w xxxx	     override ansible path
 ```
 Default values are defined following openstack deployment with the repo https://github.com/ricofehr/os-ansible-poc
 
