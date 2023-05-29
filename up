@@ -88,6 +88,8 @@ MIRROR_REGISTRY_PARAM=""
 pushd ansible >/dev/null
 ln -sf inventories/inventory_${SIZING} inventory
 ln -sf sizing_vars/sizing_vars_${SIZING}.yml sizing_vars.yml
+mkdir -p collections/ansible_collections
+ansible-galaxy collection install -r requirements.yml -p ./collections/
 ansible-playbook --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" $MIRROR_REGISTRY_PARAM -e k8s_cni="$CNI_PLUGIN" -i inventory playbook.yml 2>&1 | tee ../tmp/k8s-deploy.log
 popd >/dev/null
 

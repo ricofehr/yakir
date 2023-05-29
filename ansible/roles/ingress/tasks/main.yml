@@ -1,12 +1,41 @@
 ---
 
-- name: import ssl certificate
-  shell: |
-    kubectl create secret tls {{ ingress_cert_name }} --key {{ ingress_cert_key }} --cert {{ ingress_cert_path }}
-    touch ~/.ingress_cert_secret
-  args:
-    executable: /bin/bash
-    creates: ~/.ingress_cert_secret
+- name: Create ingress namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        labels:
+          kubernetes.io/metadata.name: "{{ ingress_namespace }}"
+          name: "{{ ingress_namespace }}"
+          pod-security.kubernetes.io/enforce: baseline
+        name: "{{ ingress_namespace }}"
+
+- name: Slurp tls key into variable
+  ansible.builtin.slurp:
+    src: "{{ ingress_cert_key }}"
+  register: ingress_tls_key
+
+- name: Slurp tls cert into variable
+  ansible.builtin.slurp:
+    src: "{{ ingress_cert_path }}"
+  register: ingress_tls_cert
+
+- name: Create ingress tls secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      kind: Secret
+      type: kubernetes.io/tls
+      apiVersion: v1
+      metadata:
+        name: ingress-certificate
+        namespace: "{{ ingress_namespace }}"
+      data:
+        tls.crt: "{{ ingress_tls_cert.content }}"
+        tls.key: "{{ ingress_tls_key.content }}"
 
 - name: Add nginx ingress chart repo
   kubernetes.core.helm_repository:
@@ -17,21 +46,24 @@
   kubernetes.core.helm:
     name: ingress-nginx
     chart_ref: ingress-nginx/ingress-nginx
-    chart_version: 4.3.0
-    release_namespace: k8s
-    create_namespace: yes
+    chart_version: "{{ ingress_chart_version }}"
+    release_namespace: "{{ ingress_namespace }}"
+    create_namespace: true
 
 - name: Wait for ingress become created
-  shell: "kubectl get po --namespace=k8s --selector app.kubernetes.io/name=ingress-nginx --output=jsonpath='{.items[*].metadata.name}'"
+  ansible.builtin.command: |
+    kubectl get po --namespace={{ ingress_namespace }} --selector app.kubernetes.io/name=ingress-nginx --output=jsonpath='{.items[*].metadata.name}'
   register: ingress_pods_created
   until: item in ingress_pods_created.stdout
   retries: 30
   delay: 10
+  changed_when: false
   with_items:
     - ingress-nginx-controller
 
 - name: Wait for ingress pods become ready
-  shell: "kubectl wait --namespace=k8s --for=condition=Ready pods --selector app.kubernetes.io/name=ingress-nginx --timeout=600s"
+  ansible.builtin.command: |
+    kubectl wait --namespace={{ ingress_namespace }} --for=condition=Ready pods --selector app.kubernetes.io/name=ingress-nginx --timeout=600s
+  changed_when: false
 
-- name: Delete ingress admission webhook
-  shell: kubectl delete -A ValidatingWebhookConfiguration ingress-nginx-admission
+...

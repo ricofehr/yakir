@@ -19,13 +19,14 @@
     chart_version: "{{ opa_gatekeeper_version }}"
     release_namespace: "{{ opa_namespace }}"
 
-- name: Create CRD opa templatess 
+- name: Create CRD opa templates
   kubernetes.core.k8s:
     state: present
     template: opa-templates.yml.j2
 
-- name: Create CR opa rules 
+- name: Create CR opa rules
   kubernetes.core.k8s:
     state: present
     template: opa-rules.yml.j2
 
+...

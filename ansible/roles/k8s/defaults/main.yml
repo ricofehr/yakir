@@ -17,3 +17,8 @@ k8s_metric_server_version: "v0.6.1"
 k8s_cilium_helm_repo: "https://helm.cilium.io/"
 k8s_cilium_namespace: kube-cilium
 k8s_cilium_node_taints: "node.cilium.io/agent-not-ready=true:NoExecute"
+
+k8s_os_provider_manifest_path: https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests
+k8s_metric_repo: https://github.com/kubernetes-sigs/metrics-server
+k8s_calico_repo: https://raw.githubusercontent.com/projectcalico/calico/{{ k8s_calico_version }}
+...

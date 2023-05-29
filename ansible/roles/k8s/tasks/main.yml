@@ -2,164 +2,196 @@
 
 - name: Install kubernetes python package
   ansible.builtin.pip:
-    name: kubernetes=={{ k8s_kubernetes_python_version }}
+    name: kubernetes=={{ k8s_kubernetes_python_version }}
 
 - name: Update /etc/hosts - Remove hostname to 127.0.0.1 resolved hosts
-  become: yes
-  lineinfile: dest=/etc/hosts regexp='^127\.0\.0\.1' line='127.0.0.1 localhost' owner=root group=root mode=0644
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: '^127\.0\.0\.1'
+    line: '127.0.0.1 localhost'
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: Update /etc/hosts - Ensure private ip for master1 resolved hosts
-  become: yes
-  lineinfile: dest=/etc/hosts regexp='{{ k8s_master_hostname }}$' line='{{ k8s_master_ip }} {{ k8s_master_hostname }}' owner=root group=root mode=0644
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: '{{ k8s_master_hostname }}$'
+    line: '{{ k8s_master_ip }} {{ k8s_master_hostname }}'
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: Update /etc/hosts - Ensure private ip for k8s nodes resolved hosts
-  become: yes
-  lineinfile: dest=/etc/hosts regexp='{{ item.name }}$' line='{{ item.ip }} {{ item.name }}' owner=root group=root mode=0644
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: '{{ item.name }}$'
+    line: '{{ item.ip }} {{ item.name }}'
+    owner: root
+    group: root
+    mode: '0644'
   loop: "{{ k8s_nodes }}"
 
-- name: Restart kubeproxy at reboot
-  become: yes
+- name: Prepare kubeproxy as a service
+  become: true
   when:
     - kubernetes_node_type == 'admin'
     - is_cloud == '0'
-  copy:
+  ansible.builtin.copy:
     content: |
-             #!/bin/bash
-             sudo -i -u {{ ansible_user}} nohup kubectl proxy --address={{ k8s_master_ip }} --accept-hosts='^.*$' &
-             exit
-    dest: /etc/rc.local
-    owner: root
-    mode: 0755
+      [Unit]
+      Description=Launch proxy service on Kubernetes instance
+      After=syslog.target network.target auditd.service crio.service
 
-- name: swapoff
-  become: yes
-  shell: swapoff -a
+      [Service]
+      ExecStart=kubectl proxy --address={{ k8s_master_ip }} --accept-hosts='^.*$'
+      User={{ ansible_user }}
+      Restart=always
+      RestartSec=30
+
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/kubeproxy.service
+    owner: root
+    mode: '0755'
+
+- name: Disable swap
+  become: true
+  ansible.builtin.command: swapoff -a
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
 
 - name: Remove Swap from fstab
-  become: yes
-  lineinfile:
+  become: true
+  ansible.builtin.lineinfile:
     dest: /etc/fstab
     regexp: '^.*swap.*$'
     state: absent
 
 - name: Ensure /etc/kubernetes folder is present
-  become: yes
-  file:
+  become: true
+  ansible.builtin.file:
     path: /etc/kubernetes
     owner: root
     state: directory
-    mode: 0755
+    mode: '0755'
 
 - name: Install route package
-  become: yes
-  apt:
+  become: true
+  ansible.builtin.apt:
     name: net-tools
     state: present
     update_cache: true
-    force: yes
+    force: true
 
-- name: generate cloud-config
-  become: yes
+- name: Generate cloud-config file (for Openstack provider)
+  become: true
   when: is_cloud == '1'
-  template:
+  ansible.builtin.template:
     src: templates/cloud.conf.j2
     dest: /etc/kubernetes/cloud-config
-    mode: 0644
+    mode: '0644'
 
-- name: generate kubeadm.conf
-  become: yes
+- name: Generate kubeadm.conf for No Cloud provider
+  become: true
   when: is_cloud == '0'
-  template:
+  ansible.builtin.template:
     src: templates/nocloud-kubeadm.conf.j2
     dest: /etc/kubernetes/kubeadm.conf
-    mode: 0644
+    mode: '0644'
 
-- name: generate kubeadm.conf
-  become: yes
+- name: Generate kubeadm.conf for Openstack provider
+  become: true
   when: is_cloud == '1'
-  template:
+  ansible.builtin.template:
     src: templates/cloud-kubeadm.conf.j2
     dest: /etc/kubernetes/kubeadm.conf
-    mode: 0644
+    mode: '0644'
 
-- name: cloud ssl certificate file
-  become: yes
+- name: Get cloud ssl certificate file
+  become: true
   when:
     - is_cloud == '1'
     - cloud_crt_path != ''
-  copy:
+  ansible.builtin.copy:
     src: "{{ cloud_crt_path }}"
     dest: /usr/local/share/ca-certificates/cloud.crt
+    mode: '0644'
 
-- name: add cloud cert to certificates store
-  become: yes
+- name: Add cloud cert to certificates store
+  become: true
   when:
     - is_cloud == '1'
     - cloud_crt_path != ''
-  shell: update-ca-certificates
+  ansible.builtin.command: update-ca-certificates
+  args:
+    creates: /home/{{ ansible_user }}/.k8sinstall
 
 - name: Kubelet cloud arguments
-  become: yes
+  become: true
   when: is_cloud == '1'
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
     regexp: "^Environment=\"KUBELET_KUBECONFIG_ARGS\".*$"
-    line: "Environment=\"KUBELET_KUBECONFIG_ARGS=--cloud-provider=external --cloud-config=/etc/kubernetes/cloud-config --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf\""
+    line: >
+      Environment="KUBELET_KUBECONFIG_ARGS=--cloud-provider=external
+      --cloud-config=/etc/kubernetes/cloud-config
+      --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
 
 - name: Restart kubelet service
-  become: yes
-  systemd:
+  become: true
+  ansible.builtin.systemd:
     name: kubelet
     state: restarted
-    enabled: yes
-    daemon_reload: yes
+    enabled: true
+    daemon_reload: true
 
-- name: init master
-  become: yes
+- name: Init manager node
+  become: true
   when:
     - kubernetes_node_type == 'admin'
   run_once: true
-  shell: |
+  ansible.builtin.shell: |
     kubeadm reset -f
     kubeadm init --config /etc/kubernetes/kubeadm.conf
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
 
-- name: "init {{ ansible_user }} env"
+- name: Init kubeconfig for current user
   when: kubernetes_node_type == 'admin'
   run_once: true
-  shell: >
-    mkdir -p /home/{{ ansible_user }}/.kube;
+  ansible.builtin.shell: >
+    mkdir -p {{ ansible_env.HOME }}/.kube;
     sudo cp -f /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config;
     sudo chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config;
-
-- name: get token
-  become: yes
-  run_once: true
-  when: kubernetes_node_type == 'admin'
-  shell:  kubeadm token list | tail -n +2 | head -n 1 | sed "s; .*;;"
-  register: master_token
-
-- name: Add k8snode
-  become: yes
-  when:
-    - kubernetes_node_type == 'worker'
-  shell: "kubeadm join --token {{ hostvars[groups['master'][0]]['master_token'].stdout }} --discovery-token-unsafe-skip-ca-verification --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_master_ip }}:443"
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
 
-#- name: Wait until the file .kube/config is present before continuing
-#  ansible.builtin.wait_for:
-#    path: /home/{{ ansible_user }}/.kube/config
-#  delegate_to: "{{ k8s_master_hostname }}"
-#
-#- name: Wait until kubeconfig is well setted
-#  ansible.builtin.wait_for:
-#    path: /home/{{ ansible_user }}/.kube/config
-#    search_regex: "server: https://{{ k8s_master_ip }}:443"
-#  delegate_to: "{{ k8s_master_hostname }}"
+- name: Get token from control-plane node
+  become: true
+  run_once: true
+  when: kubernetes_node_type == 'admin'
+  ansible.builtin.shell: |
+    set -e -o pipefail
+    kubeadm token list | tail -n +2 | head -n 1 | sed "s/ .*//"
+  args:
+    executable: /bin/bash
+    creates: /home/{{ ansible_user }}/.k8sinstall
+  register: k8s_token
+
+- name: Add k8snode
+  become: true
+  when:
+    - kubernetes_node_type == 'worker'
+  ansible.builtin.command: >
+    kubeadm join --token {{ hostvars[groups['master'][0]]['k8s_token'].stdout }} --discovery-token-unsafe-skip-ca-verification
+    --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_master_ip }}:443
+  args:
+    creates: /home/{{ ansible_user }}/.k8sinstall
 
 - name: Wait for kubernetes API is reachable
   ansible.builtin.wait_for:
@@ -170,19 +202,19 @@
 - name: Taint nodes for cilium purpose
   when:
     - k8s_cni == 'cilium'
-  shell: |
+  ansible.builtin.shell: |
     kubectl taint nodes {{ inventory_hostname }} {{ k8s_cilium_node_taints }}
   args:
     creates: /home/{{ ansible_user }}/.k8sinstall
   delegate_to: "{{ k8s_master_hostname }}"
 
 - name: Ensure kubelet is in a running state
-  become: yes
-  service:
+  become: true
+  ansible.builtin.service:
     name: kubelet
     state: started
-  register: kubelet_details
-  until: kubelet_details.status.ActiveState == "active"
+  register: k8s_kubelet_details
+  until: k8s_kubelet_details.status.ActiveState == "active"
   retries: 25
   delay: 20
 
@@ -211,7 +243,7 @@
   run_once: true
   kubernetes.core.k8s:
     state: present
-    src: https://raw.githubusercontent.com/projectcalico/calico/{{ k8s_calico_version }}/manifests/tigera-operator.yaml
+    src: "{{ k8s_calico_repo }}/manifests/tigera-operator.yaml"
 
 - name: Calico CNI Custom Settings
   when:
@@ -254,7 +286,7 @@
   run_once: true
   kubernetes.core.k8s:
     state: present
-    src: https://github.com/kubernetes-sigs/metrics-server/releases/download/{{ k8s_metric_server_version }}/components.yaml
+    src: "{{ k8s_metric_repo }}/releases/download/{{ k8s_metric_server_version }}/components.yaml"
 
 - name: Create secret from cloud-config file for openstack controller manager
   when:
@@ -282,9 +314,9 @@
     state: present
     src: "{{ item }}"
   loop:
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/controller-manager/cloud-controller-manager-roles.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/controller-manager/cloud-controller-manager-role-bindings.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/controller-manager/openstack-cloud-controller-manager-ds.yaml
+    - "{{ k8s_os_provider_manifest_path }}/controller-manager/cloud-controller-manager-roles.yaml"
+    - "{{ k8s_os_provider_manifest_path }}/controller-manager/cloud-controller-manager-role-bindings.yaml"
+    - "{{ k8s_os_provider_manifest_path }}/controller-manager/openstack-cloud-controller-manager-ds.yaml"
 
 - name: Openstack Cinder CSI Plugin
   when:
@@ -295,20 +327,21 @@
     state: present
     src: "{{ item }}"
   loop:
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/cinder-csi-plugin/cinder-csi-controllerplugin-rbac.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/cinder-csi-plugin/cinder-csi-controllerplugin.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/cinder-csi-plugin/cinder-csi-nodeplugin-rbac.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/cinder-csi-plugin/cinder-csi-nodeplugin.yaml
-    - https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ k8s_openstack_provider_version }}/manifests/cinder-csi-plugin/csi-cinder-driver.yaml
+    - "{{ k8s_os_provider_manifest_path }}/cinder-csi-plugin/cinder-csi-controllerplugin-rbac.yaml"
+    - "{{ k8s_os_provider_manifest_path }}/cinder-csi-plugin/cinder-csi-controllerplugin.yaml"
+    - "{{ k8s_os_provider_manifest_path }}/cinder-csi-plugin/cinder-csi-nodeplugin-rbac.yaml"
+    - "{{ k8s_os_provider_manifest_path }}/cinder-csi-plugin/cinder-csi-nodeplugin.yaml"
+    - "{{ k8s_os_provider_manifest_path }}/cinder-csi-plugin/csi-cinder-driver.yaml"
 
-
-- name: proxy master
+- name: Proxy manager node
+  become: true
   when:
     - kubernetes_node_type == 'admin'
     - is_cloud == '0'
-  shell: nohup kubectl proxy --address={{ k8s_master_ip }} --accept-hosts='^.*$' &
-  args:
-    creates: ~/.k8sinstall
+  ansible.builtin.systemd:
+    state: restarted
+    daemon_reload: true
+    name: kubeproxy
 
 - name: Apply cinder storage class
   when:
@@ -319,19 +352,23 @@
     state: present
     template: templates/cinder-sc.yml.j2
 
-- name: get contents of authkey
-  command: cat /home/{{ ansible_user }}/.ssh/authorized_keys
-  register: authkey
+- name: Get contents of authkey
+  ansible.builtin.command: cat {{ ansible_env.HOME }}/.ssh/authorized_keys
+  register: k8s_authkey
+  changed_when: false
 
 - name: Set authorized key for root user
-  become: yes
-  authorized_key:
+  become: true
+  ansible.posix.authorized_key:
     user: "root"
     state: present
-    key: "{{ authkey.stdout }}"
+    key: "{{ k8s_authkey.stdout }}"
 
-- name: end install
-  file:
+- name: End k8s install
+  ansible.builtin.file:
     dest: ~/.k8sinstall
     state: touch
-    force: yes
+    force: true
+    mode: '0600'
+
+...

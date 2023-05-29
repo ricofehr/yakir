@@ -1,28 +1,33 @@
 ---
 
 - name: Ensure admin group is present
-  group:
+  become: true
+  ansible.builtin.group:
     name: admin
     state: present
-  become: yes
 
-- name: Add ansible user to admn group
-  user:
-    append: yes
+- name: Ansible user properties
+  become: true
+  ansible.builtin.user:
+    append: true
     name: "{{ ansible_user }}"
+    shell: /bin/bash
     groups:
       - admin
-  become: yes
 
 - name: No passwd for admin group on sudo
-  lineinfile:
+  become: true
+  ansible.builtin.lineinfile:
     path: /etc/sudoers
     state: present
     regexp: '^%ADMIN ALL='
     line: '%ADMIN ALL=(ALL) NOPASSWD: ALL'
     validate: '/usr/sbin/visudo -cf %s'
-  become: yes
- 
+
 - name: Unlock ansible account and disable password auth
-  shell: usermod -p '*' {{ ansible_user }}
-  become: yes
+  become: true
+  ansible.builtin.command: usermod -p '*' {{ ansible_user }}
+  args:
+    creates: "{{ base_firstboot_creates_path }}"
+
+...

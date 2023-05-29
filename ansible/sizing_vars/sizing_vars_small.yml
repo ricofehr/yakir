@@ -4,6 +4,7 @@ sizing_k8s_node1_ip: "{{ hostvars[groups['nodes'][0]]['ansible_host'] }}"
 sizing_k8s_node2_ip: "{{ hostvars[groups['nodes'][1]]['ansible_host'] }}"
 
 sizing_k8s_nodes:
-  - { name: "{{ hostvars[groups['nodes'][0]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node1_ip }}" }
-  - { name: "{{ hostvars[groups['nodes'][1]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node2_ip }}" }
+  - { name: "{{ hostvars[groups['nodes'][0]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node1_ip }}" }
+  - { name: "{{ hostvars[groups['nodes'][1]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node2_ip }}" }
 
+...

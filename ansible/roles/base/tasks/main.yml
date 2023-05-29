@@ -1,9 +1,12 @@
 ---
 
-- import_tasks: attributes.yml
+- name: Define operating system attributes
+  ansible.builtin.import_tasks: attributes.yml
 
-- import_tasks: packages.yml
+- name: Install common packages
+  ansible.builtin.import_tasks: packages.yml
 
-- import_tasks: user.yml
+- name: Set user properties
+  ansible.builtin.import_tasks: user.yml
 
-- import_tasks: endbase.yml
+...

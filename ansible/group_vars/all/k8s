@@ -10,3 +10,8 @@ k8s_weave_version: "{{ global_weave_version }}"
 k8s_calico_version: "{{ global_calico_version }}"
 k8s_openstack_provider_version: "{{ global_openstack_provider_version }}"
 k8s_metric_server_version: "{{ global_metric_server_version }}"
+
+
+
+
+...

@@ -1,0 +1,13 @@
+---
+
+profile: production
+
+exclude_paths:
+  - collections
+  - roles/kubernetes
+
+kinds:
+  - playbook: "**/playbook.yml"
+  - vars: "**/{group_,sizing_}vars/**"
+
+...

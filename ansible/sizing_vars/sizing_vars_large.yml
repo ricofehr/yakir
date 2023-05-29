@@ -7,9 +7,10 @@ sizing_k8s_node4_ip: "{{ hostvars[groups['nodes'][3]]['ansible_host'] }}"
 sizing_k8s_node5_ip: "{{ hostvars[groups['nodes'][4]]['ansible_host'] }}"
 
 sizing_k8s_nodes:
-  - { name: "{{ hostvars[groups['nodes'][0]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node1_ip }}" }
-  - { name: "{{ hostvars[groups['nodes'][1]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node2_ip }}" }
-  - { name: "{{ hostvars[groups['nodes'][2]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node3_ip }}" }
-  - { name: "{{ hostvars[groups['nodes'][3]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node4_ip }}" }
-  - { name: "{{ hostvars[groups['nodes'][4]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node5_ip }}" }
+  - { name: "{{ hostvars[groups['nodes'][0]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node1_ip }}" }
+  - { name: "{{ hostvars[groups['nodes'][1]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node2_ip }}" }
+  - { name: "{{ hostvars[groups['nodes'][2]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node3_ip }}" }
+  - { name: "{{ hostvars[groups['nodes'][3]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node4_ip }}" }
+  - { name: "{{ hostvars[groups['nodes'][4]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node5_ip }}" }
 
+...

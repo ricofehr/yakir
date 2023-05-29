@@ -1,5 +1,9 @@
 ---
 
-- file:
-    path: ~/.ansible_base
+- name: Mark base install as complete
+  ansible.builtin.file:
+    path: "{{ base_firstboot_creates_path }}"
     state: touch
+    mode: '0600'
+
+...

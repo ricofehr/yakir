@@ -10,3 +10,5 @@ kubedashboard_sa: cluster-developer
 kubedashboard_sa_admin: dashboard-admin
 kubedashboard_role: cluster-developer
 kubedashboard_rolebinding: cluster-developer
+
+...

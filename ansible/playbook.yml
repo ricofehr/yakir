@@ -1,5 +1,6 @@
 ---
-- hosts:
+- name: Install prerequisites and kubernetes packages
+  hosts:
     - master
     - nodes
   strategy: linear
@@ -9,7 +10,8 @@
     - role: kubernetes
       become: true
 
-- hosts:
+- name: Init kubernetes on manager node
+  hosts:
     - master
   serial: 1
   strategy: linear
@@ -20,7 +22,8 @@
     - role: helm
     - role: k8s
 
-- hosts:
+- name: Init kubernetes on worker nodes
+  hosts:
     - nodes
   strategy: linear
   vars_files:
@@ -28,11 +31,12 @@
   roles:
     - role: k8s
 
-- hosts:
+- name: Postinstall fine-tuning and install tools & services
+  hosts:
     - master
   serial: 1
   strategy: linear
-  run_once: yes
+  run_once: true
   vars_files:
     - sizing_vars.yml
   roles:
@@ -41,3 +45,4 @@
     - role: kubedashboard
     - role: opa
 
+...

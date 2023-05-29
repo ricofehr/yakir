@@ -5,6 +5,9 @@ Vagrantfile
 # tmp folder
 /tmp
 
+ansible/collections/ansible_collections/**
+!ansible/collections/ansible_collections/.gitkeep
+
 # password file
 ansible/group_vars/master/passwords
 

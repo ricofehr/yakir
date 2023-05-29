@@ -1,16 +1,21 @@
 ---
 
 - name: Ensure csr are generated
-  pause:
+  ansible.builtin.pause:
     seconds: 30
 
 - name: Sign pending certificates
-  shell: kubectl get csr | sed "s/ .*$//" | while read CSR;do kubectl certificate approve $CSR;done
+  ansible.builtin.shell: |
+    set -e -o pipefail
+    kubectl get csr -o name | xargs kubectl certificate approve
+  args:
+    executable: /bin/bash
+  changed_when: false
 
 - name: Wait for control-plane pods become created
-  shell: "kubectl get po --namespace=kube-system --selector tier=control-plane --output=jsonpath='{.items[*].metadata.name}'"
-  register: control_plane_pods_created
-  until: item in control_plane_pods_created.stdout
+  ansible.builtin.shell: "kubectl get po --namespace=kube-system --selector tier=control-plane --output=jsonpath='{.items[*].metadata.name}'"
+  register: k8s_postinstall_control_plane_pods_created
+  until: item in k8s_postinstall_control_plane_pods_created.stdout
   retries: 10
   delay: 30
   with_items:
@@ -18,43 +23,52 @@
     - kube-apiserver
     - kube-controller-manager
     - kube-scheduler
+  changed_when: false
 
 - name: Wait for control-plane pods become ready
-  shell: "kubectl wait --namespace=kube-system --for=condition=Ready pods --selector tier=control-plane --timeout=600s"
+  ansible.builtin.command: "kubectl wait --namespace=kube-system --for=condition=Ready pods --selector tier=control-plane --timeout=600s"
+  changed_when: false
 
 - name: Wait for kube-proxy become created
-  shell: "kubectl get po --namespace=kube-system --selector k8s-app=kube-proxy --output=jsonpath='{.items[*].metadata.name}'"
-  register: kube_proxy_pods_created
-  until: item in kube_proxy_pods_created.stdout
+  ansible.builtin.command: "kubectl get po --namespace=kube-system --selector k8s-app=kube-proxy --output=jsonpath='{.items[*].metadata.name}'"
+  register: k8s_postinstall_kube_proxy_pods_created
+  until: item in k8s_postinstall_kube_proxy_pods_created.stdout
   retries: 30
   delay: 10
   with_items:
     - kube-proxy
+  changed_when: false
 
 - name: Wait for kube-proxy pods become ready
-  shell: "kubectl wait --namespace=kube-system --for=condition=Ready pods --selector k8s-app=kube-proxy --timeout=600s"
+  ansible.builtin.command: "kubectl wait --namespace=kube-system --for=condition=Ready pods --selector k8s-app=kube-proxy --timeout=600s"
+  changed_when: false
 
 - name: Wait for CNI pods become created
   when:
-    - k8s_cni == 'calico'
-  shell: "kubectl get po --namespace=calico-system --selector k8s-app=calico-node --output=jsonpath='{.items[*].metadata.name}'"
-  register: cni_pods_created
-  until: item in cni_pods_created.stdout
+    - k8s_postinstall_k8s_cni == 'calico'
+  ansible.builtin.shell: "kubectl get po --namespace=calico-system --selector k8s-app=calico-node --output=jsonpath='{.items[*].metadata.name}'"
+  register: k8s_postinstall_cni_pods_created
+  until: item in k8s_postinstall_cni_pods_created.stdout
   retries: 30
   delay: 10
   with_items:
     - calico-node
+  changed_when: false
 
 - name: Wait for cni pods become ready
   when:
-    - k8s_cni == 'calico'
-  shell: "kubectl wait --namespace=calico-system --for=condition=Ready pods --selector k8s-app=calico-node --timeout=600s"
+    - k8s_postinstall_k8s_cni == 'calico'
+  ansible.builtin.command: "kubectl wait --namespace=calico-system --for=condition=Ready pods --selector k8s-app=calico-node --timeout=600s"
+  changed_when: false
 
 - name: Wait for kube-cilium pods become ready
   when:
-    - k8s_cni == 'cilium'
-  shell: "kubectl wait pod --all --namespace=kube-cilium --for=condition=Ready --timeout=600s"
+    - k8s_postinstall_k8s_cni == 'cilium'
+  ansible.builtin.command: "kubectl wait pod --all --namespace=kube-cilium --for=condition=Ready --timeout=600s"
+  changed_when: false
 
 - name: Wait for kube-system pods become ready
-  shell: "kubectl wait pod --all --namespace=kube-system --for=condition=Ready --timeout=600s"
+  ansible.builtin.command: "kubectl wait pod --all --namespace=kube-system --for=condition=Ready --timeout=600s"
+  changed_when: false
 
+...

@@ -1,71 +1,95 @@
 ---
 
 - name: Enable ip forward
-  become: yes
+  become: true
   ansible.posix.sysctl:
     name: net.ipv4.ip_forward
     value: '1'
-    sysctl_set: yes
+    sysctl_set: true
     state: present
-    reload: yes
+    reload: true
 
 - name: Add br_netfilter module
-  become: yes
-  modprobe:
+  become: true
+  community.general.modprobe:
     name: br_netfilter
     state: present
 
-- include_vars: "packages.yml"
+- name: Get cri-o packages list
+  ansible.builtin.include_vars: "packages.yml"
 
-- name: Prepare deb repos
-  become: yes
-  shell: |
-    echo "deb [signed-by=/usr/share/keyrings/libcontainers-archive-keyring.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/{{ crio_os }}/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-    echo "deb [signed-by=/usr/share/keyrings/libcontainers-crio-archive-keyring.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ crio_version }}/{{ crio_os }}/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:{{ crio_version }}.list
+- name: Ensure keyring folder is here
+  become: true
+  ansible.builtin.file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: '0755'
 
-    mkdir -p /usr/share/keyrings
-    curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/{{ crio_os }}/Release.key | gpg --yes --dearmor -o /usr/share/keyrings/libcontainers-archive-keyring.gpg
-    curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ crio_version }}/{{ crio_os }}/Release.key | gpg --yes --dearmor -o /usr/share/keyrings/libcontainers-crio-archive-keyring.gpg
+- name: Get key
+  become: true
+  ansible.builtin.apt_key:
+    url: "{{ crio_repo_url }}/{{ crio_os }}/Release.key"
+    keyring: "{{ crio_keyring_key1_path }}"
+
+- name: Add CRI-O repository
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by={{ crio_keyring_key1_path }}] {{ crio_repo_url }}/{{ crio_os }}/ /"
+    state: present
+
+- name: Get key 2
+  become: true
+  ansible.builtin.apt_key:
+    url: "{{ crio_repo_url }}:/cri-o:/{{ crio_version }}/{{ crio_os }}/Release.key"
+    keyring: "{{ crio_keyring_key2_path }}"
+
+- name: Add CRI-O repository 2
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by={{ crio_keyring_key2_path }}] {{ crio_repo_url }}:/cri-o:/{{ crio_version }}/{{ crio_os }}/ /"
+    state: present
 
 - name: Install crio packages
-  become: yes
-  apt:
+  become: true
+  ansible.builtin.apt:
     name: "{{ crio_packages }}"
     state: present
     update_cache: true
-    force: yes
+    force: true
 
 - name: Remove crio bridge (conflict with calico)
-  become: yes
-  file:
+  become: true
+  ansible.builtin.file:
     path: /etc/cni/net.d/100-crio-bridge.conflist
     state: absent
 
 - name: Remove loopback cni (conflict with calico)
-  become: yes
-  file:
+  become: true
+  ansible.builtin.file:
     path: /etc/cni/net.d/200-loopback.conflist
     state: absent
 
 - name: Ensure containers etc folder exist
-  become: yes
+  become: true
   when: crio_mirror != ''
-  file:
+  ansible.builtin.file:
     path: /etc/containers/registries.conf.d
     state: directory
-    mode: 0755
+    mode: '0755'
 
 - name: Registries config
-  become: yes
+  become: true
   when: crio_mirror != ''
-  template:
+  ansible.builtin.template:
     src: templates/registries.conf.j2
     dest: /etc/containers/registries.conf.d/001-images-mirror.conf
-    mode: 0644
+    mode: '0644'
 
-- name: enable crio service
-  become: yes
-  service:
+- name: Enable crio service
+  become: true
+  ansible.builtin.service:
     name: crio
-    enabled: yes
+    enabled: true
     state: started
+
+...

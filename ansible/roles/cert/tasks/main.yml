@@ -1,31 +1,33 @@
 ---
 
 - name: Ensure cryptography python library is preset
-  become: yes
-  apt:
+  become: true
+  ansible.builtin.apt:
     name: python3-cryptography
     state: present
 
 - name: Certificates folder
-  file:
+  ansible.builtin.file:
     path: "{{ certs_folder }}"
     owner: "{{ ansible_user }}"
     state: directory
-    mode: 0755
+    mode: '0755'
 
 - name: Generate an OpenSSL private key.
-  openssl_privatekey:
+  community.crypto.openssl_privatekey:
     path: "{{ cert_key }}"
 
 - name: Generate an OpenSSL CSR.
-  openssl_csr:
+  community.crypto.openssl_csr:
     path: "{{ cert_csr }}"
     privatekey_path: "{{ cert_key }}"
     common_name: "*.{{ cert_domain }}"
 
 - name: Generate a Self Signed OpenSSL certificate
-  openssl_certificate:
+  community.crypto.x509_certificate:
     path: "{{ cert_path }}"
     privatekey_path: "{{ cert_key }}"
     csr_path: "{{ cert_csr }}"
     provider: selfsigned
+
+...

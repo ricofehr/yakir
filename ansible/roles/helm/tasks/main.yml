@@ -1,22 +1,22 @@
 ---
 
 - name: Add helm apt key
-  become: yes
-  apt_key:
+  become: true
+  ansible.builtin.apt_key:
     url: https://baltocdn.com/helm/signing.asc
     state: present
 
 - name: Add helm apt repository
-  become: yes
-  apt_repository:
+  become: true
+  ansible.builtin.apt_repository:
     repo: deb https://baltocdn.com/helm/stable/debian/ all main
     state: present
 
 - name: Install helm package
-  become: yes
-  apt:
+  become: true
+  ansible.builtin.apt:
     name: helm
-    update_cache: yes
+    update_cache: true
 
 - name: Add stable repository
   kubernetes.core.helm_repository:
@@ -28,3 +28,4 @@
     name: incubator
     repo_url: https://charts.helm.sh/incubator
 
+...

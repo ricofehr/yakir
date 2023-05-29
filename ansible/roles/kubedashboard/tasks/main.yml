@@ -1,15 +1,16 @@
 ---
 
 - name: Ensure helm-values folder is present
-  file:
+  ansible.builtin.file:
     path: helm-values
     state: directory
-    mode: 0755
+    mode: '0755'
 
 - name: Values parameters file
-  template:
+  ansible.builtin.template:
     src: templates/values.yml.j2
     dest: helm-values/dashboard.yml
+    mode: '0644'
 
 - name: Add dashboard chart repo
   kubernetes.core.helm_repository:
@@ -43,7 +44,12 @@
     values_files:
       - helm-values/dashboard.yml
 
-- name: url dashboard
+- name: Get url dashboard
   when: is_cloud == '0'
-  debug:
-    msg: "You can reach the dashboard with http://{{ ansible_host }}:8001/api/v1/namespaces/{{ kubedashboard_namespace }}/services/http:dashboard-kubernetes-dashboard:http/proxy/"
+  ansible.builtin.debug:
+    msg: >
+      "You can reach the dashboard with "
+      "http://{{ ansible_host }}:8001/api/v1/namespaces/"
+      "{{ kubedashboard_namespace }}/services/http:dashboard-kubernetes-dashboard:http/proxy/"
+
+...
