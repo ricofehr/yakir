@@ -1,0 +1,9 @@
+---
+
+- name: Weave CNI
+  run_once: true
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ cni_weave_manifest }}"
+
+...

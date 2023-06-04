@@ -43,30 +43,6 @@
   ansible.builtin.command: "kubectl wait --namespace=kube-system --for=condition=Ready pods --selector k8s-app=kube-proxy --timeout=600s"
   changed_when: false
 
-- name: Wait for CNI pods become created
-  when:
-    - k8s_postinstall_k8s_cni == 'calico'
-  ansible.builtin.shell: "kubectl get po --namespace=calico-system --selector k8s-app=calico-node --output=jsonpath='{.items[*].metadata.name}'"
-  register: k8s_postinstall_cni_pods_created
-  until: item in k8s_postinstall_cni_pods_created.stdout
-  retries: 30
-  delay: 10
-  with_items:
-    - calico-node
-  changed_when: false
-
-- name: Wait for cni pods become ready
-  when:
-    - k8s_postinstall_k8s_cni == 'calico'
-  ansible.builtin.command: "kubectl wait --namespace=calico-system --for=condition=Ready pods --selector k8s-app=calico-node --timeout=600s"
-  changed_when: false
-
-- name: Wait for kube-cilium pods become ready
-  when:
-    - k8s_postinstall_k8s_cni == 'cilium'
-  ansible.builtin.command: "kubectl wait pod --all --namespace=kube-cilium --for=condition=Ready --timeout=600s"
-  changed_when: false
-
 - name: Wait for kube-system pods become ready
   ansible.builtin.command: "kubectl wait pod --all --namespace=kube-system --for=condition=Ready --timeout=600s"
   changed_when: false

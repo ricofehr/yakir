@@ -1,0 +1,5 @@
+---
+
+cni_k8s_nodes: "{{ global_k8s_nodes }}"
+
+...

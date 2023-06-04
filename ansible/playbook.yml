@@ -40,6 +40,7 @@
   vars_files:
     - sizing_vars.yml
   roles:
+    - role: cni
     - role: k8s_postinstall
     - role: ingress
     - role: kubedashboard

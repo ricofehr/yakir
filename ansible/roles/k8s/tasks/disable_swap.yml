@@ -1,0 +1,16 @@
+---
+
+- name: Disable swap
+  become: true
+  ansible.builtin.command: swapoff -a
+  args:
+    creates: "{{ ansible_env.HOME }}/.k8sinstall"
+
+- name: Remove Swap from fstab
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /etc/fstab
+    regexp: '^.*swap.*$'
+    state: absent
+
+...

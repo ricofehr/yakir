@@ -1,0 +1,10 @@
+---
+
+- name: Add metrics addon
+  when: kubernetes_node_type == 'admin'
+  run_once: true
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ k8s_metric_repo }}/releases/download/{{ k8s_metric_server_version }}/components.yaml"
+
+...

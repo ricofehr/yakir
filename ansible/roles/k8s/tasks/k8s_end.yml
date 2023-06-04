@@ -1,0 +1,10 @@
+---
+
+- name: End k8s install
+  ansible.builtin.file:
+    dest: "{{ ansible_env.HOME }}/.k8sinstall"
+    state: touch
+    force: true
+    mode: '0600'
+
+...

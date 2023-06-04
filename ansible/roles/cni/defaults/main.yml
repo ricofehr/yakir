@@ -1,0 +1,16 @@
+---
+
+cni_k8s_nodes: []
+cni_plugin: "calico"
+cni_weave_version: "v2.3.0"
+cni_calico_version: "v3.26.0"
+cni_cilium_version: "1.13.2"
+
+cni_cilium_helm_repo: "https://helm.cilium.io/"
+cni_cilium_namespace: kube-cilium
+cni_cilium_node_taints: "node.cilium.io/agent-not-ready=true:NoExecute"
+
+cni_weave_manifest: https://github.com/weaveworks/weave/releases/download/{{ cni_weave_version }}/weave-daemonset-k8s.yaml
+cni_calico_repo: https://raw.githubusercontent.com/projectcalico/calico/{{ cni_calico_version }}
+
+...

@@ -1,0 +1,23 @@
+---
+
+- name: Install kubernetes python package
+  ansible.builtin.pip:
+    name: kubernetes=={{ k8s_kubernetes_python_version }}
+
+- name: Ensure /etc/kubernetes folder is present
+  become: true
+  ansible.builtin.file:
+    path: /etc/kubernetes
+    owner: root
+    state: directory
+    mode: '0755'
+
+- name: Install route package
+  become: true
+  ansible.builtin.apt:
+    name: net-tools
+    state: present
+    update_cache: true
+    force: true
+
+...

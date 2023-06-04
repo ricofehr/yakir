@@ -1,0 +1,34 @@
+---
+
+- name: Update /etc/hosts - Remove hostname to 127.0.0.1 resolved hosts
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: '^127\.0\.0\.1'
+    line: '127.0.0.1 localhost'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Update /etc/hosts - Ensure private ip for master1 resolved hosts
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: '{{ k8s_master_hostname }}$'
+    line: '{{ k8s_master_ip }} {{ k8s_master_hostname }}'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Update /etc/hosts - Ensure private ip for k8s nodes resolved hosts
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: '{{ item.name }}$'
+    line: '{{ item.ip }} {{ item.name }}'
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ k8s_nodes }}"
+
+...

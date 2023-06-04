@@ -1,0 +1,28 @@
+---
+
+- name: Calico CNI Custom
+  run_once: true
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ cni_calico_repo }}/manifests/tigera-operator.yaml"
+
+- name: Calico CNI Custom Settings
+  kubernetes.core.k8s:
+    state: present
+    template: templates/calico-custom-resources.yml.j2
+
+- name: Wait for CNI pods become created
+  ansible.builtin.shell: "kubectl get po --namespace=calico-system --selector k8s-app=calico-node --output=jsonpath='{.items[*].metadata.name}'"
+  register: cni_pods_created
+  until: item in cni_pods_created.stdout
+  retries: 30
+  delay: 10
+  with_items:
+    - calico-node
+  changed_when: false
+
+- name: Wait for cni pods become ready
+  ansible.builtin.command: "kubectl wait --namespace=calico-system --for=condition=Ready pods --selector k8s-app=calico-node --timeout=600s"
+  changed_when: false
+
+...

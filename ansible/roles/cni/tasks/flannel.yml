@@ -1,0 +1,9 @@
+---
+
+- name: Flannel CNI
+  run_once: true
+  kubernetes.core.k8s:
+    state: present
+    template: templates/kube-flannel.yml.j2
+
+...

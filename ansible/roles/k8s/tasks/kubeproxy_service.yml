@@ -1,0 +1,31 @@
+---
+
+- name: Prepare kubeproxy as a service
+  become: true
+  ansible.builtin.copy:
+    content: |
+      [Unit]
+      Description=Launch proxy service on Kubernetes instance
+      After=syslog.target network.target auditd.service crio.service
+
+      [Service]
+      ExecStart=kubectl proxy --address={{ k8s_master_ip }} --accept-hosts='^.*$'
+      User={{ ansible_user }}
+      Restart=always
+      RestartSec=30
+
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/kubeproxy.service
+    owner: root
+    mode: '0755'
+
+- name: Proxy manager node
+  become: true
+  ansible.builtin.systemd:
+    state: started
+    daemon_reload: true
+    name: kubeproxy
+
+...
