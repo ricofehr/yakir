@@ -12,6 +12,7 @@
     append: true
     name: "{{ ansible_user }}"
     shell: /bin/bash
+    password: '*'
     groups:
       - admin
 
@@ -23,11 +24,5 @@
     regexp: '^%ADMIN ALL='
     line: '%ADMIN ALL=(ALL) NOPASSWD: ALL'
     validate: '/usr/sbin/visudo -cf %s'
-
-- name: Unlock ansible account and disable password auth
-  become: true
-  ansible.builtin.command: usermod -p '*' {{ ansible_user }}
-  args:
-    creates: "{{ base_firstboot_creates_path }}"
 
 ...

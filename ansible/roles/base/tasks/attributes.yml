@@ -1,11 +1,17 @@
 ---
 
-- name: Set default system language
+- name: Install locales package
   become: true
-  when: base_locale is defined
-  ansible.builtin.command: locale-gen "{{ base_locale }}"
-  args:
-    creates: "{{ base_firstboot_creates_path }}"
+  ansible.builtin.apt:
+    name: locales
+    state: present
+    update_cache: true
+
+- name: Ensure a locale exists
+  become: true
+  community.general.locale_gen:
+    name: "{{ base_locale }}"
+    state: present
 
 - name: Set timezone to "{{ base_timezone }}"
   become: true

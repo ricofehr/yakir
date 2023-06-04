@@ -1,5 +1,0 @@
----
-
-base_firstboot_creates_path: "{{ ansible_env.HOME }}/.ansible_base"
-
-...
