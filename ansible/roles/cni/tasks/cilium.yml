@@ -26,8 +26,8 @@
     chart_version: "{{ cni_cilium_version }}"
     release_namespace: "{{ cni_cilium_namespace }}"
 
-- name: Wait for kube-cilium pods become ready
-  ansible.builtin.command: "kubectl wait pod --all --namespace=kube-cilium --for=condition=Ready --timeout=600s"
+- name: Wait for cilium pods become ready
+  ansible.builtin.command: "kubectl wait pod --all --namespace={{ cni_cilium_namespace }} --for=condition=Ready --timeout=600s"
   changed_when: false
 
 ...
