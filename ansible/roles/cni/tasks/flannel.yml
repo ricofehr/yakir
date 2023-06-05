@@ -1,9 +1,32 @@
 ---
 
-- name: Flannel CNI
-  run_once: true
+- name: Add flannel chart repo
+  kubernetes.core.helm_repository:
+    name: flannel-cni
+    repo_url: "{{ cni_flannel_helm_repo }}"
+
+- name: Create flannel namespace
   kubernetes.core.k8s:
     state: present
-    template: templates/kube-flannel.yml.j2
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        labels:
+          kubernetes.io/metadata.name: "{{ cni_flannel_namespace }}"
+          name: "{{ cni_flannel_namespace }}"
+          pod-security.kubernetes.io/enforce: privileged
+        name: "{{ cni_flannel_namespace }}"
+
+- name: Deploy Flannel
+  kubernetes.core.helm:
+    name: flannel
+    chart_ref: "flannel-cni/flannel"
+    chart_version: "{{ cni_flannel_version }}"
+    release_namespace: "{{ cni_flannel_namespace }}"
+
+- name: Wait for flannel pods become ready
+  ansible.builtin.command: "kubectl wait pod --all --namespace={{ cni_flannel_namespace }} --for=condition=Ready --timeout=600s"
+  changed_when: false
 
 ...
