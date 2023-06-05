@@ -2,7 +2,7 @@
 
 cni_k8s_nodes: []
 cni_plugin: "calico"
-cni_weave_version: "v2.3.0"
+cni_weave_version: "v2.8.1"
 cni_calico_version: "v3.26.0"
 cni_cilium_version: "1.13.2"
 
