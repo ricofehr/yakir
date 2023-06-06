@@ -1,7 +1,7 @@
 ---
 - name: Install prerequisites and kubernetes packages
   hosts:
-    - master
+    - manager
     - nodes
   strategy: linear
   roles:
@@ -12,7 +12,7 @@
 
 - name: Init kubernetes on manager node
   hosts:
-    - master
+    - manager
   serial: 1
   strategy: linear
   vars_files:
@@ -33,7 +33,7 @@
 
 - name: Postinstall fine-tuning and install tools & services
   hosts:
-    - master
+    - manager
   serial: 1
   strategy: linear
   run_once: true
@@ -41,7 +41,7 @@
     - sizing_vars.yml
   roles:
     - role: cni
-    - role: k8s_postinstall
+    - role: postinstall
     - role: ingress
     - role: kubedashboard
     - role: opa

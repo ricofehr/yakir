@@ -27,7 +27,4 @@
     - is_cloud == '1'
   ansible.builtin.import_tasks: openstack_provider.yml
 
-- name: Set end k8s file state
-  ansible.builtin.import_tasks: k8s_end.yml
-
 ...

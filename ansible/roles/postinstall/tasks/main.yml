@@ -1,9 +1,5 @@
 ---
 
-- name: Ensure csr are generated
-  ansible.builtin.pause:
-    seconds: 30
-
 - name: Sign pending certificates
   ansible.builtin.shell: |
     set -e -o pipefail
@@ -14,8 +10,8 @@
 
 - name: Wait for control-plane pods become created
   ansible.builtin.shell: "kubectl get po --namespace=kube-system --selector tier=control-plane --output=jsonpath='{.items[*].metadata.name}'"
-  register: k8s_postinstall_control_plane_pods_created
-  until: item in k8s_postinstall_control_plane_pods_created.stdout
+  register: postinstall_control_plane_pods_created
+  until: item in postinstall_control_plane_pods_created.stdout
   retries: 10
   delay: 30
   with_items:
@@ -31,8 +27,8 @@
 
 - name: Wait for kube-proxy become created
   ansible.builtin.command: "kubectl get po --namespace=kube-system --selector k8s-app=kube-proxy --output=jsonpath='{.items[*].metadata.name}'"
-  register: k8s_postinstall_kube_proxy_pods_created
-  until: item in k8s_postinstall_kube_proxy_pods_created.stdout
+  register: postinstall_kube_proxy_pods_created
+  until: item in postinstall_kube_proxy_pods_created.stdout
   retries: 30
   delay: 10
   with_items:

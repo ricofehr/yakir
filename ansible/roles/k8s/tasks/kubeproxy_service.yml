@@ -9,7 +9,7 @@
       After=syslog.target network.target auditd.service crio.service
 
       [Service]
-      ExecStart=kubectl proxy --address={{ k8s_master_ip }} --accept-hosts='^.*$'
+      ExecStart=kubectl proxy --address={{ k8s_manager_ip }} --accept-hosts='^.*$'
       User={{ ansible_user }}
       Restart=always
       RestartSec=30

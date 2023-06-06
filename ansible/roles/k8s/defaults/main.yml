@@ -2,8 +2,8 @@
 
 is_cloud: '0'
 
-k8s_master_hostname: "localhost"
-k8s_master_ip: "127.0.0.1"
+k8s_manager_hostname: "localhost"
+k8s_manager_ip: "127.0.0.1"
 k8s_nodes: []
 k8s_cni: "calico"
 k8s_version: "v1.24.0"

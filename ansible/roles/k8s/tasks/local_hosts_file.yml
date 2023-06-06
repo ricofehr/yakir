@@ -10,12 +10,12 @@
     group: root
     mode: '0644'
 
-- name: Update /etc/hosts - Ensure private ip for master1 resolved hosts
+- name: Update /etc/hosts - Ensure private ip for manager1 resolved hosts
   become: true
   ansible.builtin.lineinfile:
     dest: /etc/hosts
-    regexp: '{{ k8s_master_hostname }}$'
-    line: '{{ k8s_master_ip }} {{ k8s_master_hostname }}'
+    regexp: '{{ k8s_manager_hostname }}$'
+    line: '{{ k8s_manager_ip }} {{ k8s_manager_hostname }}'
     owner: root
     group: root
     mode: '0644'

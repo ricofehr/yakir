@@ -39,9 +39,11 @@
   when:
     - is_cloud == '1'
     - cloud_crt_path != ''
-  ansible.builtin.command: update-ca-certificates
+  ansible.builtin.shell: |
+    update-ca-certificates
+    touch {{ ansible_env.HOME }}/.cloudcert
   args:
-    creates: "{{ ansible_env.HOME }}/.k8sinstall"
+    creates: "{{ ansible_env.HOME }}/.cloudcert"
 
 - name: Kubelet cloud arguments
   become: true
@@ -64,43 +66,49 @@
     kubeadm reset -f
     kubeadm init --config /etc/kubernetes/kubeadm.conf
   args:
-    creates: "{{ ansible_env.HOME }}/.k8sinstall"
+    creates: "{{ ansible_env.HOME }}/.kube/config"
 
-- name: Init kubeconfig for current user
+- name: Ensure .kube folder exist
   when: kubernetes_node_type == 'admin'
-  run_once: true
-  ansible.builtin.shell: >
-    mkdir -p {{ ansible_env.HOME }}/.kube;
-    sudo cp -f /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config;
-    sudo chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config;
-  args:
-    creates: "{{ ansible_env.HOME }}/.k8sinstall"
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.kube"
+    state: directory
+    mode: '0755'
+
+- name: Generate kubeconfig for current user
+  when: kubernetes_node_type == 'admin'
+  ansible.builtin.copy:
+    remote_src: true
+    src: /etc/kubernetes/admin.conf
+    dest: "{{ ansible_env.HOME }}/.kube/config"
+    mode: '0600'
 
 - name: Get token from control-plane node
   become: true
-  run_once: true
-  when: kubernetes_node_type == 'admin'
+  when: kubernetes_node_type == 'worker'
   ansible.builtin.shell: |
     set -e -o pipefail
     kubeadm token list | tail -n +2 | head -n 1 | sed "s/ .*//"
   args:
     executable: /bin/bash
-    creates: "{{ ansible_env.HOME }}/.k8sinstall"
   register: k8s_token
+  delegate_to: "{{ k8s_manager_hostname }}"
+  changed_when: false
 
 - name: Add k8snode
   become: true
   when:
     - kubernetes_node_type == 'worker'
-  ansible.builtin.command: >
-    kubeadm join --token {{ hostvars[groups['master'][0]]['k8s_token'].stdout }} --discovery-token-unsafe-skip-ca-verification
-    --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_master_ip }}:443
+  ansible.builtin.shell: >
+    kubeadm join --token {{ k8s_token.stdout }} --discovery-token-unsafe-skip-ca-verification
+    --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_manager_ip }}:443;
+    touch {{ ansible_env.HOME }}/.k8sinstall
   args:
     creates: "{{ ansible_env.HOME }}/.k8sinstall"
 
 - name: Wait for kubernetes API is reachable
   ansible.builtin.wait_for:
-    host: "{{ k8s_master_ip }}"
+    host: "{{ k8s_manager_ip }}"
     port: 443
     delay: 5
 
