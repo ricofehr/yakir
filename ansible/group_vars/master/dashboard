@@ -1,4 +1,0 @@
----
-
-dashboard_domain: dashboard.{{ global_domain }}
-dashboard_persistence_disk: "{{ global_persistence_disk }}"

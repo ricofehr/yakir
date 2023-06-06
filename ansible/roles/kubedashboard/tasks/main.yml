@@ -45,7 +45,7 @@
       - helm-values/dashboard.yml
 
 - name: Get url dashboard
-  when: is_cloud == '0'
+  when: kubedashboard_cloud == 'no'
   ansible.builtin.debug:
     msg: >
       "You can reach the dashboard with "

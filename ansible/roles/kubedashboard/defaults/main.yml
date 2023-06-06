@@ -4,6 +4,7 @@ kubedashboard_domain: dashboard.k8s.local
 kubedashboard_proto_url: https
 kubedashboard_ssl: true
 kubedashboard_persistence_disk: false
+kubedashboard_cloud: 'no'
 
 kubedashboard_namespace: kube-dashboard
 kubedashboard_sa: cluster-developer

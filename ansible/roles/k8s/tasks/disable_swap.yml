@@ -2,7 +2,7 @@
 
 - name: Disable swap
   become: true
-  ansible.builtin.command: |
+  ansible.builtin.shell: |
     swapoff -a
     touch {{ ansible_env.HOME }}/.swap_disabled
   args:

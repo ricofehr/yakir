@@ -1,6 +1,6 @@
 ---
 
-is_cloud: '0'
+is_cloud: 'no'
 cloud_username: tenant0
 cloud_password: tenant0
 cloud_authurl: http://172.29.236.101:5000/v3

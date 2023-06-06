@@ -1,5 +1,7 @@
 ---
 
+global_cloud: 'no'
+
 global_kubernetes_version: 1.27.2
 global_openstack_provider_version: v1.27.1
 global_kubernetes_cni_version: 1.2.0-00
@@ -18,3 +20,4 @@ global_cert_key: "{{ global_certs_folder }}/k8s-ingress.pem"
 global_cert_csr: "{{ global_certs_folder }}/k8s-ingress.csr"
 global_k8s_nodes: "{{ sizing_k8s_nodes }}"
 
+...

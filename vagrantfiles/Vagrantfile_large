@@ -1,8 +1,8 @@
-# k8s master
-masters = {
-    "k8s-master1" => "192.168.58.10",
-    "k8s-master2" => "192.168.58.11",
-    "k8s-master3" => "192.168.58.12"
+# k8s manager
+managers = {
+    "k8s-manager1" => "192.168.58.10",
+    "k8s-manager2" => "192.168.58.11",
+    "k8s-manager3" => "192.168.58.12"
 }
 
 # k8s nodes
@@ -32,7 +32,7 @@ Vagrant.configure("2") do |config|
       config.vm.box = "bento/ubuntu-22.04"
     end
 
-    masters.each do |name, ip|
+    managers.each do |name, ip|
       config.vm.define name do |machine|
         machine.vm.hostname = name
         machine.vm.network :private_network, ip: ip

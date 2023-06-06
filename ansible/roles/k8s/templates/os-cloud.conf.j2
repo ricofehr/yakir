@@ -1,0 +1,21 @@
+[Global]
+username={{ os_cloud_username }}
+password={{ os_cloud_password }}
+auth-url={{ os_cloud_authurl }}
+tenant-name={{ os_cloud_tenant_name }}
+domain-name={{ os_cloud_domain_name }}
+
+[LoadBalancer]
+use-octavia=true
+subnet-id={{ os_cloud_subnet_id }}
+floating-network-id={{ os_cloud_floatingnetwork_id }}
+lb-method=LEAST_CONNECTIONS
+lb-provider=amphora
+create-monitor=true
+monitor-delay=5s
+monitor-timeout=3s
+monitor-max-retries=5
+manage-security-groups=false
+
+[BlockStorage]
+bs-version=v2

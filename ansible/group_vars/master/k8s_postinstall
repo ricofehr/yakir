@@ -1,5 +1,0 @@
----
-
-k8s_postinstall_k8s_cni: "{{ k8s_cni }}"
-
-...

@@ -1,0 +1,21 @@
+---
+
+- name: Generate cloud-config file (for Openstack provider)
+  become: true
+  ansible.builtin.template:
+    src: templates/cloud.conf.j2
+    dest: /etc/kubernetes/cloud-config
+    mode: '0644'
+
+- name: Kubelet cloud arguments
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+    regexp: "^Environment=\"KUBELET_KUBECONFIG_ARGS\".*$"
+    line: >
+      Environment="KUBELET_KUBECONFIG_ARGS=--cloud-provider=external
+      --cloud-config=/etc/kubernetes/cloud-config
+      --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+  notify: Restart kubelet service
+
+...

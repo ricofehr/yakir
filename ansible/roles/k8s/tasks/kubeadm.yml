@@ -1,61 +1,11 @@
 ---
 
-- name: Generate cloud-config file (for Openstack provider)
-  become: true
-  when: is_cloud == '1'
-  ansible.builtin.template:
-    src: templates/cloud.conf.j2
-    dest: /etc/kubernetes/cloud-config
-    mode: '0644'
-
 - name: Generate kubeadm.conf for No Cloud provider
   become: true
-  when: is_cloud == '0'
   ansible.builtin.template:
-    src: templates/nocloud-kubeadm.conf.j2
+    src: templates/{{ k8s_cloud }}-cloud-kubeadm.conf.j2
     dest: /etc/kubernetes/kubeadm.conf
     mode: '0644'
-
-- name: Generate kubeadm.conf for Openstack provider
-  become: true
-  when: is_cloud == '1'
-  ansible.builtin.template:
-    src: templates/cloud-kubeadm.conf.j2
-    dest: /etc/kubernetes/kubeadm.conf
-    mode: '0644'
-
-- name: Get cloud ssl certificate file
-  become: true
-  when:
-    - is_cloud == '1'
-    - cloud_crt_path != ''
-  ansible.builtin.copy:
-    src: "{{ cloud_crt_path }}"
-    dest: /usr/local/share/ca-certificates/cloud.crt
-    mode: '0644'
-
-- name: Add cloud cert to linux store
-  become: true
-  when:
-    - is_cloud == '1'
-    - cloud_crt_path != ''
-  ansible.builtin.shell: |
-    update-ca-certificates
-    touch {{ ansible_env.HOME }}/.cloudcert
-  args:
-    creates: "{{ ansible_env.HOME }}/.cloudcert"
-
-- name: Kubelet cloud arguments
-  become: true
-  when: is_cloud == '1'
-  ansible.builtin.lineinfile:
-    dest: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-    regexp: "^Environment=\"KUBELET_KUBECONFIG_ARGS\".*$"
-    line: >
-      Environment="KUBELET_KUBECONFIG_ARGS=--cloud-provider=external
-      --cloud-config=/etc/kubernetes/cloud-config
-      --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
-  notify: Restart kubelet service
 
 - name: Init manager node
   become: true
@@ -67,21 +17,6 @@
     kubeadm init --config /etc/kubernetes/kubeadm.conf
   args:
     creates: "{{ ansible_env.HOME }}/.kube/config"
-
-- name: Ensure .kube folder exist
-  when: kubernetes_node_type == 'admin'
-  ansible.builtin.file:
-    path: "{{ ansible_env.HOME }}/.kube"
-    state: directory
-    mode: '0755'
-
-- name: Generate kubeconfig for current user
-  when: kubernetes_node_type == 'admin'
-  ansible.builtin.copy:
-    remote_src: true
-    src: /etc/kubernetes/admin.conf
-    dest: "{{ ansible_env.HOME }}/.kube/config"
-    mode: '0600'
 
 - name: Get token from control-plane node
   become: true
