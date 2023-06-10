@@ -5,8 +5,7 @@ managers = {
 
 # k8s nodes
 nodes = {
-    "k8s-node1" => "192.168.58.20",
-    "k8s-node2" => "192.168.58.21"
+    "k8s-node1" => "192.168.58.20"
 }
 
 def running_rosetta()

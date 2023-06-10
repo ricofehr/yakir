@@ -38,11 +38,11 @@ Vagrant.configure("2") do |config|
         machine.vm.network :private_network, ip: ip
         machine.vm.provider :virtualbox do |v|
           v.name = name
-          v.memory = 4096
+          v.memory = 3072
           v.cpus = 2
         end
         machine.vm.provider :parallels do |v|
-          v.memory = 4096
+          v.memory = 3072
           v.cpus = 2
         end
       end
@@ -54,11 +54,11 @@ Vagrant.configure("2") do |config|
         machine.vm.network :private_network, ip: ip
         machine.vm.provider :virtualbox do |v|
           v.name = name
-          v.memory = 5120
+          v.memory = 2048
           v.cpus = 4
         end
         machine.vm.provider :parallels do |v|
-          v.memory = 5120
+          v.memory = 2048
           v.cpus = 4
         end
       end

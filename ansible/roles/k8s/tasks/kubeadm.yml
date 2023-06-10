@@ -7,43 +7,116 @@
     dest: /etc/kubernetes/kubeadm.conf
     mode: '0644'
 
-- name: Init manager node
+- name: Init first manager node
   become: true
-  when:
-    - kubernetes_node_type == 'admin'
-  run_once: true
+  when: k8s_managers_group_name in group_names
   ansible.builtin.shell: |
     kubeadm reset -f
     kubeadm init --config /etc/kubernetes/kubeadm.conf
   args:
     creates: "{{ ansible_env.HOME }}/.kube/config"
+  run_once: true
+  delegate_to: "{{ k8s_man01_hostname }}"
+
+- name: Check if pki folder already exists
+  ansible.builtin.stat:
+    path: /etc/kubernetes/pki
+  register: k8s_is_pki_folder
+  changed_when: false
+
+- name: Archive pki folder from man01
+  become: true
+  when:
+    - inventory_hostname != k8s_man01_hostname
+    - k8s_managers_group_name in group_names
+    - not k8s_is_pki_folder.stat.exists
+  community.general.archive:
+    path: /etc/kubernetes/pki/*
+    dest: "{{ ansible_env.HOME }}/pki.tar.gz"
+    mode: '0640'
+    format: gz
+  run_once: true
+  delegate_to: "{{ k8s_man01_hostname }}"
+
+- name: Get pki folder in local
+  become: true
+  when:
+    - inventory_hostname != k8s_man01_hostname
+    - k8s_managers_group_name in group_names
+    - not k8s_is_pki_folder.stat.exists
+  ansible.builtin.fetch:
+    src: "{{ ansible_env.HOME }}/pki.tar.gz"
+    dest: assets/files/
+    flat: true
+  run_once: true
+  delegate_to: "{{ k8s_man01_hostname }}"
+
+- name: Ensure pki folder exists
+  become: true
+  when:
+    - inventory_hostname != k8s_man01_hostname
+    - k8s_managers_group_name in group_names
+  ansible.builtin.file:
+    path: /etc/kubernetes/pki
+    state: directory
+    mode: '0755'
+
+- name: Synchronization of pki folder to destination
+  become: true
+  when:
+    - inventory_hostname != k8s_man01_hostname
+    - k8s_managers_group_name in group_names
+    - not k8s_is_pki_folder.stat.exists
+  ansible.builtin.unarchive:
+    src: assets/files/pki.tar.gz
+    dest: /etc/kubernetes/pki
 
 - name: Get token from control-plane node
   become: true
-  when: kubernetes_node_type == 'worker'
+  when: inventory_hostname != k8s_man01_hostname
   ansible.builtin.shell: |
     set -e -o pipefail
     kubeadm token list | tail -n +2 | head -n 1 | sed "s/ .*//"
   args:
     executable: /bin/bash
   register: k8s_token
-  delegate_to: "{{ k8s_manager_hostname }}"
+  delegate_to: "{{ k8s_man01_hostname }}"
   changed_when: false
 
-- name: Add k8snode
+- name: Add other manager nodes
   become: true
   when:
-    - kubernetes_node_type == 'worker'
+    - k8s_managers_group_name in group_names
+    - inventory_hostname != k8s_man01_hostname
   ansible.builtin.shell: >
     kubeadm join --token {{ k8s_token.stdout }} --discovery-token-unsafe-skip-ca-verification
-    --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_manager_ip }}:443;
+    --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock --control-plane
+    --apiserver-advertise-address {{ ansible_host }} --apiserver-bind-port 443 {{ k8s_man01_ip }}:443 &&
     touch {{ ansible_env.HOME }}/.k8sinstall
   args:
     creates: "{{ ansible_env.HOME }}/.k8sinstall"
 
-- name: Wait for kubernetes API is reachable
+- name: Add k8snode
+  become: true
+  when: k8s_nodes_group_name in group_names
+  ansible.builtin.shell: >
+    kubeadm join --token {{ k8s_token.stdout }} --discovery-token-unsafe-skip-ca-verification
+    --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_man01_ip }}:443 &&
+    touch {{ ansible_env.HOME }}/.k8sinstall
+  args:
+    creates: "{{ ansible_env.HOME }}/.k8sinstall"
+
+- name: Wait for local kubernetes API is reachable
+  when: k8s_managers_group_name in group_names
   ansible.builtin.wait_for:
-    host: "{{ k8s_manager_ip }}"
+    host: "{{ ansible_host }}"
+    port: 443
+    delay: 5
+
+- name: Wait for VIP kubernetes API is reachable
+  when: k8s_managers_group_name in group_names
+  ansible.builtin.wait_for:
+    host: "{{ k8s_controlplane_endpoint_ip }}"
     port: 443
     delay: 5
 

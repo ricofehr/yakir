@@ -3,7 +3,7 @@
 - name: Sign pending certificates
   ansible.builtin.shell: |
     set -e -o pipefail
-    kubectl get csr -o name | xargs kubectl certificate approve
+    kubectl get csr -o name | while read CRT; do kubectl certificate approve $CRT; done
   args:
     executable: /bin/bash
   changed_when: false

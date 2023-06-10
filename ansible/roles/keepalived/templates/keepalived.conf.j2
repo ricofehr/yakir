@@ -1,0 +1,35 @@
+global_defs {
+    default_interface {{ keepalived_eth }}
+    enable_script_security
+    router_id {{ keepalived_node_name }}
+}
+
+vrrp_script {{ keepalived_script_name }} {
+  script  "{{ keepalived_script }}"
+  interval 20
+  timeout  5
+  rise     1
+  fall     1
+  user     root
+}
+
+vrrp_instance VI_1 {
+    state {{ keepalived_state }}
+    interface {{ keepalived_eth }}
+    virtual_router_id 100
+    mcast_src_ip {{ keepalived_src_ip }}
+    priority {{ keepalived_priority }}
+    advert_int 3
+    authentication {
+        auth_type PASS
+        auth_pass {{ keepalived_pass }}
+    }
+
+    track_script {
+        {{ keepalived_script_name }}
+    }
+
+    virtual_ipaddress {
+        {{ keepalived_vip }} label {{ keepalived_eth }}:VIP
+    }
+}

@@ -5,6 +5,9 @@ metadata:
   name: ns-must-have-pod-security-label
 spec:
   match:
+    namespaces: ["project-*"]
+    excludedNamespaces: ["kube-*", "calico-*", "tigera-*"]
+    scope: Namespaced
     kinds:
       - apiGroups: [""]
         kinds: ["Namespace"]

@@ -1,3 +1,7 @@
 ---
 
+- name: No cloud prerequisites
+  ansible.builtin.debug:
+    msg: No prerequisites tasks in this install mode
+
 ...

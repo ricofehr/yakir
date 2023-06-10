@@ -10,29 +10,25 @@
   ansible.builtin.import_tasks: local_hosts_file.yml
 
 - name: Cloud prerequisites
-  when:
-    - kubernetes_node_type == 'admin'
+  when: kubernetes_node_type == 'admin'
   ansible.builtin.import_tasks: "{{ k8s_cloud }}_cloud.yml"
 
 - name: Import cloud certificate
-  when:
-    - cloud_crt_path != ''
+  when: cloud_crt_path != ''
   ansible.builtin.import_tasks: cloud_cert.yml
 
 - name: Kubernetes install via kubeadm
   ansible.builtin.import_tasks: kubeadm.yml
 
 - name: Write kubeconfig on manager node
-  when:
-    - kubernetes_node_type == 'admin'
+  when: kubernetes_node_type == 'admin'
   ansible.builtin.import_tasks: kubeconfig.yml
 
 - name: Add metrics addon
   ansible.builtin.import_tasks: metrics.yml
 
 - name: Cloud provider
-  when:
-    - kubernetes_node_type == 'admin'
+  when: kubernetes_node_type == 'admin'
   ansible.builtin.import_tasks: "{{ k8s_cloud }}_provider.yml"
 
 ...

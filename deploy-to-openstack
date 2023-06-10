@@ -6,6 +6,7 @@ OSPASSWORD="tenant0"
 OSAUTHURL="http://172.29.236.101:5000/v3"
 OSTENANT="tenant0"
 OSREGION="RegionOne"
+CNI_PLUGIN="cilium"
 FLAVORMASTERS="large"
 FLAVORNODES="xlarge"
 NODES_EXTRA_VARS=""
@@ -125,6 +126,11 @@ while (($# > 0)); do
       SSHKEYFILE="$1"
       shift
       ;;
+    -kp)
+      shift
+      KEEPALIVED_PASSWORD="$1"
+      shift
+      ;;
     -w)
       shift
       ANSIBLEPATH="$1"
@@ -225,18 +231,22 @@ terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 sleep 150
 
 # get private and public vm ips
-K8SMASTER_IP="$(terraform output -json master_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
-K8SMASTER_PRIVATE_IP="$(terraform output -json master_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
+K8SMASTER1_IP="$(terraform output -json master_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
+K8SMASTER1_PRIVATE_IP="$(terraform output -json master_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
 K8SNODE1_IP="$(terraform output -json node_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
 K8SNODE1_PRIVATE_IP="$(terraform output -json node_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
-K8SNODE2_IP="$(terraform output -json node_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
-K8SNODE2_PRIVATE_IP="$(terraform output -json node_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
 
 if [[ "$SIZING" != "small" ]]; then
-  K8SNODE3_IP="$(terraform output -json node_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $3 }')"
-  K8SNODE3_PRIVATE_IP="$(terraform output -json node_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $3 }')"
+  K8SMASTER2_IP="$(terraform output -json master_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
+  K8SMASTER2_PRIVATE_IP="$(terraform output -json master_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
+  K8SMASTER3_IP="$(terraform output -json master_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $3 }')"
+  K8SMASTER3_PRIVATE_IP="$(terraform output -json master_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $3 }')"
+  K8SNODE2_IP="$(terraform output -json node_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
+  K8SNODE2_PRIVATE_IP="$(terraform output -json node_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
 
   if [[ "$SIZING" != "medium" ]]; then
+    K8SNODE3_IP="$(terraform output -json node_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $3 }')"
+    K8SNODE3_PRIVATE_IP="$(terraform output -json node_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $3 }')"
     K8SNODE4_IP="$(terraform output -json node_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $4 }')"
     K8SNODE4_PRIVATE_IP="$(terraform output -json node_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $4 }')"
     K8SNODE5_IP="$(terraform output -json node_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $5 }')"
@@ -252,18 +262,24 @@ ln -sf sizing_vars/sizing_vars_${SIZING}.yml sizing_vars.yml
 
 # Prepare inventory
 echo "[master]" > tfinventory
-echo "k8s-master1 ansible_host=${K8SMASTER_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+echo "k8s-master1 ansible_host=${K8SMASTER1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_man01_ip=$K8SMASTER1_PRIVATE_IP"
+if [[ "$SIZING" != "small" ]]; then
+  echo "k8s-master2 ansible_host=${K8SMASTER2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+  echo "k8s-master3 ansible_host=${K8SMASTER3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+  VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_man02_ip=$K8SMASTER2_PRIVATE_IP -e sizing_k8s_man03_ip=$K8SMASTER3_PRIVATE_IP"
+fi
 echo "[nodes]" >> tfinventory
 echo "k8s-node1 ansible_host=${K8SNODE1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-echo "k8s-node2 ansible_host=${K8SNODE2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-NODES_EXTRA_VARS="-e sizing_k8s_node1_ip=$K8SNODE1_PRIVATE_IP -e sizing_k8s_node2_ip=$K8SNODE2_PRIVATE_IP"
+VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_node1_ip=$K8SNODE1_PRIVATE_IP"
 if [[ "$SIZING" != "small" ]]; then
-  NODES_EXTRA_VARS="$NODES_EXTRA_VARS -e sizing_k8s_node3_ip=$K8SNODE3_PRIVATE_IP"
+  echo "k8s-node2 ansible_host=${K8SNODE2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
   echo "k8s-node3 ansible_host=${K8SNODE3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+  VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_node2_ip=$K8SNODE2_PRIVATE_IP -e sizing_k8s_node3_ip=$K8SNODE3_PRIVATE_IP"
   if [[ "$SIZING" != "medium" ]]; then
-    NODES_EXTRA_VARS="$NODES_EXTRA_VARS -e sizing_k8s_node4_ip=$K8SNODE4_PRIVATE_IP -e sizing_k8s_node5_ip=$K8SNODE5_PRIVATE_IP"
     echo "k8s-node4 ansible_host=${K8SNODE4_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
     echo "k8s-node5 ansible_host=${K8SNODE5_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+    VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_node4_ip=$K8SNODE4_PRIVATE_IP -e sizing_k8s_node5_ip=$K8SNODE5_PRIVATE_IP"
   fi
 fi
 # Disable cowsay ansible output
@@ -272,8 +288,9 @@ export ANSIBLE_NOCOWS=1
 # Install one K8S master and two K8S nodes
 $ANSIBLEPATH -i tfinventory \
 --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
--e "is_cloud=1" -e "k8s_cni=cilium" \
--e "k8s_master_ip=$K8SMASTER_PRIVATE_IP" $NODES_EXTRA_VARS \
+-e "global_controlplane_endpoint_ip=$K8SMASTER1_PRIVATE_IP" \
+-e "global_cloud=os" -e "k8s_cni=$CNI_PLUGIN" \
+-e "k8s_master_ip=$K8SMASTER_PRIVATE_IP" $VMS_EXTRA_VARS \
 -e "cloud_username=$OSUSER" -e "cloud_password=$OSPASSWORD" \
 -e "cloud_authurl=$OSAUTHURL" -e "cloud_tenant_name=$OSTENANT" \
 -e "cloud_subnet_id=$SUBNETID" -e "cloud_floatingnetwork_id=$FLOATINGIPID" \

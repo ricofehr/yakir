@@ -6,5 +6,6 @@
   kubernetes.core.k8s:
     state: present
     src: "{{ k8s_metric_repo }}/releases/download/{{ k8s_metric_server_version }}/components.yaml"
+  delegate_to: "{{ k8s_man01_hostname }}"
 
 ...

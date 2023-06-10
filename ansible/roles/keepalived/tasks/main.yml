@@ -1,0 +1,26 @@
+---
+
+- name: Install keepalived package
+  become: true
+  ansible.builtin.apt:
+    name: keepalived
+    update_cache: true
+
+- name: Write keepalived configuration
+  become: true
+  ansible.builtin.template:
+    src: templates/keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    mode: '0644'
+  notify: Restart keepalived
+
+- name: Start keepalived service
+  become: true
+  ansible.builtin.service:
+    name: keepalived
+    state: started
+
+- name: Flush keepalived restart handler
+  ansible.builtin.meta: flush_handlers
+
+...

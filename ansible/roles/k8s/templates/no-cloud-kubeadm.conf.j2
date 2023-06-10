@@ -1,7 +1,7 @@
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 localAPIEndpoint:
-  advertiseAddress: "{{ k8s_manager_ip }}"
+  advertiseAddress: "{{ k8s_man01_ip }}"
   bindPort: 443
 nodeRegistration:
   name: "{{ inventory_hostname }}"
@@ -15,6 +15,25 @@ networking:
   dnsDomain: cluster.local
   podSubnet: 10.244.0.0/16
   serviceSubnet: 10.96.0.0/12
+controlPlaneEndpoint: "{{ k8s_controlplane_endpoint }}:{{ k8s_controlplane_port }}"
+apiServer:
+  certSANs:
+{% for manager in k8s_managers %}
+    - "{{ manager.ip }}"
+    - "{{ manager.name }}"
+{% endfor %}
+etcd:
+  local:
+    serverCertSANs:
+{% for manager in k8s_managers %}
+    - "{{ manager.ip }}"
+    - "{{ manager.name }}"
+{% endfor %}
+    peerCertSANs:
+{% for manager in k8s_managers %}
+    - "{{ manager.ip }}"
+    - "{{ manager.name }}"
+{% endfor %}
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration

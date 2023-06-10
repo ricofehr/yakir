@@ -5,6 +5,6 @@ variable "k8s_masters" {
 
 variable "k8s_nodes" {
   description = "K8S node Vms count to create"
-  default = 2
+  default = 1
 }
 

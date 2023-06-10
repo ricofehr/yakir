@@ -1,8 +1,16 @@
 ---
 
-k8s_manager_hostname: "{{ hostvars[groups['manager'][0]]['inventory_hostname'] }}"
-k8s_manager_ip: "{{ hostvars[groups['manager'][0]]['ansible_host'] }}"
+k8s_controlplane_endpoint: "control-plane"
+k8s_controlplane_endpoint_ip: "{{ global_controlplane_endpoint_ip }}"
+k8s_controlplane_port: "443"
+
+k8s_managers_group_name: "{{ global_managers_group_name }}"
+k8s_nodes_group_name: "{{ global_nodes_group_name }}"
+
+k8s_man01_hostname: "{{ global_man01_hostname }}"
+k8s_man01_ip: "{{ global_man01_ip }}"
 k8s_nodes: "{{ global_k8s_nodes }}"
+k8s_managers: "{{ global_k8s_managers }}"
 k8s_cni: "calico"
 k8s_version: "v{{ global_kubernetes_version }}"
 k8s_kubernetes_python_version: "{{ global_kubernetes_python_version }}"

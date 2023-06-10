@@ -1,7 +1,17 @@
-[manager]
-k8s-manager1 ansible_host=192.168.58.10 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_python_interpreter=/usr/bin/python3
+[man01]
+k8s-manager1 ansible_host=192.168.58.10 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_python_interpreter=/usr/bin/python3 keepalived_state=MASTER keepalived_priority=100
+
+[man02]
+k8s-manager2 ansible_host=192.168.58.11 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80
+
+[man03]
+k8s-manager3 ansible_host=192.168.58.12 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80
+
+[managers:children]
+man01
+man02
+man03
 
 [nodes]
 k8s-node1 ansible_host=192.168.58.20 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_python_interpreter=/usr/bin/python3
 k8s-node2 ansible_host=192.168.58.21 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_python_interpreter=/usr/bin/python3
-k8s-node3 ansible_host=192.168.58.22 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_python_interpreter=/usr/bin/python3

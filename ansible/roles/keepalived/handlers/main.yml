@@ -1,0 +1,11 @@
+---
+
+- name: Restart keepalived
+  become: true
+  ansible.builtin.systemd:
+    name: keepalived
+    state: restarted
+    enabled: true
+    daemon_reload: true
+
+...

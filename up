@@ -5,6 +5,7 @@ ISDESTROY=0
 SIZING=small
 MIRROR_REGISTRY=""
 CNI_PLUGIN="calico"
+KEEPALIVED_PASSWORD="$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 8 ; echo '')"
 
 # Help function
 deployhelp() {
@@ -14,11 +15,12 @@ Usage: $0 [options]
 -d           destroy all previously provisioned vms
 -c xxxx      CNI plugin, choices are weave, flannel, calico (default), cilium
 -p xxxx      vagrant provider, default is virtualbox
+-kp xxxx     keepalived password, default is randomly generated
 -m xxxx      container private mirror registry
 -s xxxx      sizing deployment, default is small
-              - small : 1 master and 2 nodes, host with 16Go ram / 2 cores
-              - medium : 1 master and 3 nodes host with 24Go ram / 4 cores
-              - large : 1 master and 5 nodes, host with 32Go ram / 6 cores
+              - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
+              - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
+              - large : 3 managers and 5 nodes, host with 24Go ram / 6 cores
 EOF
 
 exit 1
@@ -34,6 +36,11 @@ while (($# > 0)); do
     -c)
       shift
       CNI_PLUGIN=$1
+      shift
+      ;;
+    -kp)
+      shift
+      KEEPALIVED_PASSWORD="$1"
       shift
       ;;
     -m)
@@ -74,7 +81,7 @@ fi
 # Launch vagrant vms
 ln -sf vagrantfiles/Vagrantfile_${SIZING} Vagrantfile
 vagrant up --provider=$PROVIDER
-sleep 30
+sleep 15
 
 # Disable cowsay ansible output
 export ANSIBLE_NOCOWS=1
@@ -90,6 +97,7 @@ ln -sf inventories/inventory_${SIZING} inventory
 ln -sf sizing_vars/sizing_vars_${SIZING}.yml sizing_vars.yml
 mkdir -p collections/ansible_collections
 ansible-galaxy collection install -r requirements.yml -p ./collections/
-ansible-playbook --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" $MIRROR_REGISTRY_PARAM -e cni_plugin="$CNI_PLUGIN" -i inventory playbook.yml 2>&1 | tee ../tmp/k8s-deploy.log
+ansible-playbook --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" \
+  $MIRROR_REGISTRY_PARAM -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" -i inventory playbook.yml 2>&1
 popd >/dev/null
 

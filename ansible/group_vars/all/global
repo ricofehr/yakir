@@ -2,6 +2,10 @@
 
 global_cloud: 'no'
 
+global_managers_group_name: "managers"
+global_nodes_group_name: "nodes"
+global_controlplane_endpoint_ip: "192.168.58.250"
+
 global_kubernetes_version: 1.27.2
 global_openstack_provider_version: v1.27.1
 global_kubernetes_cni_version: 1.2.0-00
@@ -18,6 +22,10 @@ global_certs_folder: "{{ ansible_env.HOME }}/k8scerts"
 global_cert_path: "{{ global_certs_folder }}/k8s-ingress.crt"
 global_cert_key: "{{ global_certs_folder }}/k8s-ingress.pem"
 global_cert_csr: "{{ global_certs_folder }}/k8s-ingress.csr"
+global_k8s_managers: "{{ sizing_k8s_managers }}"
 global_k8s_nodes: "{{ sizing_k8s_nodes }}"
+
+global_man01_hostname: "{{ global_k8s_managers[0]['name'] }}"
+global_man01_ip: "{{ global_k8s_managers[0]['ip'] }}"
 
 ...

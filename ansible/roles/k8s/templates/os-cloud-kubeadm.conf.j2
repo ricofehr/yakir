@@ -6,7 +6,7 @@ nodeRegistration:
     cloud-provider: "external"
   criSocket: unix:///var/run/crio/crio.sock
 localAPIEndpoint:
-  advertiseAddress: "{{ k8s_manager_ip }}"
+  advertiseAddress: "{{ k8s_man01_ip }}"
   bindPort: 443
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
@@ -20,6 +20,23 @@ apiServer:
   extraArgs:
     enable-admission-plugins: NodeRestriction
     runtime-config: "storage.k8s.io/v1=true"
+  certSANs:
+{% for manager in k8s_managers %}
+    - "{{ manager.ip }}"
+    - "{{ manager.name }}"
+{% endfor %}
+etcd:
+  local:
+    serverCertSANs:
+{% for manager in k8s_managers %}
+    - "{{ manager.ip }}"
+    - "{{ manager.name }}"
+{% endfor %}
+    peerCertSANs:
+{% for manager in k8s_managers %}
+    - "{{ manager.ip }}"
+    - "{{ manager.name }}"
+{% endfor %}
 controllerManager:
   extraArgs:
     external-cloud-volume-plugin: openstack

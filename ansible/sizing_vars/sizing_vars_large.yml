@@ -1,16 +1,24 @@
 ---
+sizing_k8s_man01_ip: "{{ hostvars[groups[global_managers_group_name][0]]['ansible_host'] }}"
+sizing_k8s_man02_ip: "{{ hostvars[groups[global_managers_group_name][1]]['ansible_host'] }}"
+sizing_k8s_man03_ip: "{{ hostvars[groups[global_managers_group_name][2]]['ansible_host'] }}"
 
-sizing_k8s_node1_ip: "{{ hostvars[groups['nodes'][0]]['ansible_host'] }}"
-sizing_k8s_node2_ip: "{{ hostvars[groups['nodes'][1]]['ansible_host'] }}"
-sizing_k8s_node3_ip: "{{ hostvars[groups['nodes'][2]]['ansible_host'] }}"
-sizing_k8s_node4_ip: "{{ hostvars[groups['nodes'][3]]['ansible_host'] }}"
-sizing_k8s_node5_ip: "{{ hostvars[groups['nodes'][4]]['ansible_host'] }}"
+sizing_k8s_managers:
+  - { name: "{{ hostvars[groups[global_managers_group_name][0]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_man01_ip }}" }
+  - { name: "{{ hostvars[groups[global_managers_group_name][1]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_man02_ip }}" }
+  - { name: "{{ hostvars[groups[global_managers_group_name][2]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_man03_ip }}" }
+
+sizing_k8s_node1_ip: "{{ hostvars[groups[global_nodes_group_name][0]]['ansible_host'] }}"
+sizing_k8s_node2_ip: "{{ hostvars[groups[global_nodes_group_name][1]]['ansible_host'] }}"
+sizing_k8s_node3_ip: "{{ hostvars[groups[global_nodes_group_name][2]]['ansible_host'] }}"
+sizing_k8s_node4_ip: "{{ hostvars[groups[global_nodes_group_name][3]]['ansible_host'] }}"
+sizing_k8s_node5_ip: "{{ hostvars[groups[global_nodes_group_name][4]]['ansible_host'] }}"
 
 sizing_k8s_nodes:
-  - { name: "{{ hostvars[groups['nodes'][0]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node1_ip }}" }
-  - { name: "{{ hostvars[groups['nodes'][1]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node2_ip }}" }
-  - { name: "{{ hostvars[groups['nodes'][2]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node3_ip }}" }
-  - { name: "{{ hostvars[groups['nodes'][3]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node4_ip }}" }
-  - { name: "{{ hostvars[groups['nodes'][4]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node5_ip }}" }
+  - { name: "{{ hostvars[groups[global_nodes_group_name][0]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node1_ip }}" }
+  - { name: "{{ hostvars[groups[global_nodes_group_name][1]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node2_ip }}" }
+  - { name: "{{ hostvars[groups[global_nodes_group_name][2]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node3_ip }}" }
+  - { name: "{{ hostvars[groups[global_nodes_group_name][3]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node4_ip }}" }
+  - { name: "{{ hostvars[groups[global_nodes_group_name][4]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node5_ip }}" }
 
 ...

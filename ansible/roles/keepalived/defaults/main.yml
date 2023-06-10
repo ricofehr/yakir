@@ -1,0 +1,13 @@
+---
+
+keepalived_vip: "10.10.0.250"
+keepalived_script_name: "check_http"
+keepalived_script: "/usr/bin/curl -s http://localhost/status -o dev/null"
+keepalived_pass: "Passw0rd"
+keepalived_eth: "eth0"
+keepalived_node_name: "localhost"
+keepalived_src_ip: "127.0.0.1"
+keepalived_priority: 80
+keepalived_state: "MASTER"
+
+...

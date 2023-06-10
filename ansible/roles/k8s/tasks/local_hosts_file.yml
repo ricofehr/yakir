@@ -10,15 +10,16 @@
     group: root
     mode: '0644'
 
-- name: Update /etc/hosts - Ensure private ip for manager1 resolved hosts
+- name: Update /etc/hosts - Ensure private ip for k8s managers resolved hosts
   become: true
   ansible.builtin.lineinfile:
     dest: /etc/hosts
-    regexp: '{{ k8s_manager_hostname }}$'
-    line: '{{ k8s_manager_ip }} {{ k8s_manager_hostname }}'
+    regexp: '{{ item.name }}$'
+    line: '{{ item.ip }} {{ item.name }}'
     owner: root
     group: root
     mode: '0644'
+  loop: "{{ k8s_managers }}"
 
 - name: Update /etc/hosts - Ensure private ip for k8s nodes resolved hosts
   become: true
@@ -30,5 +31,15 @@
     group: root
     mode: '0644'
   loop: "{{ k8s_nodes }}"
+
+- name: Update /etc/hosts - Add control-plane endpoint
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: '{{ k8s_controlplane_endpoint }}$'
+    line: '{{ k8s_controlplane_endpoint_ip }} {{ k8s_controlplane_endpoint }}'
+    owner: root
+    group: root
+    mode: '0644'
 
 ...

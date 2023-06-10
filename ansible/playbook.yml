@@ -1,7 +1,7 @@
 ---
 - name: Install prerequisites and kubernetes packages
   hosts:
-    - manager
+    - managers
     - nodes
   strategy: linear
   roles:
@@ -10,17 +10,28 @@
     - role: kubernetes
       become: true
 
-- name: Init kubernetes on manager node
+- name: Install prerequisites on first manager node
   hosts:
-    - manager
-  serial: 1
-  strategy: linear
+    - man01
+  run_once: true
   vars_files:
     - sizing_vars.yml
   roles:
     - role: cert
     - role: helm
+
+- name: Init kubernetes on manager nodes
+  hosts:
+    - managers
+  serial: 1
+  strategy: linear
+  vars_files:
+    - sizing_vars.yml
+  roles:
+    - role: keepalived
+      when: global_cloud == 'no'
     - role: k8s
+      tags: ["k8s"]
 
 - name: Init kubernetes on worker nodes
   hosts:
@@ -33,9 +44,7 @@
 
 - name: Postinstall fine-tuning and install tools & services
   hosts:
-    - manager
-  serial: 1
-  strategy: linear
+    - man01
   run_once: true
   vars_files:
     - sizing_vars.yml

@@ -63,7 +63,7 @@
 
 - name: Wait for ingress pods become ready
   ansible.builtin.command: |
-    kubectl wait --namespace={{ ingress_namespace }} --for=condition=Ready pods --selector app.kubernetes.io/name=ingress-nginx --timeout=600s
+    kubectl wait --namespace={{ ingress_namespace }} --for=condition=Ready pods --selector app.kubernetes.io/component=controller --timeout=600s
   changed_when: false
 
 ...

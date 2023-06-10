@@ -5,6 +5,9 @@ Vagrantfile
 # tmp folder
 /tmp
 
+# local assets files
+ansible/assets
+
 ansible/collections/ansible_collections/**
 !ansible/collections/ansible_collections/.gitkeep
 

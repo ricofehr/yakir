@@ -2,9 +2,9 @@
 
 A base k8s install with Vagrant (Bento/Ubuntu boxes)
 - 3 sizings
-  - small: 1 Master and 2 Nodes (fit to 16Go RAM Laptop with 2 cpu cores)
-  - medium : 1 Master and 3 Nodes (fit to 24Go RAM Laptop with 4 cpu cores)
-  - large : 1 Master and 5 Nodes (fit to 32Go RAM Laptop with 6 cpu cores)
+  - small: 1 Master and 1 Node (fit to 8Go RAM Laptop with 2 cpu cores)
+  - medium : 3 Master and 2 Nodes (fit to 16Go RAM Laptop with 4 cpu cores)
+  - large : 3 Master and 5 Nodes (fit to 32Go RAM Laptop with 6 cpu cores)
 
 ## Run
 
@@ -25,11 +25,12 @@ Usage: ./up [options]
 -d           destroy all previously provisioned vms
 -c xxxx      CNI plugin, choices are weave, flannel, calico (default), cilium
 -p xxxx      vagrant provider, default is virtualbox
+-kp xxxx     keepalived password, default is randomly generated
 -m xxxx      container private mirror registry
 -s xxxx      sizing deployment, default is small
-              - small : 1 master and 2 nodes, host with 16Go ram / 2 cores
-              - medium : 1 master and 3 nodes host with 24Go ram / 4 cores
-              - large : 1 master and 5 nodes, host with 32Go ram / 6 cores
+              - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
+              - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
+              - large : 3 managers and 5 nodes, host with 24Go ram / 6 cores
 ```
 
 ## Openstack deployment

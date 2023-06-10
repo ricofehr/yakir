@@ -2,9 +2,14 @@
 
 k8s_cloud: 'no'
 
-k8s_manager_hostname: "localhost"
-k8s_manager_ip: "127.0.0.1"
+k8s_man01_hostname: "localhost"
+k8s_man01_ip: "127.0.0.1"
+k8s_controlplane_endpoint: "{{ k8s_man01_ip }}"
+k8s_controlplane_port: "6443"
 k8s_nodes: []
+k8s_managers: []
+k8s_managers_group_name: managers
+k8s_nodes_group_name: nodes
 k8s_cni: "calico"
 k8s_version: "v1.24.0"
 k8s_kubernetes_python_version: "25.0.0"
