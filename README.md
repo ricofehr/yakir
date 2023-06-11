@@ -5,11 +5,11 @@
 
 A base k8s install on Ubuntu release (Tested on Jammy).
 
-Can be deployed on local with Vagrant (Bento/Ubuntu boxes) or on Openstack (same VMs count, but using Openstack defined flavors for cpu/ram/disk definition) 
+Can be deployed on local with Vagrant (Bento/Ubuntu boxes) or on Openstack 
 - 3 different sizings
-  - small: 1 Master and 1 Node (for a Vagrant deployment, fit to 8Go RAM Laptop with 2 cpu cores)
-  - medium : 3 Master and 2 Nodes (for a Vagrant deployment, fit to 16Go RAM Laptop with 4 cpu cores)
-  - large : 3 Master and 5 Nodes (for a Vagrant deployment, fit to 32Go RAM Laptop with 6 cpu cores)
+  - small: 1 Managers and 1 Worker (for a Vagrant deployment, fit to 8Go RAM Laptop with 2 cpu cores)
+  - medium : 3 Managers and 2 Workers (for a Vagrant deployment, fit to 16Go RAM Laptop with 4 cpu cores)
+  - large : 3 Managers and 5 Workers (for a Vagrant deployment, fit to 32Go RAM Laptop with 6 cpu cores)
 
 ## Repository structure
 
@@ -102,8 +102,8 @@ Usage: ./deploy-to-openstack [options]
 -t xxxx      openstack tenant, default is tenant0
 -r xxxx      openstack region, default is RegionOne
 -s xxxx      deployment sizing, choices are small / medium / large, default is small
--fm xxxx     openstack flavor for master instance, default is large
--fn xxxx     openstack flavor for nodes instance, default is xlarge
+-fm xxxx     openstack flavor for managers instance, default is large
+-fn xxxx     openstack flavor for workers instance, default is xlarge
 -fip xxxx    openstack floatingip network id, no default
 -oscrt xxxx  openstack ssl certificate path
 -secgrp xxxx openstack tenant security group, default is k8s
