@@ -1,9 +1,9 @@
 [![Linter Status](https://github.com/ricofehr/yakir/workflows/Linter/badge.svg)](https://github.com/ricofehr/yakir/actions?workflow=Linter)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/ricofehr/yakir/main/LICENSE)
 
-# yakir
+# Yakir - Yet Another Kubernetes Installation Repository
 
-A base k8s install on Ubuntu release (Tested on Jammy).
+A base k8s install on Ubuntu distribution (Tested on Jammy).
 
 Can be deployed on local with Vagrant (Bento/Ubuntu boxes) or on Openstack 
 - 3 different sizings
