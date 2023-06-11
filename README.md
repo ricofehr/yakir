@@ -1,3 +1,5 @@
+[![Linter Status](https://github.com/ricofehr/yakir/workflows/Linter/badge.svg)](https://github.com/ricofehr/yakir/actions?workflow=Linter)
+
 # yakir
 
 A base k8s install on modern Ubuntu release.
