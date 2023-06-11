@@ -19,7 +19,7 @@
 
 ### Improvement
 
-- Use variable for define disk persistence needs on helm deployments 
+- Use variable for define disk persistence needs on helm deployments
 - Use ansible helm collection to deploy helm chart, instead of shell commands
 
 ### Other
