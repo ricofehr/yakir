@@ -1,10 +1,11 @@
 [![Linter Status](https://github.com/ricofehr/yakir/workflows/Linter/badge.svg)](https://github.com/ricofehr/yakir/actions?workflow=Linter)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/ricofehr/yakir/main/LICENSE)
 
 # yakir
 
-A base k8s install on modern Ubuntu release.
+A base k8s install on Ubuntu release (Tested on Jammy).
 
-Can be deployed on local with Vagrant (Bento/Ubuntu boxes) or on Openstack (same VMs scope, but using Openstack defined flaors) 
+Can be deployed on local with Vagrant (Bento/Ubuntu boxes) or on Openstack (same VMs count, but using Openstack defined flavors for cpu/ram/disk definition) 
 - 3 different sizings
   - small: 1 Master and 1 Node (for a Vagrant deployment, fit to 8Go RAM Laptop with 2 cpu cores)
   - medium : 3 Master and 2 Nodes (for a Vagrant deployment, fit to 16Go RAM Laptop with 4 cpu cores)
@@ -15,22 +16,22 @@ Can be deployed on local with Vagrant (Bento/Ubuntu boxes) or on Openstack (same
 ```
 yakir/
 +--ansible/                 Root folder for ansible IaC deployment stack
-    +---group_vars/         An Higher variables scope, overrides defaults/main.yml roles definition
+    +---group_vars/         An Higher variables scope, which overrides defaults/main.yml roles definition
         +---all/
             +---global      Includes all global and transversal variables of the deployment
     +---sizing_vars/        Variables about deployment scope on VMs list - depending about small, medium, larger targeted form factor
-    +---collections/        Folder where collections are downloaded from ansible-galaxy
-    +---inventories/        Inventory files scoped about small, medium, larger targeted form factor
-    +---roles/              Ansible role folder (ansible instructions unit - role centric development)
-        +---base            Prerquisites for the Linux OS : global attributes (language, locale, swap usage, ...), user management, system packages
-        +---cert            Manage self-signed certificate creation
+    +---collections/        Folder where collections are downloaded from ansible-galaxy command
+    +---inventories/        Inventory files, scoped about small, medium, larger targeted form factor
+    +---roles/              Ansible roles folder
+        +---base            Prerequisites for the Linux OS : global attributes (locale, hostname, time, swap usage, ...), user management, system packages
+        +---cert            Manage self-signed certificate creation (used for wildcard ingress FQDN)
         +---cni             Manage network plugins for Kubernetes
         +---crio            Manage container engine installation
         +---helm            Install helm command and add global helm repositories
         +---ingress         Deploy nginx ingress component on Kubernetes
         +---k8s             Install and configure a Kubernetes deployment with Kubeadm
         +---keepalived      Install keepalived service on manager hosts for a no cloud deployment : ensure a failover IP for control-plane endpoint
-        +---kubernetes      External depencies to a galaxy role from the community : install kubernetes binary packages on VMs
+        +---kubernetes      External dependencies from a galaxy role (gantsign repository) : install kubernetes binary packages on VMs
         +---kubedashboard   Install and secure Dashboard deployment for Kubernetes
         +---opa             Install Gatekeeper and define some open policy rules
         +---postinstall     Some validations and post-config topics after Kubernetes deployment
@@ -58,6 +59,10 @@ Deployment of Kubernetes with crio as container engine, and multiple CNI choices
 
 ## Vagrant deployment
 
+2 providers are defined in Vagrantfiles (using bento boxes)
+- virtualbox : targeted for x86 systems (amd64 Ubuntu vagrant box)
+- parallels : targeted for apple silicon systems (arm64 Ubuntu vagrant box)
+
 ### Run
 
 ```
@@ -76,9 +81,9 @@ Usage: ./up [options]
 -h           this is some help text.
 -d           destroy all previously provisioned vms
 -c xxxx      CNI plugin, choices are weave, flannel, calico (default), cilium
--p xxxx      vagrant provider, default is virtualbox
+-p xxxx      vagrant provider, choices are virtualbox (default) or parallels
 -kp xxxx     keepalived password, default is randomly generated
--m xxxx      container private mirror registry
+-m xxxx      container private mirror registry (default is none : get container images directly from Internet)
 -s xxxx      sizing deployment, default is small
               - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
               - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
