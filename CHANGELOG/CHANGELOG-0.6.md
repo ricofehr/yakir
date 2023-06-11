@@ -7,6 +7,10 @@
 - For deployment on openstack, install Openstack controller Manager, and Cinder CSI Plugin
 - Add private mirror container registry option (default is to use public registries as before)
 
+### Bug or Regression
+
+- Fix a syntax typo on cloud config file
+
 ### Inprovement
 
 - Group components version variables in the same ansible file (at group_vars/all/global)
@@ -15,22 +19,20 @@
 
 - Clean unused vars files on Ansible folders
 
-### Bug or Regression
-
-- Fix a syntax typo on cloud config file
 
 # v0.6.1
 
 ## Changes by Kind
 
-### Improvement
-
-- Some Ansible syntax improvement and rework
-
 ### Bug or Regression
 
 - Freeze kubernetes version to v1.27.1
 - Fix installation with openstack provider
+
+### Improvement
+
+- Some Ansible syntax improvement and rework
+
 
 # v0.6
 
@@ -41,21 +43,22 @@
 - Add arm64 (apple silicon) boxes on Vagrantfile for parallels provider
 - Add Getekeeper with a rule to ensure pod-security enforcing on Namespaces creation
 
+### Bug or Regression
+
+- Fix kubelet installation
+
 ### Improvement
 
 - Upgrade Kubernetes version to v1.27.0 (from v1.25)
 - Ansible improvement : replace pause tasks with wait-until workflow
 - Add some hardening settings on Dashboard deployment
 
-### Bug or Regression
-
-- Fix kubelet installation
-
 ### Other
 
 - Remove CI stack deployment : no more Gitea, Sonar, Jenkinsx, Docker-registry, or Istio chart installation
 - Remove Monitoring and Logging stack deployment : no more ELK, Prometheus or Grafana chart installation
 - Remove some debug instructions
+
 
 # v0.6-rc5
 
@@ -66,30 +69,33 @@
 - Fix apt package install issue with update of gpg key id
 - Fix kubenretes_cni package version
 
+
 # v0.6-rc4
 
 ## Changes by Kind
-
-### Improvement
-
-- Rework kubeadm instructions to load config from file
 
 ### Bug or Regression
 
 - Fix cgroupDriver setting to systemd value
 - Add csr approvement command after Kubernetes installation to avoid have CSR standing not validated
 
+### Improvement
+
+- Rework kubeadm instructions to load config from file
+
+
 # v0.6-rc3
 
 ## Changes by Kind
+
+### Bug or Regression
+
+- Fix deprecated "warn" attributes on Ansible
 
 ### Improvement
 
 - Change small flavor deployment scope
 
-### Bug or Regression
-
-- Fix deprecated "warn" attributes on Ansible
 
 # v0.6-rc2
 
