@@ -13,7 +13,7 @@ NODES_EXTRA_VARS=""
 PRIVATENETWORK="private"
 PUBLICNETWORK="public"
 SECURITYGROUP="k8s"
-LINUXIMAGE="bionic"
+LINUXIMAGE="jammy"
 SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
 ANSIBLEPATH="/usr/bin/ansible-playbook"
 MIRROR_REGISTRY=""
@@ -40,7 +40,7 @@ Usage: $0 [options]
 -secgrp xxxx openstack tenant security group, default is k8s
 -snet xxxx   openstack subnet id, no default
 -m xxxx      mirror registry for docker.io, quay.io, registry.k8s.io images
--o xxxx      openstack operating system image, default is bionic
+-o xxxx      openstack operating system image, default is $LINUXIMAGE
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
 -w xxxx	     override ansible path
 EOF

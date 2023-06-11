@@ -109,7 +109,7 @@ Usage: ./deploy-to-openstack [options]
 -secgrp xxxx openstack tenant security group, default is k8s
 -snet xxxx   openstack subnet id, no default
 -m xxxx      mirror registry for docker.io images
--o xxxx      openstack operating system image, default is bionic
+-o xxxx      openstack operating system image, default is jammy 
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
 -w xxxx	     override ansible path
 ```
