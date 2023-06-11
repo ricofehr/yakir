@@ -1,4 +1,4 @@
-# k8s
+# yakir
 
 A base k8s install with Vagrant (Bento/Ubuntu boxes)
 - 3 sizings
@@ -62,3 +62,13 @@ Once installed, the terraform folder is into tf/openstack, for example destroy t
 ```
 cd tf/openstack && terraform destroy
 ```
+
+## TODO
+
+- Add monitoring stack (prometheus, grafana)
+- Add logging collector stack (fluentbit)
+- Add backup process (backup etcd and storage repositories)
+- Add hardening stuff on Linux OS, and k8s settings
+- Add csi for a distributed Filesystem like Ceph
+- Work on a kvm deployment
+- Work on opentelemetry integration
