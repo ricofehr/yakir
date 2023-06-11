@@ -3,6 +3,7 @@
 sizing_k8s_man01_ip: "{{ hostvars[groups[global_managers_group_name][0]]['ansible_host'] }}"
 sizing_k8s_managers:
   - { name: "{{ hostvars[groups[global_managers_group_name][0]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_man01_ip }}" }
+sizing_k8s_manager_to_ip: "{{ sizing_k8s_managers | items2dict(key_name='name', value_name='ip') }}"
 
 sizing_k8s_node1_ip: "{{ hostvars[groups[global_nodes_group_name][0]]['ansible_host'] }}"
 sizing_k8s_nodes:

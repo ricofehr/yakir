@@ -5,7 +5,7 @@ keepalived_script_name: apiserver
 keepalived_pass: "abcdefgh1234" 
 keepalived_eth: "eth1"
 keepalived_node_name: "{{ inventory_hostname }}"
-keepalived_src_ip: "{{ ansible_host }}"
+keepalived_src_ip: "{{ sizing_k8s_manager_to_ip[keepalived_node_name] }}"
 keepalived_script: "/usr/bin/curl -s -k https://{{ keepalived_src_ip }}:443/healthz -o /dev/null"
 
 ...

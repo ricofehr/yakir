@@ -228,7 +228,7 @@ terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 -var public_network_name="$PUBLICNETWORK" -var security_group="$SECURITYGROUP" \
 -var image="$LINUXIMAGE" -var keypair_sshkey="$(cat $SSHKEYFILE | tr -d "\n")" -auto-approve
 
-sleep 150
+sleep 120
 
 # get private and public vm ips
 K8SMASTER1_IP="$(terraform output -json master_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
@@ -261,14 +261,23 @@ pushd ansible > /dev/null
 ln -sf sizing_vars/sizing_vars_${SIZING}.yml sizing_vars.yml
 
 # Prepare inventory
-echo "[master]" > tfinventory
-echo "k8s-master1 ansible_host=${K8SMASTER1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+echo "[man01]" > tfinventory
+echo "k8s-manager1 ansible_host=${K8SMASTER1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
 VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_man01_ip=$K8SMASTER1_PRIVATE_IP"
 if [[ "$SIZING" != "small" ]]; then
-  echo "k8s-master2 ansible_host=${K8SMASTER2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-  echo "k8s-master3 ansible_host=${K8SMASTER3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+  echo "[man02]" >> tfinventory
+  echo "k8s-manager2 ansible_host=${K8SMASTER2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+  echo "[man03]" >> tfinventory
+  echo "k8s-manager3 ansible_host=${K8SMASTER3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
   VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_man02_ip=$K8SMASTER2_PRIVATE_IP -e sizing_k8s_man03_ip=$K8SMASTER3_PRIVATE_IP"
 fi
+echo "[managers:children]" >> tfinventory
+echo "man01" >> tfinventory
+if [[ "$SIZING" != "small" ]]; then
+  echo "man02" >> tfinventory
+  echo "man03" >> tfinventory
+fi
+
 echo "[nodes]" >> tfinventory
 echo "k8s-node1 ansible_host=${K8SNODE1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
 VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_node1_ip=$K8SNODE1_PRIVATE_IP"
@@ -289,8 +298,7 @@ export ANSIBLE_NOCOWS=1
 $ANSIBLEPATH -i tfinventory \
 --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
 -e "global_controlplane_endpoint_ip=$K8SMASTER1_PRIVATE_IP" \
--e "global_cloud=os" -e "k8s_cni=$CNI_PLUGIN" \
--e "k8s_master_ip=$K8SMASTER_PRIVATE_IP" $VMS_EXTRA_VARS \
+-e "global_cloud=os" -e "k8s_cni=$CNI_PLUGIN" $VMS_EXTRA_VARS \
 -e "cloud_username=$OSUSER" -e "cloud_password=$OSPASSWORD" \
 -e "cloud_authurl=$OSAUTHURL" -e "cloud_tenant_name=$OSTENANT" \
 -e "cloud_subnet_id=$SUBNETID" -e "cloud_floatingnetwork_id=$FLOATINGIPID" \

@@ -91,7 +91,7 @@
   ansible.builtin.shell: >
     kubeadm join --token {{ k8s_token.stdout }} --discovery-token-unsafe-skip-ca-verification
     --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock --control-plane
-    --apiserver-advertise-address {{ ansible_host }} --apiserver-bind-port 443 {{ k8s_man01_ip }}:443 &&
+    --apiserver-advertise-address {{ k8s_node_ip }} --apiserver-bind-port 443 {{ k8s_man01_ip }}:443 &&
     touch {{ ansible_env.HOME }}/.k8sinstall
   args:
     creates: "{{ ansible_env.HOME }}/.k8sinstall"
@@ -109,7 +109,7 @@
 - name: Wait for local kubernetes API is reachable
   when: k8s_managers_group_name in group_names
   ansible.builtin.wait_for:
-    host: "{{ ansible_host }}"
+    host: "{{ k8s_node_ip }}"
     port: 443
     delay: 5
 
