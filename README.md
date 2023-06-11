@@ -2,13 +2,61 @@
 
 A base k8s install on modern Ubuntu release.
 
-Can be deployed on local with Vagrant (Bento/Ubuntu boxes)
-- 3 sizings
-  - small: 1 Master and 1 Node (fit to 8Go RAM Laptop with 2 cpu cores)
-  - medium : 3 Master and 2 Nodes (fit to 16Go RAM Laptop with 4 cpu cores)
-  - large : 3 Master and 5 Nodes (fit to 32Go RAM Laptop with 6 cpu cores)
+Can be deployed on local with Vagrant (Bento/Ubuntu boxes) or on Openstack (same VMs scope, but using Openstack defined flaors) 
+- 3 different sizings
+  - small: 1 Master and 1 Node (for a Vagrant deployment, fit to 8Go RAM Laptop with 2 cpu cores)
+  - medium : 3 Master and 2 Nodes (for a Vagrant deployment, fit to 16Go RAM Laptop with 4 cpu cores)
+  - large : 3 Master and 5 Nodes (for a Vagrant deployment, fit to 32Go RAM Laptop with 6 cpu cores)
 
-## Run
+## Repository structure
+
+```
+yakir/
++--ansible/                 Root folder for ansible IaC deployment stack
+    +---group_vars/         An Higher variables scope, overrides defaults/main.yml roles definition
+        +---all/
+            +---global      Includes all global and transversal variables of the deployment
+    +---sizing_vars/        Variables about deployment scope on VMs list - depending about small, medium, larger targeted form factor
+    +---collections/        Folder where collections are downloaded from ansible-galaxy
+    +---inventories/        Inventory files scoped about small, medium, larger targeted form factor
+    +---roles/              Ansible role folder (ansible instructions unit - role centric development)
+        +---base            Prerquisites for the Linux OS : global attributes (language, locale, swap usage, ...), user management, system packages
+        +---cert            Manage self-signed certificate creation
+        +---cni             Manage network plugins for Kubernetes
+        +---crio            Manage container engine installation
+        +---helm            Install helm command and add global helm repositories
+        +---ingress         Deploy nginx ingress component on Kubernetes
+        +---k8s             Install and configure a Kubernetes deployment with Kubeadm
+        +---keepalived      Install keepalived service on manager hosts for a no cloud deployment : ensure a failover IP for control-plane endpoint
+        +---kubernetes      External depencies to a galaxy role from the community : install kubernetes binary packages on VMs
+        +---kubedashboard   Install and secure Dashboard deployment for Kubernetes
+        +---opa             Install Gatekeeper and define some open policy rules
+        +---postinstall     Some validations and post-config topics after Kubernetes deployment
+    +---inventory           File created (symlink to targeted file on inventories folder) by the deployment script : used by ansible-playbook to scope the infra
+    +---sizing_vars.yml     File created (symlink to targeted file on sizing_vars folder) by the deployment script : used by ansible-playbook to scope the infra metadata
+    +---requirements.yml    Collections dependencies, to install in collections folder (ansible-galaxy command is executed by deployment scripts on the root folder)
++--tf/                      Terraform folder which contains HCL provisioning tasks
+    +---openstack/          HCL instructions for provisioning VMs and resources on Openstack as prerequisites for k8s installation
++--vagrantfiles/            Deployment flavors vagrantfile for small, medium, large scopes
+deploy-to-openstack         Script for installation on a lived openstack with Terraform (See options below on this page)
+up                          Script for local installation with Vagrant (See options below on this page) 
+Vagrantfile                 File created (symlink to targeted file on vagrantfiles folder) by the deployment script : used by Vagrant to scope the VMs provisioning
+```
+
+## Components
+
+Deployment of Kubernetes with crio as container engine, and multiple CNI choices
+- Kubernetes v1.27.2
+- Crio v1.27
+- Calico v3.25.1
+- Weave v2.8.1
+- Flannel v0.22.0
+- Cilium v1.13.2
+- Gatekeeper v3.12.0
+
+## Vagrant deployment
+
+### Run
 
 ```
 $ git submodule update --init
@@ -19,7 +67,7 @@ Once setup done
 - Dashboard is reached here
 http://192.168.58.10:8001/api/v1/namespaces/kube-dashboard/services/https:dashboard-kubernetes-dashboard:https/proxy
 
-## Options
+### Options
 
 ```
 Usage: ./up [options]
@@ -34,17 +82,6 @@ Usage: ./up [options]
               - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
               - large : 3 managers and 5 nodes, host with 24Go ram / 6 cores
 ```
-
-## Releases scope
-
-Deployment of Kubernetes with crio as container engine, and multiple CNI choices
-- Kubernetes v1.27.2
-- Crio v1.27
-- Calico v3.25.1
-- Weave v2.8.1
-- Flannel v0.22.0
-- Cilium v1.13.2
-- Gatekeeper v3.12.0
 
 ## Openstack deployment
 
@@ -69,9 +106,10 @@ Usage: ./deploy-to-openstack [options]
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
 -w xxxx	     override ansible path
 ```
-Default values are defined following openstack deployment with the repo https://github.com/ricofehr/os-ansible-poc
 
-Once installed, the terraform folder is into tf/openstack, for example destroy the k8s deployment
+Tested with an openstack deployment from the repo https://github.com/ricofehr/os-ansible-poc
+
+Once installed, the terraform state file is into tf/openstack, for example destroy the k8s deployment
 ```
 cd tf/openstack && terraform destroy
 ```
