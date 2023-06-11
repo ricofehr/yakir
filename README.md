@@ -1,6 +1,8 @@
 # yakir
 
-A base k8s install with Vagrant (Bento/Ubuntu boxes)
+A base k8s install on modern Ubuntu release.
+
+Can be deployed on local with Vagrant (Bento/Ubuntu boxes)
 - 3 sizings
   - small: 1 Master and 1 Node (fit to 8Go RAM Laptop with 2 cpu cores)
   - medium : 3 Master and 2 Nodes (fit to 16Go RAM Laptop with 4 cpu cores)
@@ -32,6 +34,17 @@ Usage: ./up [options]
               - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
               - large : 3 managers and 5 nodes, host with 24Go ram / 6 cores
 ```
+
+## Releases scope
+
+Deployment of Kubernetes with crio as container engine, and multiple CNI choices
+- Kubernetes v1.27.2
+- Crio v1.27
+- Calico v3.25.1
+- Weave v2.8.1
+- Flannel v0.22.0
+- Cilium v1.13.2
+- Gatekeeper v3.12.0
 
 ## Openstack deployment
 
