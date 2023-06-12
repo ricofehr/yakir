@@ -5,6 +5,7 @@ global_cloud: 'no'
 global_managers_group_name: "managers"
 global_nodes_group_name: "nodes"
 global_controlplane_endpoint_ip: "192.168.58.250"
+global_controlplane_endpoint_port: 6443
 
 global_kubernetes_version: 1.27.2
 global_openstack_provider_version: v1.27.1

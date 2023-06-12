@@ -1,11 +1,12 @@
 ---
 
 keepalived_vip: "{{ global_controlplane_endpoint_ip }}"
+keepalived_health_port: "{{ global_controlplane_endpoint_port }}"
 keepalived_script_name: apiserver
 keepalived_pass: "abcdefgh1234" 
 keepalived_eth: "eth1"
 keepalived_node_name: "{{ inventory_hostname }}"
 keepalived_src_ip: "{{ sizing_k8s_manager_to_ip[keepalived_node_name] }}"
-keepalived_script: "/usr/bin/curl -s -k https://{{ keepalived_src_ip }}:443/healthz -o /dev/null"
+keepalived_script: "/usr/bin/curl -s -k https://{{ keepalived_src_ip }}:{{ keepalived_health_port }}/healthz -o /dev/null"
 
 ...

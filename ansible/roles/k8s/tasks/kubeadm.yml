@@ -76,10 +76,10 @@
   when: inventory_hostname != k8s_man01_hostname
   ansible.builtin.shell: |
     set -e -o pipefail
-    kubeadm token list | tail -n +2 | head -n 1 | sed "s/ .*//"
+    kubeadm token create --print-join-command
   args:
     executable: /bin/bash
-  register: k8s_token
+  register: k8s_token_cmd
   delegate_to: "{{ k8s_man01_hostname }}"
   changed_when: false
 
@@ -89,9 +89,8 @@
     - k8s_managers_group_name in group_names
     - inventory_hostname != k8s_man01_hostname
   ansible.builtin.shell: >
-    kubeadm join --token {{ k8s_token.stdout }} --discovery-token-unsafe-skip-ca-verification
-    --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock --control-plane
-    --apiserver-advertise-address {{ k8s_node_ip }} --apiserver-bind-port 443 {{ k8s_man01_ip }}:443 &&
+    {{ k8s_token_cmd.stdout }} --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock
+    --control-plane --apiserver-advertise-address {{ k8s_node_ip }} --apiserver-bind-port {{ k8s_controlplane_port }} &&
     touch {{ ansible_env.HOME }}/.k8sinstall
   args:
     creates: "{{ ansible_env.HOME }}/.k8sinstall"
@@ -100,8 +99,7 @@
   become: true
   when: k8s_nodes_group_name in group_names
   ansible.builtin.shell: >
-    kubeadm join --token {{ k8s_token.stdout }} --discovery-token-unsafe-skip-ca-verification
-    --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock {{ k8s_man01_ip }}:443 &&
+    {{ k8s_token_cmd.stdout }} --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock &&
     touch {{ ansible_env.HOME }}/.k8sinstall
   args:
     creates: "{{ ansible_env.HOME }}/.k8sinstall"
@@ -110,14 +108,14 @@
   when: k8s_managers_group_name in group_names
   ansible.builtin.wait_for:
     host: "{{ k8s_node_ip }}"
-    port: 443
+    port: "{{ k8s_controlplane_port }}"
     delay: 5
 
 - name: Wait for VIP kubernetes API is reachable
   when: k8s_managers_group_name in group_names
   ansible.builtin.wait_for:
     host: "{{ k8s_controlplane_endpoint_ip }}"
-    port: 443
+    port: "{{ k8s_controlplane_port }}"
     delay: 5
 
 - name: Ensure kubelet is in a running state

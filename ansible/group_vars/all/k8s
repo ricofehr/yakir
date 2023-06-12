@@ -2,7 +2,7 @@
 
 k8s_controlplane_endpoint: "control-plane"
 k8s_controlplane_endpoint_ip: "{{ global_controlplane_endpoint_ip }}"
-k8s_controlplane_port: "443"
+k8s_controlplane_port: "{{ global_controlplane_endpoint_port }}"
 
 k8s_managers_group_name: "{{ global_managers_group_name }}"
 k8s_nodes_group_name: "{{ global_nodes_group_name }}"
