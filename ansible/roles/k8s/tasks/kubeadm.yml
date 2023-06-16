@@ -1,11 +1,15 @@
 ---
 
-- name: Generate kubeadm.conf for No Cloud provider
+- name: Generate kubeadm.conf for first manager node
   become: true
+  when: k8s_managers_group_name in group_names
   ansible.builtin.template:
     src: templates/{{ k8s_cloud }}-cloud-kubeadm.conf.j2
     dest: /etc/kubernetes/kubeadm.conf
     mode: '0644'
+    force: false
+  run_once: true
+  delegate_to: "{{ k8s_man01_hostname }}"
 
 - name: Init first manager node
   become: true
@@ -18,89 +22,53 @@
   run_once: true
   delegate_to: "{{ k8s_man01_hostname }}"
 
-- name: Check if pki folder already exists
-  ansible.builtin.stat:
-    path: /etc/kubernetes/pki
-  register: k8s_is_pki_folder
-  changed_when: false
-
-- name: Archive pki folder from man01
-  become: true
-  when:
-    - inventory_hostname != k8s_man01_hostname
-    - k8s_managers_group_name in group_names
-    - not k8s_is_pki_folder.stat.exists
-  community.general.archive:
-    path: /etc/kubernetes/pki/*
-    dest: "{{ ansible_env.HOME }}/pki.tar.gz"
-    mode: '0640'
-    format: gz
-  run_once: true
-  delegate_to: "{{ k8s_man01_hostname }}"
-
-- name: Get pki folder in local
-  become: true
-  when:
-    - inventory_hostname != k8s_man01_hostname
-    - k8s_managers_group_name in group_names
-    - not k8s_is_pki_folder.stat.exists
-  ansible.builtin.fetch:
-    src: "{{ ansible_env.HOME }}/pki.tar.gz"
-    dest: assets/files/
-    flat: true
-  run_once: true
-  delegate_to: "{{ k8s_man01_hostname }}"
-
-- name: Ensure pki folder exists
-  become: true
-  when:
-    - inventory_hostname != k8s_man01_hostname
-    - k8s_managers_group_name in group_names
-  ansible.builtin.file:
-    path: /etc/kubernetes/pki
-    state: directory
-    mode: '0755'
-
-- name: Synchronization of pki folder to destination
-  become: true
-  when:
-    - inventory_hostname != k8s_man01_hostname
-    - k8s_managers_group_name in group_names
-    - not k8s_is_pki_folder.stat.exists
-  ansible.builtin.unarchive:
-    src: assets/files/pki.tar.gz
-    dest: /etc/kubernetes/pki
-
 - name: Get token from control-plane node
   become: true
   when: inventory_hostname != k8s_man01_hostname
   ansible.builtin.shell: |
     set -e -o pipefail
-    kubeadm token create --print-join-command
+    kubeadm token create --print-join-command | cut -d ' ' -f5,7
   args:
     executable: /bin/bash
-  register: k8s_token_cmd
+  register: k8s_token_print
   delegate_to: "{{ k8s_man01_hostname }}"
   changed_when: false
 
-- name: Add other manager nodes
+- name: Get certificate key
+  become: true
+  when: inventory_hostname != k8s_man01_hostname
+  ansible.builtin.shell: |
+    set -e -o pipefail
+    kubeadm init phase upload-certs --upload-certs | tail -n 1 | tr -d "\n"
+  args:
+    executable: /bin/bash
+  register: k8s_cert_key
+  delegate_to: "{{ k8s_man01_hostname }}"
+  changed_when: false
+
+- name: Set kubeadm template variables
+  when: inventory_hostname != k8s_man01_hostname
+  ansible.builtin.set_fact:
+    k8s_token: "{{ k8s_token_print.stdout.split(' ')[0] }}"
+    k8s_cert_hash: "{{ k8s_token_print.stdout.split(' ')[1] }}"
+    k8s_cert_key: "{{ k8s_cert_key.stdout }}"
+
+- name: Generate kubeadm.conf for joined nodes
+  become: true
+  when: inventory_hostname != k8s_man01_hostname
+  ansible.builtin.template:
+    src: templates/{{ k8s_cloud }}-cloud-kubeadm-join.conf.j2
+    dest: /etc/kubernetes/kubeadm.conf
+    force: false
+    mode: '0644'
+
+- name: Add other nodes
   become: true
   when:
-    - k8s_managers_group_name in group_names
     - inventory_hostname != k8s_man01_hostname
   ansible.builtin.shell: >
-    {{ k8s_token_cmd.stdout }} --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock
-    --control-plane --apiserver-advertise-address {{ k8s_node_ip }} --apiserver-bind-port {{ k8s_controlplane_port }} &&
-    touch {{ ansible_env.HOME }}/.k8sinstall
-  args:
-    creates: "{{ ansible_env.HOME }}/.k8sinstall"
-
-- name: Add k8snode
-  become: true
-  when: k8s_nodes_group_name in group_names
-  ansible.builtin.shell: >
-    {{ k8s_token_cmd.stdout }} --node-name {{ inventory_hostname }} --cri-socket=unix:///var/run/crio/crio.sock &&
-    touch {{ ansible_env.HOME }}/.k8sinstall
+    kubeadm join {{ k8s_controlplane_endpoint }}:{{ k8s_controlplane_port }} --config /etc/kubernetes/kubeadm.conf
+    && touch {{ ansible_env.HOME }}/.k8sinstall
   args:
     creates: "{{ ansible_env.HOME }}/.k8sinstall"
 

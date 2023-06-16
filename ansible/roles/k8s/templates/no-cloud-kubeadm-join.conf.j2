@@ -1,0 +1,19 @@
+apiVersion: kubeadm.k8s.io/v1beta3
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: "{{ k8s_controlplane_endpoint }}:{{ k8s_controlplane_port }}"
+    token: "{{ k8s_token }}"
+    caCertHashes: ["{{ k8s_cert_hash }}"]
+kind: JoinConfiguration
+nodeRegistration:
+  name: "{{ inventory_hostname }}"
+  kubeletExtraArgs:
+    cgroup-driver: "systemd"
+  criSocket: unix:///var/run/crio/crio.sock
+{% if k8s_managers_group_name in group_names %}
+controlPlane:
+  localAPIEndpoint:
+    advertiseAddress: "{{ k8s_node_ip }}"
+    bindPort: {{ k8s_controlplane_port }}
+  certificateKey: "{{ k8s_cert_key }}"
+{% endif %}

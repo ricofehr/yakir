@@ -4,6 +4,7 @@ k8s_cloud: 'no'
 
 k8s_man01_hostname: "localhost"
 k8s_man01_ip: "127.0.0.1"
+k8s_node_ip: "127.0.0.1"
 k8s_controlplane_endpoint: "{{ k8s_man01_ip }}"
 k8s_controlplane_port: "6443"
 k8s_nodes: []
