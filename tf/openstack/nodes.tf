@@ -3,6 +3,16 @@ resource "openstack_networking_floatingip_v2" "floatingip_nodes" {
   count = var.k8s_nodes
 }
 
+resource "openstack_networking_port_v2" "port_nodes" {
+  name           = "port-nodes-${count.index + 1}"
+  network_id     = var.private_network_id
+  admin_state_up = true
+  fixed_ip {
+    subnet_id = var.private_subnet_id
+  }
+  count = var.k8s_nodes
+}
+
 resource "openstack_compute_instance_v2" "vm_nodes" {
   name            = "${var.k8s_node_name}${count.index + 1}"
   image_name      = "${var.image}"
@@ -11,7 +21,7 @@ resource "openstack_compute_instance_v2" "vm_nodes" {
   security_groups = ["${var.security_group}"]
 
   network {
-    name = "${var.private_network_name}"
+    port = openstack_networking_port_v2.port_nodes[count.index].id
   }
   count = var.k8s_nodes
 }
@@ -21,4 +31,3 @@ resource "openstack_compute_floatingip_associate_v2" "floatingip_binding_nodes" 
   instance_id = "${openstack_compute_instance_v2.vm_nodes[count.index].id}"
   count = var.k8s_nodes
 }
-

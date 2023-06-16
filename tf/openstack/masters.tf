@@ -34,13 +34,3 @@ resource "openstack_compute_floatingip_associate_v2" "floatingip_binding_masters
   instance_id = "${openstack_compute_instance_v2.vm_masters[count.index].id}"
   count = var.k8s_masters
 }
-
-#resource "openstack_networking_port_v2" "port_vip_keepalived" {
-#  name           = "port-vip-keepalived"
-#  network_id     = var.private.network_id
-#  admin_state_up = true
-#  fixed_ip {
-#    subnet_id = var.private_subnet_id
-#  }
-#  security_groups = ["${var.security_group}"]
-#}
