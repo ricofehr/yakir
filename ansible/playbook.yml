@@ -29,7 +29,6 @@
     - sizing_vars.yml
   roles:
     - role: keepalived
-      when: global_cloud == 'no'
     - role: k8s
       tags: ["k8s"]
 

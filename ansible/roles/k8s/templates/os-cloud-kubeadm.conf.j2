@@ -16,6 +16,7 @@ networking:
   dnsDomain: cluster.local
   podSubnet: 10.244.0.0/16
   serviceSubnet: 10.96.0.0/12
+controlPlaneEndpoint: "{{ k8s_controlplane_endpoint }}:{{ k8s_controlplane_port }}"
 apiServer:
   extraArgs:
     enable-admission-plugins: NodeRestriction
