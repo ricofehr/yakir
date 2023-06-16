@@ -20,4 +20,20 @@
     update_cache: true
     force: true
 
+- name: Enable kernel module br-netfilter
+  become: true
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+
+- name: Set br_netfilter parameters
+  become: true
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: '1'
+    state: present
+  loop:
+    - net.bridge.bridge-nf-call-ip6tables
+    - net.bridge.bridge-nf-call-iptables
+
 ...
