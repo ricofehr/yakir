@@ -16,11 +16,14 @@ SECURITYGROUP="k8s"
 LINUXIMAGE="jammy"
 SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
 ANSIBLEPATH="/usr/bin/ansible-playbook"
+VM_ETH="ens3"
 MIRROR_REGISTRY=""
 FLOATINGIPID=""
+NETID=""
 SUBNETID=""
 OSCERTPATH=""
 SIZING="small"
+VIP_MANAGERS=""
 
 # Help function
 deployhelp() {
@@ -36,8 +39,10 @@ Usage: $0 [options]
 -fm xxxx     openstack flavor for master instance, default is large
 -fn xxxx     openstack flavor for nodes instance, default is xlarge
 -fip xxxx    openstack floatingip network id, no default
+-vip1 xxxx   failover ip for managers nodes
 -oscrt xxxx  openstack ssl certificate path
 -secgrp xxxx openstack tenant security group, default is k8s
+-net xxxx    openstack net id, no default
 -snet xxxx   openstack subnet id, no default
 -m xxxx      mirror registry for docker.io, quay.io, registry.k8s.io images
 -o xxxx      openstack operating system image, default is $LINUXIMAGE
@@ -86,6 +91,11 @@ while (($# > 0)); do
       FLOATINGIPID="$1"
       shift
       ;;
+    -vip1)
+      shift
+      VIP_MANAGERS="$1"
+      shift
+      ;;
     -fm)
       shift
       FLAVORMASTERS="$1"
@@ -104,6 +114,11 @@ while (($# > 0)); do
     -secgrp)
       shift
       SECURITYGROUP="$1"
+      shift
+      ;;
+    -net)
+      shift
+      NETID="$1"
       shift
       ;;
     -snet)
@@ -202,8 +217,18 @@ if [[ -z "$FLOATINGIPID" ]]; then
   deployhelp
 fi
 
+if [[ -z "$NETID" ]]; then
+  echo "-net openstack private network id parameter is missing"
+  deployhelp
+fi
+
 if [[ -z "$SUBNETID" ]]; then
   echo "-snet openstack private subnet id parameter is missing"
+  deployhelp
+fi
+
+if [[ -z "$VIP_MANAGERS" ]]; then
+  echo "-vip1 vip managers ip is missing"
   deployhelp
 fi
 
@@ -226,6 +251,8 @@ terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 -var provider_region="$OSREGION" -var k8s_master_flavor="$FLAVORMASTERS" \
 -var k8s_node_flavor="$FLAVORNODES" -var private_network_name="$PRIVATENETWORK" \
 -var public_network_name="$PUBLICNETWORK" -var security_group="$SECURITYGROUP" \
+-var private_network_id="$NETID" -var private_subnet_id="$SUBNETID" \
+-var vip_managers_ip="$VIP_MANAGERS" \
 -var image="$LINUXIMAGE" -var keypair_sshkey="$(cat $SSHKEYFILE | tr -d "\n")" -auto-approve
 
 sleep 120
@@ -294,11 +321,15 @@ fi
 # Disable cowsay ansible output
 export ANSIBLE_NOCOWS=1
 
+mkdir -p collections/ansible_collections
+ansible-galaxy collection install -r requirements.yml -p ./collections/
+
 # Install one K8S master and two K8S nodes
 $ANSIBLEPATH -i tfinventory \
 --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
--e "global_controlplane_endpoint_ip=$K8SMASTER1_PRIVATE_IP" \
+-e "global_controlplane_endpoint_ip=$VIP_MANAGERS" \
 -e "global_cloud=os" -e "k8s_cni=$CNI_PLUGIN" $VMS_EXTRA_VARS \
+-e "keepalived_eth=$VM_ETH" \
 -e "cloud_username=$OSUSER" -e "cloud_password=$OSPASSWORD" \
 -e "cloud_authurl=$OSAUTHURL" -e "cloud_tenant_name=$OSTENANT" \
 -e "cloud_subnet_id=$SUBNETID" -e "cloud_floatingnetwork_id=$FLOATINGIPID" \

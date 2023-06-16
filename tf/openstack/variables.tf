@@ -33,13 +33,25 @@ variable "keypair_sshkey" {
 }
 
 variable "public_network_name" {
-  description = "External openstack subnet"
+  description = "External openstack network name"
   default = "public"
 }
 
 variable "private_network_name" {
-  description = "Internal openstack subnet"
+  description = "Internal openstack network name"
   default = "private"
+}
+
+variable "private_network_id" {
+  description = "Internal openstack network id"
+}
+
+variable "private_subnet_id" {
+  description = "Internal openstack subnet id"
+}
+
+variable "vip_managers_ip" {
+  description = "VIP IP for managers node"
 }
 
 variable "image" {
