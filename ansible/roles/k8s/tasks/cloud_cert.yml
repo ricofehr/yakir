@@ -3,7 +3,7 @@
 - name: Get cloud ssl certificate file
   become: true
   ansible.builtin.copy:
-    src: "{{ cloud_crt_path }}"
+    src: "{{ k8s_cloud_crt_path }}"
     dest: /usr/local/share/ca-certificates/cloud.crt
     mode: '0644'
 

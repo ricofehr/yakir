@@ -330,9 +330,9 @@ $ANSIBLEPATH -i tfinventory \
 -e "global_controlplane_endpoint_ip=$VIP_MANAGERS" \
 -e "global_cloud=os" -e "k8s_cni=$CNI_PLUGIN" $VMS_EXTRA_VARS \
 -e "keepalived_eth=$VM_ETH" \
--e "cloud_username=$OSUSER" -e "cloud_password=$OSPASSWORD" \
--e "cloud_authurl=$OSAUTHURL" -e "cloud_tenant_name=$OSTENANT" \
--e "cloud_subnet_id=$SUBNETID" -e "cloud_floatingnetwork_id=$FLOATINGIPID" \
--e "global_persistence_disk=true" -e "cloud_crt_path=$OSCERTPATH" $MIRROR_REGISTRY_PARAM
+-e "k8s_os_cloud_username=$OSUSER" -e "k8s_os_cloud_password=$OSPASSWORD" \
+-e "k8s_os_cloud_authurl=$OSAUTHURL" -e "k8s_os_cloud_tenant_name=$OSTENANT" \
+-e "k8s_os_cloud_subnet_id=$SUBNETID" -e "k8s_os_cloud_floatingnetwork_id=$FLOATINGIPID" \
+-e "global_persistence_disk=true" -e "k8s_cloud_crt_path=$OSCERTPATH" $MIRROR_REGISTRY_PARAM
 
 popd > /dev/null

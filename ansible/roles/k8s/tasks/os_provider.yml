@@ -12,7 +12,7 @@
         namespace: kube-system
       type: Opaque
       data:
-        cloud.conf: "{{ lookup('template', 'cloud.conf.j2') | b64encode }}"
+        cloud.conf: "{{ lookup('template', 'os-cloud.conf.j2') | b64encode }}"
   delegate_to: "{{ k8s_man01_hostname }}"
 
 - name: Openstack controller manager

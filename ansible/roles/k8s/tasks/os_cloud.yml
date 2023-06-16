@@ -3,7 +3,7 @@
 - name: Generate cloud-config file (for Openstack provider)
   become: true
   ansible.builtin.template:
-    src: templates/cloud.conf.j2
+    src: templates/os-cloud.conf.j2
     dest: /etc/kubernetes/cloud-config
     mode: '0644'
 
