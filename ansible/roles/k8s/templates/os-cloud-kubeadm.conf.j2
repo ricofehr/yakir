@@ -2,8 +2,6 @@ apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 nodeRegistration:
   name: "{{ inventory_hostname }}"
-  kubeletExtraArgs:
-    cloud-provider: "external"
   criSocket: unix:///var/run/crio/crio.sock
 localAPIEndpoint:
   advertiseAddress: "{{ k8s_man01_ip }}"
@@ -19,8 +17,9 @@ networking:
 controlPlaneEndpoint: "{{ k8s_controlplane_endpoint }}:{{ k8s_controlplane_port }}"
 apiServer:
   extraArgs:
-    enable-admission-plugins: NodeRestriction
-    runtime-config: "storage.k8s.io/v1=true"
+    cloud-provider: "external"
+    #enable-admission-plugins: NodeRestriction
+    #runtime-config: "storage.k8s.io/v1=true"
   certSANs:
 {% for manager in k8s_managers %}
     - "{{ manager.ip }}"
@@ -40,15 +39,10 @@ etcd:
 {% endfor %}
 controllerManager:
   extraArgs:
-    external-cloud-volume-plugin: openstack
-  extraVolumes:
-  - name: cloud-config
-    hostPath: "/etc/kubernetes/cloud-config"
-    mountPath: "/etc/kubernetes/cloud-config"
-    readOnly: true
-    pathType: File
+    cloud-provider: "external"
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 serverTLSBootstrap: true
 cgroupDriver: systemd
+cloudProvider: "external"

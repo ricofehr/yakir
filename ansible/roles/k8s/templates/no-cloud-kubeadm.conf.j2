@@ -5,8 +5,6 @@ localAPIEndpoint:
   bindPort: {{ k8s_controlplane_port }}
 nodeRegistration:
   name: "{{ inventory_hostname }}"
-  kubeletExtraArgs:
-    cgroup-driver: "systemd"
   criSocket: unix:///var/run/crio/crio.sock
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
