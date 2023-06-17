@@ -14,11 +14,19 @@
 - name: Init first manager node
   become: true
   when: k8s_managers_group_name in group_names
-  ansible.builtin.shell: |
-    kubeadm reset -f
-    kubeadm init --config /etc/kubernetes/kubeadm.conf
+  ansible.builtin.command: kubeadm init --config /etc/kubernetes/kubeadm.conf
   args:
-    creates: "{{ ansible_env.HOME }}/.kube/config"
+    creates: "{{ ansible_env.HOME }}/.kubeadm_init"
+  run_once: true
+  delegate_to: "{{ k8s_man01_hostname }}"
+
+- name: Create a state file for the kubeadm command execution
+  when: k8s_managers_group_name in group_names
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ ansible_env.HOME }}/.kubeadm_init"
+    force: false
+    mode: '0640'
   run_once: true
   delegate_to: "{{ k8s_man01_hostname }}"
 
@@ -62,15 +70,21 @@
     force: false
     mode: '0644'
 
-- name: Add other nodes
+- name: Add node
   become: true
-  when:
-    - inventory_hostname != k8s_man01_hostname
-  ansible.builtin.shell: >
-    kubeadm join {{ k8s_controlplane_endpoint }}:{{ k8s_controlplane_port }} --config /etc/kubernetes/kubeadm.conf
-    && touch {{ ansible_env.HOME }}/.k8sinstall
+  when: inventory_hostname != k8s_man01_hostname
+  ansible.builtin.command:
+    cmd: kubeadm join {{ k8s_controlplane_endpoint }}:{{ k8s_controlplane_port }} --config /etc/kubernetes/kubeadm.conf
   args:
-    creates: "{{ ansible_env.HOME }}/.k8sinstall"
+    creates: "{{ ansible_env.HOME }}/.kubeadm_join"
+
+- name: Create a state file for the kubeadm command execution
+  when: inventory_hostname != k8s_man01_hostname
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ ansible_env.HOME }}/.kubeadm_join"
+    force: false
+    mode: '0640'
 
 - name: Wait for local kubernetes API is reachable
   when: k8s_managers_group_name in group_names
