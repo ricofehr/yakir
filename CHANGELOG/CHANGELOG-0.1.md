@@ -11,7 +11,7 @@
 - Optionnaly, install som CI tools (gitea, sonar, jenkinsx)
 - Deployment on Local with Vagrant, on openstack cloud via Terraform
 
-### Bug or Regression
+### Bug Fix
 
 ### Improvement
 

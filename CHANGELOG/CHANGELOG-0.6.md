@@ -7,7 +7,7 @@
 - For deployment on openstack, install Openstack controller Manager, and Cinder CSI Plugin
 - Add private mirror container registry option (default is to use public registries as before)
 
-### Bug or Regression
+### Bug Fix
 
 - Fix a syntax typo on cloud config file
 
@@ -24,7 +24,7 @@
 
 ## Changes by Kind
 
-### Bug or Regression
+### Bug Fix
 
 - Freeze kubernetes version to v1.27.1
 - Fix installation with openstack provider
@@ -43,7 +43,7 @@
 - Add arm64 (apple silicon) boxes on Vagrantfile for parallels provider
 - Add Getekeeper with a rule to ensure pod-security enforcing on Namespaces creation
 
-### Bug or Regression
+### Bug Fix
 
 - Fix kubelet installation
 
@@ -64,7 +64,7 @@
 
 ## Changes by Kind
 
-### Bug or Regression
+### Bug Fix
 
 - Fix apt package install issue with update of gpg key id
 - Fix kubenretes_cni package version
@@ -74,7 +74,7 @@
 
 ## Changes by Kind
 
-### Bug or Regression
+### Bug Fix
 
 - Fix cgroupDriver setting to systemd value
 - Add csr approvement command after Kubernetes installation to avoid have CSR standing not validated
@@ -88,7 +88,7 @@
 
 ## Changes by Kind
 
-### Bug or Regression
+### Bug Fix
 
 - Fix deprecated "warn" attributes on Ansible
 
@@ -101,7 +101,7 @@
 
 ## Changes by Kind
 
-### Bug or Regression
+### Bug Fix
 
 - Add pause between terraform part and ansible execution during deployment on openstack
 
@@ -116,7 +116,7 @@
 - Update Vagrant box to Jammy (20.04) Ubuntu release
 - Add calico and Flannel CNI choices along Weave already present
 
-### Bug or Regression
+### Bug Fix
 
 ### Improvement
 

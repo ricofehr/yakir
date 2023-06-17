@@ -6,7 +6,7 @@
 
 - Manage 3 deployment sizing scopes : small (1 master / 2 nodes), medium (1 master / 3 nodes) and large (1 master / 5 nodes)
 
-### Bug or Regression
+### Bug Fix
 
 - Fix Octavia Load-balancer creation during Kubernetes deployment on openstack
 - Change k8s apt key id with the updated version for the Kubernetes package repository

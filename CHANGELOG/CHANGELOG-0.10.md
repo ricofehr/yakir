@@ -1,3 +1,16 @@
+# v0.10.1
+
+## Changes by Kind
+
+### Bug Fix
+
+- Fix breaking change on yakir deployment for Openstack provider : manage multiple management nodes on this installation mode
+
+### Improvement
+
+- Rework kubeadm "joining" workflow : better implementation with higher idempotency level and less tasks
+
+
 # v0.10
 
 ## Changes by Kind
@@ -7,7 +20,7 @@
 - Control-plane nodes cluster deployment : 3 manager nodes provisioned
 - Add failover ip mechanism for control-plane nodes : keepalived service installation
 
-### Bug or Regression
+### Bug Fix
 
 ### Improvement
 

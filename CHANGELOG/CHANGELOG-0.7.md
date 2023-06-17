@@ -2,7 +2,7 @@
 
 ## Changes by Kind
 
-### Bug or Regression
+### Bug Fix
 
 - Fix calico mtu issue with set value to 1350
 
@@ -15,7 +15,7 @@
 
 ## Changes by Kind
 
-### Bug or Regression
+### Bug Fix
 
 ### Improvement
 
@@ -26,7 +26,7 @@
 
 ## Changes by Kind
 
-### Bug or Regression
+### Bug Fix
 
 - Fix calico deployment with clean crio bridge
 

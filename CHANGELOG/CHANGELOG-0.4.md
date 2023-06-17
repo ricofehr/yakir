@@ -4,7 +4,7 @@
 
 ### New Feature
 
-### Bug or Regression
+### Bug Fix
 
 ### Improvement
 

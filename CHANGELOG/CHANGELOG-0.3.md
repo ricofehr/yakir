@@ -2,7 +2,7 @@
 
 ## Changes by Kind
 
-### Bug or Regression
+### Bug Fix
 
 - Freeze openstack provider version used by terraform
 
@@ -15,7 +15,7 @@
 
 - Add keycloak, elk, prometheus and grafana installation
 
-### Bug or Regression
+### Bug Fix
 
 ### Improvement
 

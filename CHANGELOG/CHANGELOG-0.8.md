@@ -6,7 +6,7 @@
 
 - Add Cilium choice for CNI plugin : default choice for cloud deployment
 
-### Bug or Regression
+### Bug Fix
 
 ### Improvement
 
