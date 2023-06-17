@@ -27,7 +27,7 @@
     release_namespace: "{{ cni_cilium_namespace }}"
 
 - name: Wait for cilium pods become ready
-  ansible.builtin.command: "kubectl wait pod --all --namespace={{ cni_cilium_namespace }} --for=condition=Ready --timeout=600s"
+  ansible.builtin.command: "kubectl wait pod --all --namespace={{ cni_cilium_namespace }} --for=condition=Ready --timeout=1200s"
   changed_when: false
 
 ...
