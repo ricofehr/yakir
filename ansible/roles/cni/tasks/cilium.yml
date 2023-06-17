@@ -25,6 +25,11 @@
     chart_ref: "cilium-cni/cilium"
     chart_version: "{{ cni_cilium_version }}"
     release_namespace: "{{ cni_cilium_namespace }}"
+    set_values:
+      - value: ipv4NativeRoutingCIDR=10.244.0.0/16
+        value_type: string
+      - value: k8s.requireIPv4PodCIDR=true
+        value_type: string
 
 - name: Wait for cilium pods become ready
   ansible.builtin.command: "kubectl wait pod --all --namespace={{ cni_cilium_namespace }} --for=condition=Ready --timeout=1200s"
