@@ -102,14 +102,16 @@ Usage: ./deploy-to-openstack [options]
 -t xxxx      openstack tenant, default is tenant0
 -r xxxx      openstack region, default is RegionOne
 -s xxxx      deployment sizing, choices are small / medium / large, default is small
--fm xxxx     openstack flavor for managers instance, default is large
--fn xxxx     openstack flavor for workers instance, default is xlarge
+-fm xxxx     openstack flavor for master instance, default is large
+-fn xxxx     openstack flavor for nodes instance, default is xlarge
 -fip xxxx    openstack floatingip network id, no default
+-vip1 xxxx   failover ip for managers nodes
 -oscrt xxxx  openstack ssl certificate path
 -secgrp xxxx openstack tenant security group, default is k8s
+-net xxxx    openstack net id, no default
 -snet xxxx   openstack subnet id, no default
--m xxxx      mirror registry for docker.io images
--o xxxx      openstack operating system image, default is jammy 
+-m xxxx      mirror registry for docker.io, quay.io, registry.k8s.io images
+-o xxxx      openstack operating system image, default is jammy
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
 -w xxxx	     override ansible path
 ```
