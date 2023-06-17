@@ -24,15 +24,6 @@
   ansible.builtin.hostname:
     name: "{{ inventory_hostname }}"
 
-- name: Build hosts file
-  become: true
-  when: hostvars[inventory_hostname]['ansible_host'] is defined
-  ansible.builtin.lineinfile:
-    dest: /etc/hosts
-    line: "{{ hostvars[item]['ansible_host'] }} {{ item }}"
-    state: present
-  loop: "{{ ansible_play_hosts }}"
-
 - name: Ssh config strict hostkey
   become: true
   ansible.builtin.lineinfile:
