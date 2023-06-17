@@ -9,13 +9,11 @@
 
 - name: Kubelet cloud arguments
   become: true
-  ansible.builtin.lineinfile:
+  when: k8s_managers_group_name in group_names
+  ansible.builtin.template:
+    src: templates/os_kubelet-kubeadm.conf.j2
     dest: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-    regexp: "^Environment=\"KUBELET_KUBECONFIG_ARGS\".*$"
-    line: >
-      Environment="KUBELET_KUBECONFIG_ARGS=--cloud-provider=external
-      --cloud-config=/etc/kubernetes/cloud-config
-      --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+    mode: '0644'
   notify: Restart kubelet service
 
 ...

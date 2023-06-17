@@ -9,15 +9,15 @@
 - name: Manage local hosts file
   ansible.builtin.import_tasks: local_hosts_file.yml
 
+- name: Import cloud certificate
+  when: k8s_cloud_crt_path != ''
+  ansible.builtin.import_tasks: cloud_cert.yml
+
 - name: Cloud prerequisites
   when:
     - k8s_managers_group_name in group_names
     - k8s_cloud == 'os'
   ansible.builtin.import_tasks: "os_cloud.yml"
-
-- name: Import cloud certificate
-  when: k8s_cloud_crt_path != ''
-  ansible.builtin.import_tasks: cloud_cert.yml
 
 - name: Kubernetes install via kubeadm
   ansible.builtin.import_tasks: kubeadm.yml
