@@ -328,7 +328,7 @@ ansible-galaxy collection install -r requirements.yml -p ./collections/
 $ANSIBLEPATH -i tfinventory \
 --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
 -e "global_controlplane_endpoint_ip=$VIP_MANAGERS" \
--e "global_cloud=os" -e "k8s_cni=$CNI_PLUGIN" $VMS_EXTRA_VARS \
+-e "global_cloud=os" -e "cni_plugin=$CNI_PLUGIN" $VMS_EXTRA_VARS \
 -e "keepalived_eth=$VM_ETH" \
 -e "k8s_os_cloud_username=$OSUSER" -e "k8s_os_cloud_password=$OSPASSWORD" \
 -e "k8s_os_cloud_authurl=$OSAUTHURL" -e "k8s_os_cloud_tenant_name=$OSTENANT" \

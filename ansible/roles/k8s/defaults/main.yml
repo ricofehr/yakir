@@ -11,7 +11,6 @@ k8s_nodes: []
 k8s_managers: []
 k8s_managers_group_name: managers
 k8s_nodes_group_name: nodes
-k8s_cni: "calico"
 k8s_version: "v1.24.0"
 k8s_kubernetes_python_version: "25.0.0"
 k8s_weave_version: "v2.3.0"
