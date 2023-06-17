@@ -16,4 +16,7 @@
     mode: '0644'
   notify: Restart kubelet service
 
+- name: Force all kubelet restart handlers to run
+  ansible.builtin.meta: flush_handlers
+
 ...
