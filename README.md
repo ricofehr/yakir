@@ -102,7 +102,7 @@ Usage: ./deploy-to-openstack [options]
 -t xxxx      openstack tenant, default is tenant0
 -r xxxx      openstack region, default is RegionOne
 -s xxxx      deployment sizing, choices are small / medium / large, default is small
--fm xxxx     openstack flavor for master instance, default is large
+-fm xxxx     openstack flavor for manager instance, default is large
 -fn xxxx     openstack flavor for nodes instance, default is xlarge
 -fip xxxx    openstack floatingip network id, no default
 -vip1 xxxx   failover ip for managers nodes

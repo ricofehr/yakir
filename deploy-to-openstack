@@ -7,7 +7,7 @@ OSAUTHURL="http://172.29.236.101:5000/v3"
 OSTENANT="tenant0"
 OSREGION="RegionOne"
 CNI_PLUGIN="flannel"
-FLAVORMASTERS="large"
+FLAVORMANAGERS="large"
 FLAVORNODES="xlarge"
 NODES_EXTRA_VARS=""
 PRIVATENETWORK="private"
@@ -36,7 +36,7 @@ Usage: $0 [options]
 -t xxxx      openstack tenant, default is tenant0
 -r xxxx      openstack region, default is RegionOne
 -s xxxx      deployment sizing, choices are small / medium / large, default is small
--fm xxxx     openstack flavor for master instance, default is large
+-fm xxxx     openstack flavor for manager instance, default is large
 -fn xxxx     openstack flavor for nodes instance, default is xlarge
 -fip xxxx    openstack floatingip network id, no default
 -vip1 xxxx   failover ip for managers nodes
@@ -98,7 +98,7 @@ while (($# > 0)); do
       ;;
     -fm)
       shift
-      FLAVORMASTERS="$1"
+      FLAVORMANAGERS="$1"
       shift
       ;;
     -fn)
@@ -187,8 +187,8 @@ if [[ -z "$OSREGION" ]]; then
   deployhelp
 fi
 
-if [[ -z "$FLAVORMASTERS" ]]; then
-  echo "-fm openstack master flavor parameter is missing"
+if [[ -z "$FLAVORMANAGERS" ]]; then
+  echo "-fm openstack manager flavor parameter is missing"
   deployhelp
 fi
 
@@ -248,7 +248,7 @@ ln -sf sizings/sizing_${SIZING} sizing.tf
 terraform init
 terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 -var provider_password="$OSPASSWORD" -var provider_auth_url="$OSAUTHURL" \
--var provider_region="$OSREGION" -var k8s_master_flavor="$FLAVORMASTERS" \
+-var provider_region="$OSREGION" -var k8s_manager_flavor="$FLAVORMANAGERS" \
 -var k8s_node_flavor="$FLAVORNODES" -var private_network_name="$PRIVATENETWORK" \
 -var public_network_name="$PUBLICNETWORK" -var security_group="$SECURITYGROUP" \
 -var private_network_id="$NETID" -var private_subnet_id="$SUBNETID" \
@@ -258,16 +258,16 @@ terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 sleep 120
 
 # get private and public vm ips
-K8SMASTER1_IP="$(terraform output -json master_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
-K8SMASTER1_PRIVATE_IP="$(terraform output -json master_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
+K8SMANAGER1_IP="$(terraform output -json manager_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
+K8SMANAGER1_PRIVATE_IP="$(terraform output -json manager_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
 K8SNODE1_IP="$(terraform output -json node_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
 K8SNODE1_PRIVATE_IP="$(terraform output -json node_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $1 }')"
 
 if [[ "$SIZING" != "small" ]]; then
-  K8SMASTER2_IP="$(terraform output -json master_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
-  K8SMASTER2_PRIVATE_IP="$(terraform output -json master_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
-  K8SMASTER3_IP="$(terraform output -json master_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $3 }')"
-  K8SMASTER3_PRIVATE_IP="$(terraform output -json master_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $3 }')"
+  K8SMANAGER2_IP="$(terraform output -json manager_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
+  K8SMANAGER2_PRIVATE_IP="$(terraform output -json manager_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
+  K8SMANAGER3_IP="$(terraform output -json manager_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $3 }')"
+  K8SMANAGER3_PRIVATE_IP="$(terraform output -json manager_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $3 }')"
   K8SNODE2_IP="$(terraform output -json node_public_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
   K8SNODE2_PRIVATE_IP="$(terraform output -json node_private_ips | tr -d '[' | tr -d ']' | tr -d '"' | awk -F ',' '{ print $2 }')"
 
@@ -289,14 +289,14 @@ ln -sf sizing_vars/sizing_vars_${SIZING}.yml sizing_vars.yml
 
 # Prepare inventory
 echo "[man01]" > tfinventory
-echo "k8s-manager1 ansible_host=${K8SMASTER1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_man01_ip=$K8SMASTER1_PRIVATE_IP"
+echo "k8s-manager1 ansible_host=${K8SMANAGER1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_man01_ip=$K8SMANAGER1_PRIVATE_IP"
 if [[ "$SIZING" != "small" ]]; then
   echo "[man02]" >> tfinventory
-  echo "k8s-manager2 ansible_host=${K8SMASTER2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+  echo "k8s-manager2 ansible_host=${K8SMANAGER2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
   echo "[man03]" >> tfinventory
-  echo "k8s-manager3 ansible_host=${K8SMASTER3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-  VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_man02_ip=$K8SMASTER2_PRIVATE_IP -e sizing_k8s_man03_ip=$K8SMASTER3_PRIVATE_IP"
+  echo "k8s-manager3 ansible_host=${K8SMANAGER3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+  VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_man02_ip=$K8SMANAGER2_PRIVATE_IP -e sizing_k8s_man03_ip=$K8SMANAGER3_PRIVATE_IP"
 fi
 echo "[managers:children]" >> tfinventory
 echo "man01" >> tfinventory
@@ -324,7 +324,7 @@ export ANSIBLE_NOCOWS=1
 mkdir -p collections/ansible_collections
 ansible-galaxy collection install -r requirements.yml -p ./collections/
 
-# Install one K8S master and two K8S nodes
+# Install one K8S manager and two K8S nodes
 $ANSIBLEPATH -i tfinventory \
 --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
 -e "global_controlplane_endpoint_ip=$VIP_MANAGERS" \

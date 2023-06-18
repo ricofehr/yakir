@@ -4,7 +4,7 @@
 
 ### New Feature
 
-- kubernetes v1.20 deployment on 1 master and 5 worker nodes
+- kubernetes v1.20 deployment on 1 manager and 5 worker nodes
 - Docker as container engine
 - Ubuntu 20.04 as Linux distribution for VMs
 - CNI Weave installed

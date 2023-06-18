@@ -4,7 +4,7 @@
 
 ### New Feature
 
-- Manage 3 deployment sizing scopes : small (1 master / 2 nodes), medium (1 master / 3 nodes) and large (1 master / 5 nodes)
+- Manage 3 deployment sizing scopes : small (1 manager / 2 nodes), medium (1 manager / 3 nodes) and large (1 manager / 5 nodes)
 
 ### Bug Fix
 

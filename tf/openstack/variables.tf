@@ -64,9 +64,9 @@ variable "security_group" {
   default          = "k8s"
 }
 
-variable "k8s_master_name" {
+variable "k8s_manager_name" {
   description      = "Vm names"
-  default = "k8s-master"
+  default = "k8s-manager"
 }
 
 variable "k8s_node_name" {
@@ -74,7 +74,7 @@ variable "k8s_node_name" {
   default = "k8s-node"
 }
 
-variable "k8s_master_flavor" {
+variable "k8s_manager_flavor" {
   description      = "Vm Sizing Label"
   default = "large"
 }

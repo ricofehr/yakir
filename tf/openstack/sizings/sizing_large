@@ -1,5 +1,5 @@
-variable "k8s_masters" {
-  description = "K8S master Vms count to create"
+variable "k8s_managers" {
+  description = "K8S manager Vms count to create"
   default = 3
 }
 
