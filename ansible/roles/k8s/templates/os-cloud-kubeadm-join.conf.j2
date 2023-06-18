@@ -8,6 +8,8 @@ discovery:
 nodeRegistration:
   name: "{{ inventory_hostname }}"
   criSocket: unix:///var/run/crio/crio.sock
+  kubeletExtraArgs:
+    cloud-provider: "external"
 {% if k8s_managers_group_name in group_names %}
 controlPlane:
   localAPIEndpoint:

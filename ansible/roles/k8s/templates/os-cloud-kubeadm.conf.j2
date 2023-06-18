@@ -3,6 +3,8 @@ kind: InitConfiguration
 nodeRegistration:
   name: "{{ inventory_hostname }}"
   criSocket: unix:///var/run/crio/crio.sock
+  kubeletExtraArgs:
+    cloud-provider: "external"
 localAPIEndpoint:
   advertiseAddress: "{{ k8s_man01_ip }}"
   bindPort: {{ k8s_controlplane_port }}
