@@ -51,6 +51,7 @@
     - role: cni
     - role: postinstall
     - role: ingress
+    - role: cert_manager
     - role: kubedashboard
     - role: opa
 
