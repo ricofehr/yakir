@@ -17,6 +17,7 @@ LINUXIMAGE="jammy"
 SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
 ANSIBLEPATH="/usr/bin/ansible-playbook"
 VM_ETH="ens3"
+K8S_DOMAIN="k8s.local"
 MIRROR_REGISTRY=""
 FLOATINGIPID=""
 NETID=""
@@ -39,6 +40,7 @@ Usage: $0 [options]
 -fm xxxx     openstack flavor for manager instance, default is large
 -fn xxxx     openstack flavor for nodes instance, default is xlarge
 -fip xxxx    openstack floatingip network id, no default
+-kd xxxx     global kubernetes domain, default is $K8S_DOMAIN
 -vip1 xxxx   failover ip for managers nodes
 -oscrt xxxx  openstack ssl certificate path
 -secgrp xxxx openstack tenant security group, default is k8s
@@ -89,6 +91,11 @@ while (($# > 0)); do
     -fip)
       shift
       FLOATINGIPID="$1"
+      shift
+      ;;
+    -kd)
+      shift
+      k8S_DOMAIN="$1"
       shift
       ;;
     -vip1)
@@ -329,7 +336,7 @@ $ANSIBLEPATH -i tfinventory \
 --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
 -e "global_controlplane_endpoint_ip=$VIP_MANAGERS" \
 -e "global_cloud=os" -e "cni_plugin=$CNI_PLUGIN" $VMS_EXTRA_VARS \
--e "keepalived_eth=$VM_ETH" \
+-e "keepalived_eth=$VM_ETH" -e "global_domain=$K8S_DOMAIN" \
 -e "k8s_os_cloud_username=$OSUSER" -e "k8s_os_cloud_password=$OSPASSWORD" \
 -e "k8s_os_cloud_authurl=$OSAUTHURL" -e "k8s_os_cloud_tenant_name=$OSTENANT" \
 -e "k8s_os_cloud_subnet_id=$SUBNETID" -e "k8s_os_cloud_floatingnetwork_id=$FLOATINGIPID" \

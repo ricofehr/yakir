@@ -81,9 +81,10 @@ Usage: ./up [options]
 -h           this is some help text.
 -d           destroy all previously provisioned vms
 -c xxxx      CNI plugin, choices are weave, flannel, calico (default), cilium
--p xxxx      vagrant provider, choices are virtualbox (default) or parallels
+-p xxxx      vagrant provider, default is virtualbox
 -kp xxxx     keepalived password, default is randomly generated
--m xxxx      container private mirror registry (default is none : get container images directly from Internet)
+-kd xxxx     global kubernetes domain, default is k8s.local
+-m xxxx      container private mirror registry
 -s xxxx      sizing deployment, default is small
               - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
               - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
@@ -105,6 +106,7 @@ Usage: ./deploy-to-openstack [options]
 -fm xxxx     openstack flavor for manager instance, default is large
 -fn xxxx     openstack flavor for nodes instance, default is xlarge
 -fip xxxx    openstack floatingip network id, no default
+-kd xxxx     global kubernetes domain, default is k8s.local
 -vip1 xxxx   failover ip for managers nodes
 -oscrt xxxx  openstack ssl certificate path
 -secgrp xxxx openstack tenant security group, default is k8s
@@ -129,6 +131,7 @@ cd tf/openstack && terraform destroy
 - Add logging collector stack (fluentbit)
 - Add backup process (backup etcd and storage repositories)
 - Add hardening stuff on Linux OS, and k8s settings
+- Add cert-manager and ingress integration for letsencrypt process
 - Add csi for a distributed Filesystem like Ceph
 - Work on a kvm deployment
 - Work on opentelemetry integration
