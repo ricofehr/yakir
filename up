@@ -3,8 +3,10 @@
 PROVIDER="virtualbox"
 ISDESTROY=0
 SIZING=small
-MIRROR_REGISTRY=""
 K8S_DOMAIN="k8s.local"
+MIRROR_REGISTRY=""
+MIRROR_APT=""
+MIRROR_PYPI=""
 CNI_PLUGIN="calico"
 KEEPALIVED_PASSWORD="$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 8 ; echo '')"
 
@@ -18,7 +20,9 @@ Usage: $0 [options]
 -p xxxx      vagrant provider, default is virtualbox
 -kp xxxx     keepalived password, default is randomly generated
 -kd xxxx     global kubernetes domain, default is $K8S_DOMAIN
--m xxxx      container private mirror registry
+-mr xxxx     container private mirror registry
+-ma xxxx     mirror repository URL for apt packages
+-mp xxxx     mirror repository URL for pypi packages
 -s xxxx      sizing deployment, default is small
               - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
               - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
@@ -50,9 +54,19 @@ while (($# > 0)); do
       k8S_DOMAIN="$1"
       shift
       ;;
-    -m)
+    -mr)
       shift
       MIRROR_REGISTRY=$1
+      shift
+      ;;
+    -ma)
+      shift
+      MIRROR_APT="$1"
+      shift
+      ;;
+    -mp)
+      shift
+      MIRROR_PYPI="$1"
       shift
       ;;
     -s)
@@ -98,6 +112,14 @@ mkdir -p tmp
 MIRROR_REGISTRY_PARAM=""
 [[ -n "MIRROR_REGISTRY" ]] && MIRROR_REGISTRY_PARAM="-e crio_mirror=$MIRROR_REGISTRY"
 
+MIRROR_APT_PARAM=""
+[[ -n "MIRROR_APT" ]] && MIRROR_APT_PARAM="-e internal_repos_apt=$MIRROR_APT"
+
+MIRROR_PYPI_PARAM=""
+[[ -n "MIRROR_PYPI" ]] && MIRROR_PYPI_PARAM="-e internal_repos_pypi=$MIRROR_PYPI"
+
+MIRROR_PARAMS="$MIRROR_REGISTRY_PARAM $MIRROR_APT_PARAM $MIRROR_PYPI_PARAM"
+
 # Deploy an openstack installation
 pushd ansible >/dev/null
 ln -sf inventories/inventory_${SIZING} inventory
@@ -105,6 +127,6 @@ ln -sf sizing_vars/sizing_vars_${SIZING}.yml sizing_vars.yml
 mkdir -p collections/ansible_collections
 ansible-galaxy collection install -r requirements.yml -p ./collections/
 ansible-playbook --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" \
-  $MIRROR_REGISTRY_PARAM -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" -e "global_domain=$K8S_DOMAIN" -i inventory playbook.yml 2>&1
+  $MIRROR_PARAMS -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" -e "global_domain=$K8S_DOMAIN" -i inventory playbook.yml 2>&1
 popd >/dev/null
 

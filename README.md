@@ -84,7 +84,9 @@ Usage: ./up [options]
 -p xxxx      vagrant provider, default is virtualbox
 -kp xxxx     keepalived password, default is randomly generated
 -kd xxxx     global kubernetes domain, default is k8s.local
--m xxxx      container private mirror registry
+-mr xxxx     container private mirror registry
+-ma xxxx     mirror repository URL for apt packages
+-mp xxxx     mirror repository URL for pypi packages
 -s xxxx      sizing deployment, default is small
               - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
               - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores

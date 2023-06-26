@@ -1,0 +1,8 @@
+---
+
+internal_repos_apt: "https://nexus.local/jammy-proxy"
+internal_repos_apt_distribution: "jammy"
+
+internal_repos_pypi: "https://nexus.local/pypi"
+
+...

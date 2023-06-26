@@ -19,6 +19,8 @@ ANSIBLEPATH="/usr/bin/ansible-playbook"
 VM_ETH="ens3"
 K8S_DOMAIN="k8s.local"
 MIRROR_REGISTRY=""
+MIRROR_APT=""
+MIRROR_PYPI=""
 FLOATINGIPID=""
 NETID=""
 SUBNETID=""
@@ -46,7 +48,9 @@ Usage: $0 [options]
 -secgrp xxxx openstack tenant security group, default is k8s
 -net xxxx    openstack net id, no default
 -snet xxxx   openstack subnet id, no default
--m xxxx      mirror registry for docker.io, quay.io, registry.k8s.io images
+-mr xxxx     container private mirror registry
+-ma xxxx     mirror repository URL for apt packages
+-mp xxxx     mirror repository URL for pypi packages
 -o xxxx      openstack operating system image, default is $LINUXIMAGE
 -k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
 -w xxxx	     override ansible path
@@ -133,9 +137,19 @@ while (($# > 0)); do
       SUBNETID="$1"
       shift
       ;;
-    -m)
+    -mr)
       shift
-      MIRROR_REGISTRY="$1"
+      MIRROR_REGISTRY=$1
+      shift
+      ;;
+    -ma)
+      shift
+      MIRROR_APT="$1"
+      shift
+      ;;
+    -mp)
+      shift
+      MIRROR_PYPI="$1"
       shift
       ;;
     -o)
@@ -242,6 +256,14 @@ fi
 MIRROR_REGISTRY_PARAM=""
 [[ -n "MIRROR_REGISTRY" ]] && MIRROR_REGISTRY_PARAM="-e crio_mirror=$MIRROR_REGISTRY"
 
+MIRROR_APT_PARAM=""
+[[ -n "MIRROR_APT" ]] && MIRROR_APT_PARAM="-e internal_repos_apt=$MIRROR_APT"
+
+MIRROR_PYPI_PARAM=""
+[[ -n "MIRROR_PYPI" ]] && MIRROR_PYPI_PARAM="-e internal_repos_pypi=$MIRROR_PYPI"
+
+MIRROR_PARAMS="$MIRROR_REGISTRY_PARAM $MIRROR_APT_PARAM $MIRROR_PYPI_PARAM"
+
 # Ensure valid sizing
 [[ -f ansible/sizing_vars/sizing_vars_${SIZING}.yml ]] || SIZING=small
 
@@ -340,6 +362,6 @@ $ANSIBLEPATH -i tfinventory \
 -e "k8s_os_cloud_username=$OSUSER" -e "k8s_os_cloud_password=$OSPASSWORD" \
 -e "k8s_os_cloud_authurl=$OSAUTHURL" -e "k8s_os_cloud_tenant_name=$OSTENANT" \
 -e "k8s_os_cloud_subnet_id=$SUBNETID" -e "k8s_os_cloud_floatingnetwork_id=$FLOATINGIPID" \
--e "global_persistence_disk=true" -e "k8s_cloud_crt_path=$OSCERTPATH" $MIRROR_REGISTRY_PARAM
+-e "global_persistence_disk=true" -e "k8s_cloud_crt_path=$OSCERTPATH" $MIRROR_PARAMS
 
 popd > /dev/null
