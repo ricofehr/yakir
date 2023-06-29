@@ -6,9 +6,6 @@
   strategy: linear
   roles:
     - role: internal_repos
-      when:
-        - internal_repos_apt != ""
-        - internal_repos_pypi != ""
     - role: base
     - role: crio
     - role: kubernetes

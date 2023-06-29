@@ -1,22 +1,11 @@
 ---
 
-- name: Ensure .pip folder exists
-  ansible.builtin.file:
-    path: "{{ ansible_env.HOME }}/.pip"
-    state: directory
-    mode: '0755'
+- name: Pypi internal repository
+  when: internal_repos_pypi != ""
+  ansible.builtin.import_tasks: pypi.yml
 
-- name: Write pip.conf with internal repositories
-  ansible.builtin.template:
-    src: pip.conf.j2
-    dest: "{{ ansible_env.HOME }}/.pip/pip.conf"
-    mode: '0640'
-
-- name: Write apt source.list with internal repositories
-  become: true
-  ansible.builtin.template:
-    src: sources.list.j2
-    dest: "/etc/apt/sources.list"
-    mode: '0644'
+- name: Apt internal repository
+  when: internal_repos_apt != ""
+  ansible.builtin.import_tasks: apt.yml
 
 ...
