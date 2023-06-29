@@ -52,6 +52,7 @@ Vagrant.configure("2") do |config|
       config.vm.define name do |machine|
         machine.vm.hostname = name
         machine.vm.network :private_network, ip: ip
+        machine.vm.disk :disk, size: "100GB", name: "disk_ceph"
         machine.vm.provider :virtualbox do |v|
           v.name = name
           v.memory = 2048
@@ -60,6 +61,7 @@ Vagrant.configure("2") do |config|
         machine.vm.provider :parallels do |v|
           v.memory = 2048
           v.cpus = 4
+          v.customize ["set", :id, "--device-add", "hdd", "--size", "100000", "--iface", "sata"]
         end
       end
     end

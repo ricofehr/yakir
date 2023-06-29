@@ -1,0 +1,7 @@
+---
+
+csi_plugin: "rook"
+csi_rook_chart_version: v1.0
+csi_rook_namespace: kube-rook
+
+...

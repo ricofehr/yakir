@@ -1,0 +1,8 @@
+---
+
+- name: Rook CSI
+  when:
+    - csi_plugin == 'rook'
+  ansible.builtin.import_tasks: rook.yml
+
+...

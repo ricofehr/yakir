@@ -8,7 +8,8 @@ managers = {
 # k8s nodes
 nodes = {
     "k8s-node1" => "192.168.58.20",
-    "k8s-node2" => "192.168.58.21"
+    "k8s-node2" => "192.168.58.21",
+    "k8s-node3" => "192.168.58.22"
 }
 
 def running_rosetta()
@@ -35,11 +36,11 @@ Vagrant.configure("2") do |config|
         machine.vm.network :private_network, ip: ip
         machine.vm.provider :virtualbox do |v|
           v.name = name
-          v.memory = 3072
+          v.memory = 2048
           v.cpus = 2
         end
         machine.vm.provider :parallels do |v|
-          v.memory = 3072
+          v.memory = 2048
           v.cpus = 2
         end
       end
@@ -49,6 +50,7 @@ Vagrant.configure("2") do |config|
       config.vm.define name do |machine|
         machine.vm.hostname = name
         machine.vm.network :private_network, ip: ip
+        machine.vm.disk :disk, size: "100GB", name: "disk_ceph"
         machine.vm.provider :virtualbox do |v|
           v.name = name
           v.memory = 2048
@@ -57,6 +59,7 @@ Vagrant.configure("2") do |config|
         machine.vm.provider :parallels do |v|
           v.memory = 2048
           v.cpus = 4
+          v.customize ["set", :id, "--device-add", "hdd", "--size", "100000", "--iface", "sata"]
         end
       end
     end

@@ -53,6 +53,7 @@
     - sizing_vars.yml
   roles:
     - role: cni
+    - role: csi
     - role: postinstall
     - role: ingress
     - role: cert_manager

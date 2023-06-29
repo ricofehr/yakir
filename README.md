@@ -8,7 +8,7 @@ A base k8s install on Ubuntu distribution (Tested on Jammy).
 Can be deployed on local with Vagrant (Bento/Ubuntu boxes) or on Openstack 
 - 3 different sizings
   - small: 1 Managers and 1 Worker (for a Vagrant deployment, fit to 8Go RAM Laptop with 2 cpu cores)
-  - medium : 3 Managers and 2 Workers (for a Vagrant deployment, fit to 16Go RAM Laptop with 4 cpu cores)
+  - medium : 3 Managers and 3 Workers (for a Vagrant deployment, fit to 16Go RAM Laptop with 4 cpu cores)
   - large : 3 Managers and 5 Workers (for a Vagrant deployment, fit to 32Go RAM Laptop with 6 cpu cores)
 
 ## Repository structure
@@ -25,8 +25,9 @@ yakir/
     +---roles/              Ansible roles folder
         +---base            Prerequisites for the Linux OS : global attributes (locale, hostname, time, swap usage, ...), user management, system packages
         +---cert            Manage self-signed certificate creation (used for wildcard ingress FQDN)
-        +---cni             Manage network plugins for Kubernetes
+        +---cni             Manage network plugins for Kubernetes : Weave, Flannel, Cilium, Calico
         +---crio            Manage container engine installation
+        +---csi             Manage storage plugins for Kubernetes : Rook
         +---helm            Install helm command and add global helm repositories
         +---ingress         Deploy nginx ingress component on Kubernetes
         +---k8s             Install and configure a Kubernetes deployment with Kubeadm
@@ -56,6 +57,7 @@ Deployment of Kubernetes with crio as container engine, and multiple CNI choices
 - Flannel v0.22.0
 - Cilium v1.13.2
 - Gatekeeper v3.12.0
+- Rook v
 
 ## Vagrant deployment
 
@@ -133,7 +135,7 @@ cd tf/openstack && terraform destroy
 - Add logging collector stack (fluentbit)
 - Add backup process (backup etcd and storage repositories)
 - Add hardening stuff on Linux OS, and k8s settings
-- Add cert-manager and ingress integration for letsencrypt process
-- Add csi for a distributed Filesystem like Ceph
+- Add cert-manager and ingress integration for letsencrypt process -> WIP
+- Add csi for a distributed Filesystem like Ceph -> WIP
 - Work on a kvm deployment
 - Work on opentelemetry integration
