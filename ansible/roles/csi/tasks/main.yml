@@ -1,8 +1,11 @@
 ---
 
 - name: Rook CSI
-  when:
-    - csi_plugin == 'rook'
+  when: csi_plugin == 'rook'
   ansible.builtin.import_tasks: rook.yml
+
+- name: Cinder CSI
+  when: csi_plugin == 'cinder'
+  ansible.builtin.import_tasks: cinder.yml
 
 ...

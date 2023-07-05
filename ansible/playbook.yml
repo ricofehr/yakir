@@ -31,7 +31,6 @@
   roles:
     - role: keepalived
     - role: k8s
-      tags: ["k8s"]
 
 - name: Init kubernetes on worker nodes
   hosts:

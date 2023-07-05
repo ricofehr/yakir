@@ -13,9 +13,11 @@ sizing_k8s_manager_to_ip: "{{ sizing_k8s_managers | items2dict(key_name='name', 
 
 sizing_k8s_node1_ip: "{{ hostvars[groups[global_nodes_group_name][0]]['ansible_host'] }}"
 sizing_k8s_node2_ip: "{{ hostvars[groups[global_nodes_group_name][1]]['ansible_host'] }}"
+sizing_k8s_node3_ip: "{{ hostvars[groups[global_nodes_group_name][2]]['ansible_host'] }}"
 
 sizing_k8s_nodes:
   - { name: "{{ hostvars[groups[global_nodes_group_name][0]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node1_ip }}" }
   - { name: "{{ hostvars[groups[global_nodes_group_name][1]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node2_ip }}" }
+  - { name: "{{ hostvars[groups[global_nodes_group_name][2]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node3_ip }}" }
 
 ...

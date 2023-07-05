@@ -26,24 +26,4 @@
     - "{{ k8s_os_provider_manifest_path }}/controller-manager/openstack-cloud-controller-manager-ds.yaml"
   delegate_to: "{{ k8s_man01_hostname }}"
 
-- name: Openstack Cinder CSI Plugin
-  run_once: true
-  kubernetes.core.k8s:
-    state: present
-    src: "{{ item }}"
-  loop:
-    - "{{ k8s_os_provider_manifest_path }}/cinder-csi-plugin/cinder-csi-controllerplugin-rbac.yaml"
-    - "{{ k8s_os_provider_manifest_path }}/cinder-csi-plugin/cinder-csi-controllerplugin.yaml"
-    - "{{ k8s_os_provider_manifest_path }}/cinder-csi-plugin/cinder-csi-nodeplugin-rbac.yaml"
-    - "{{ k8s_os_provider_manifest_path }}/cinder-csi-plugin/cinder-csi-nodeplugin.yaml"
-    - "{{ k8s_os_provider_manifest_path }}/cinder-csi-plugin/csi-cinder-driver.yaml"
-  delegate_to: "{{ k8s_man01_hostname }}"
-
-- name: Apply cinder storage class
-  run_once: true
-  kubernetes.core.k8s:
-    state: present
-    template: templates/cinder-sc.yml.j2
-  delegate_to: "{{ k8s_man01_hostname }}"
-
 ...

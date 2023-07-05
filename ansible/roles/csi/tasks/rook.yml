@@ -10,10 +10,10 @@
         labels:
           kubernetes.io/metadata.name: "{{ csi_rook_namespace }}"
           name: "{{ csi_rook_namespace }}"
-          pod-security.kubernetes.io/enforce: baseline
+          pod-security.kubernetes.io/enforce: privileged
         name: "{{ csi_rook_namespace }}"
 
-- name: Add rook ingress chart repo
+- name: Add rook chart repo
   kubernetes.core.helm_repository:
     name: rook
     repo_url: "https://charts.rook.io/release"
@@ -22,27 +22,42 @@
   kubernetes.core.helm:
     name: rook
     chart_ref: rook/rook-ceph
-    #chart_version: "{{ csi_rook_chart_version }}"
+    chart_version: "{{ csi_rook_chart_version }}"
     release_namespace: "{{ csi_rook_namespace }}"
-    create_namespace: true
+    set_values:
+      - value: operatorNamespace={{ csi_rook_namespace }}
+        value_type: string
 
 - name: Rook CSI Cluster Init
   kubernetes.core.k8s:
     state: present
     template: templates/rook-cluster.yml.j2
 
-- name: Wait for CSI pods become created
-  ansible.builtin.shell: "kubectl get po --namespace=kube-rook --output=jsonpath='{.items[*].metadata.name}'"
-  register: csi_pods_created
-  until: item in csi_pods_created.stdout
-  retries: 30
-  delay: 10
-  with_items:
-    - calico-node
+- name: Wait for rook operator pod become ready
+  ansible.builtin.command: "kubectl wait --namespace={{ csi_rook_namespace }} --for=condition=Ready pods --selector app=rook-ceph-operator --timeout=900s"
   changed_when: false
 
-- name: Wait for csi pods become ready
-  ansible.builtin.command: "kubectl wait --namespace=kube-rook --for=condition=Ready pods --selector k8s-app=rook-node --timeout=600s"
+- name: Wait for cephfs pods become ready
+  ansible.builtin.command: "kubectl wait --namespace={{ csi_rook_namespace }} --for=condition=Ready pods --selector app=csi-cephfsplugin --timeout=900s"
+  retries: 3
+  delay: 120
+  register: csi_ceph_wait
+  until: csi_ceph_wait.rc == 0
   changed_when: false
+
+- name: Rook Filesystem
+  kubernetes.core.k8s:
+    state: present
+    template: templates/rook-filesystem.yml.j2
+
+- name: Rook Block Storage
+  kubernetes.core.k8s:
+    state: present
+    template: templates/rook-block.yml.j2
+
+- name: Rook S3 Storage
+  kubernetes.core.k8s:
+    state: present
+    template: templates/rook-bucket.yml.j2
 
 ...

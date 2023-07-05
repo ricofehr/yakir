@@ -7,6 +7,7 @@ OSAUTHURL="http://172.29.236.101:5000/v3"
 OSTENANT="tenant0"
 OSREGION="RegionOne"
 CNI_PLUGIN="flannel"
+CSI_PLUGIN="cinder"
 FLAVORMANAGERS="large"
 FLAVORNODES="xlarge"
 NODES_EXTRA_VARS=""
@@ -356,7 +357,7 @@ ansible-galaxy collection install -r requirements.yml -p ./collections/
 # Install one K8S manager and two K8S nodes
 $ANSIBLEPATH -i tfinventory \
 --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
--e "global_controlplane_endpoint_ip=$VIP_MANAGERS" \
+-e "global_controlplane_endpoint_ip=$VIP_MANAGERS" -e "csi_plugin=$CSI_PLUGIN" \
 -e "global_cloud=os" -e "cni_plugin=$CNI_PLUGIN" $VMS_EXTRA_VARS \
 -e "keepalived_eth=$VM_ETH" -e "global_domain=$K8S_DOMAIN" \
 -e "k8s_os_cloud_username=$OSUSER" -e "k8s_os_cloud_password=$OSPASSWORD" \

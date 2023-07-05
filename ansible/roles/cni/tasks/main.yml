@@ -1,23 +1,19 @@
 ---
 
 - name: Weave CNI
-  when:
-    - cni_plugin == 'weave'
+  when: cni_plugin == 'weave'
   ansible.builtin.import_tasks: weave.yml
 
 - name: Flannel CNI
-  when:
-    - cni_plugin == 'flannel'
+  when: cni_plugin == 'flannel'
   ansible.builtin.import_tasks: flannel.yml
 
 - name: Calico CNI
-  when:
-    - cni_plugin == 'calico'
+  when: cni_plugin == 'calico'
   ansible.builtin.import_tasks: calico.yml
 
 - name: Cilium CNI
-  when:
-    - cni_plugin == 'cilium'
+  when: cni_plugin == 'cilium'
   ansible.builtin.import_tasks: cilium.yml
 
 ...

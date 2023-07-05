@@ -1,0 +1,21 @@
+---
+
+- name: Openstack Cinder CSI Plugin
+  run_once: true
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+  loop:
+    - "{{ csi_cinder_manifest_path }}/cinder-csi-plugin/cinder-csi-controllerplugin-rbac.yaml"
+    - "{{ csi_cinder_manifest_path }}/cinder-csi-plugin/cinder-csi-controllerplugin.yaml"
+    - "{{ csi_cinder_provider_manifest_path }}/cinder-csi-plugin/cinder-csi-nodeplugin-rbac.yaml"
+    - "{{ csi_cinder_provider_manifest_path }}/cinder-csi-plugin/cinder-csi-nodeplugin.yaml"
+    - "{{ csi_cinder_provider_manifest_path }}/cinder-csi-plugin/csi-cinder-driver.yaml"
+
+- name: Apply cinder storage class
+  run_once: true
+  kubernetes.core.k8s:
+    state: present
+    template: templates/cinder-sc.yml.j2
+
+...

@@ -8,6 +8,7 @@ MIRROR_REGISTRY=""
 MIRROR_APT=""
 MIRROR_PYPI=""
 CNI_PLUGIN="calico"
+CSI_PLUGIN="none"
 KEEPALIVED_PASSWORD="$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 8 ; echo '')"
 
 # Help function
@@ -93,6 +94,9 @@ done
 # Ensure valid sizing
 [[ -f vagrantfiles/Vagrantfile_${SIZING} ]] || SIZING=small
 
+# Enable rook CSI if at least 3 workers
+[[ $SIZING = "small" ]] || CSI_PLUGIN="rook"
+
 # Clean older bootstrap
 if ((ISDESTROY == 1)); then
   vagrant destroy -f || echo "No vms previously installed"
@@ -127,6 +131,6 @@ ln -sf sizing_vars/sizing_vars_${SIZING}.yml sizing_vars.yml
 mkdir -p collections/ansible_collections
 ansible-galaxy collection install -r requirements.yml -p ./collections/
 ansible-playbook --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" \
-  $MIRROR_PARAMS -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" -e "global_domain=$K8S_DOMAIN" -i inventory playbook.yml 2>&1
+  $MIRROR_PARAMS -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" -e "global_domain=$K8S_DOMAIN" -e "csi_plugin=$CSI_PLUGIN" -i inventory playbook.yml 2>&1
 popd >/dev/null
 

@@ -1,7 +1,11 @@
 ---
 
 csi_plugin: "rook"
-csi_rook_chart_version: v1.0
+csi_rook_chart_version: v1.11.9
 csi_rook_namespace: kube-rook
+
+csi_cinder_provider_version: "v1.24.0"
+csi_cinder_manifest_path: https://raw.githubusercontent.com/kubernetes/cloud-provider-openstack/{{ csi_cinder_provider_version }}/manifests
+csi_k8s_nodes: []
 
 ...

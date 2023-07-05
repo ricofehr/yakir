@@ -27,7 +27,7 @@ yakir/
         +---cert            Manage self-signed certificate creation (used for wildcard ingress FQDN)
         +---cni             Manage network plugins for Kubernetes : Weave, Flannel, Cilium, Calico
         +---crio            Manage container engine installation
-        +---csi             Manage storage plugins for Kubernetes : Rook
+        +---csi             Manage storage plugins for Kubernetes : Rook or Cinder
         +---helm            Install helm command and add global helm repositories
         +---ingress         Deploy nginx ingress component on Kubernetes
         +---k8s             Install and configure a Kubernetes deployment with Kubeadm
@@ -57,7 +57,8 @@ Deployment of Kubernetes with crio as container engine, and multiple CNI choices
 - Flannel v0.22.0
 - Cilium v1.13.2
 - Gatekeeper v3.12.0
-- Rook v
+- Rook v1.11.9
+- Cert Manager v1.12.0
 
 ## Vagrant deployment
 
@@ -69,7 +70,7 @@ Deployment of Kubernetes with crio as container engine, and multiple CNI choices
 
 ```
 $ git submodule update --init
-$ up
+$ ./up
 ```
 
 Once setup done
@@ -93,6 +94,11 @@ Usage: ./up [options]
               - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
               - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
               - large : 3 managers and 5 nodes, host with 24Go ram / 6 cores
+```
+
+For example, an overwritten install on apple silion with local repository, custom domain, flannel CNI, and medium sizing
+```
+$ ./up -d -c flannel -p parallels -kp UdTelzAu -kd k8s.mydomain.io -mr registry.mydomain.io -ma https://nexus.mydomain.io/repository/jammy -mp https://nexus.mydomain.io/repository/pypi-all -s medium
 ```
 
 ## Openstack deployment
@@ -136,6 +142,5 @@ cd tf/openstack && terraform destroy
 - Add backup process (backup etcd and storage repositories)
 - Add hardening stuff on Linux OS, and k8s settings
 - Add cert-manager and ingress integration for letsencrypt process -> WIP
-- Add csi for a distributed Filesystem like Ceph -> WIP
 - Work on a kvm deployment
 - Work on opentelemetry integration
