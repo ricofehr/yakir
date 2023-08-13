@@ -52,7 +52,7 @@ while (($# > 0)); do
       ;;
     -kd)
       shift
-      k8S_DOMAIN="$1"
+      K8S_DOMAIN="$1"
       shift
       ;;
     -mr)
@@ -114,13 +114,13 @@ export ANSIBLE_NOCOWS=1
 mkdir -p tmp
 
 MIRROR_REGISTRY_PARAM=""
-[[ -n "MIRROR_REGISTRY" ]] && MIRROR_REGISTRY_PARAM="-e crio_mirror=$MIRROR_REGISTRY"
+[[ -n "$MIRROR_REGISTRY" ]] && MIRROR_REGISTRY_PARAM="-e crio_mirror=$MIRROR_REGISTRY"
 
 MIRROR_APT_PARAM=""
-[[ -n "MIRROR_APT" ]] && MIRROR_APT_PARAM="-e internal_repos_apt=$MIRROR_APT"
+[[ -n "$MIRROR_APT" ]] && MIRROR_APT_PARAM="-e internal_repos_apt=$MIRROR_APT"
 
 MIRROR_PYPI_PARAM=""
-[[ -n "MIRROR_PYPI" ]] && MIRROR_PYPI_PARAM="-e internal_repos_pypi=$MIRROR_PYPI"
+[[ -n "$MIRROR_PYPI" ]] && MIRROR_PYPI_PARAM="-e internal_repos_pypi=$MIRROR_PYPI"
 
 MIRROR_PARAMS="$MIRROR_REGISTRY_PARAM $MIRROR_APT_PARAM $MIRROR_PYPI_PARAM"
 
