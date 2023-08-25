@@ -1,0 +1,51 @@
+---
+
+- name: Create monitoring namespace
+  kubernetes.core.k8s:
+    name: "{{ monitoring_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Add prometheus chart repo
+  kubernetes.core.helm_repository:
+    name: prometheus
+    repo_url: "{{ monitoring_prometheus_repo }}"
+
+- name: Deploy Prometheus
+  kubernetes.core.helm:
+    name: prometheus
+    chart_ref: prometheus/prometheus
+    chart_version: "{{ monitoring_prometheus_version }}"
+    release_namespace: "{{ monitoring_namespace }}"
+    values:
+      alertmanager:
+        persistence:
+          storageClass: "rook-ceph-block"
+      server:
+        ingress:
+          ingressClassName: nginx
+          enabled: true
+          hosts: ["{{ monitoring_exporter_domain }}"]
+        persistentVolume:
+          storageClass: "rook-ceph-block"
+
+- name: Add grafana chart repo
+  kubernetes.core.helm_repository:
+    name: grafana
+    repo_url: "{{ monitoring_grafana_repo }}"
+
+- name: Deploy Grafana
+  kubernetes.core.helm:
+    name: grafana
+    chart_ref: grafana/grafana
+    chart_version: "{{ monitoring_grafana_version }}"
+    release_namespace: "{{ monitoring_namespace }}"
+    values:
+      replicas: 2
+      ingress.ingressClassName: nginx
+      ingress.enabled: true
+      ingress.hosts: ["{{ monitoring_grafana_domain }}"]
+      persistence.enabled: "{{ monitoring_persistence_disk }}"
+
+...

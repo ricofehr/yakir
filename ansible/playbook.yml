@@ -55,5 +55,7 @@
     - role: cert_manager
     - role: kubedashboard
     - role: opa
+    - role: monitoring
+      tags: ["monitoring"]
 
 ...
