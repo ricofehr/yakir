@@ -18,7 +18,7 @@ global_crio_version: 1.27
 global_gatekeeper_version: 3.12.0
 
 global_domain: k8s.local
-global_persistence_disk: false
+global_persistence_disk: "{{ sizing_persistence_disk }}"
 global_certs_folder: "{{ ansible_env.HOME }}/k8scerts"
 global_cert_path: "{{ global_certs_folder }}/k8s-ingress.crt"
 global_cert_key: "{{ global_certs_folder }}/k8s-ingress.pem"

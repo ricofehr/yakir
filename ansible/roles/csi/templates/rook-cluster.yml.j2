@@ -2,24 +2,40 @@ apiVersion: ceph.rook.io/v1
 kind: CephCluster
 metadata:
   name: {{ csi_rook_namespace }}
-  namespace: kube-rook
+  namespace: {{ csi_rook_namespace }}
 spec:
   cephVersion:
     image: quay.io/ceph/ceph:v17.2.6
+    allowUnsupported: false
   dataDirHostPath: /var/lib/rook
+  skipUpgradeChecks: false
+  continueUpgradeAfterChecksEvenIfNotHealthy: false
+  waitTimeoutForHealthyOSDInMinutes: 10
   mon:
     count: 3
     allowMultiplePerNode: false
+  mgr:
+    count: 1
+    allowMultiplePerNode: false
+    modules:
+      - name: pg_autoscaler
+        enabled: true
   dashboard:
     enabled: true
   # cluster level storage configuration and selection
+  monitoring:
+    # requires Prometheus to be pre-installed
+    enabled: false
+    # Whether to disable the metrics reported by Ceph. If false, the prometheus mgr module and Ceph exporter are enabled.
+    # If true, the prometheus mgr module and Ceph exporter are both disabled. Default is false.
+    metricsDisabled: false
+  network:
+    connections:
+      encryption:
+        enabled: false
+      compression:
+        enabled: false
+      requireMsgr2: false
   storage:
-    useAllNodes: false
-    useAllDevices: false
-    deviceFilter:
-    nodes:
-{% for k8s_node in csi_k8s_nodes %}
-    - name: "{{ k8s_node }}"
-      devices:
-      - name: "sdb"
-{% endfor %}
+    useAllNodes: true
+    useAllDevices: true

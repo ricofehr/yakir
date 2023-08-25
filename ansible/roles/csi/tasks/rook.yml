@@ -24,9 +24,8 @@
     chart_ref: rook/rook-ceph
     chart_version: "{{ csi_rook_chart_version }}"
     release_namespace: "{{ csi_rook_namespace }}"
-    set_values:
-      - value: operatorNamespace={{ csi_rook_namespace }}
-        value_type: string
+    values:
+      operatorNamespace: "{{ csi_rook_namespace }}"
 
 - name: Rook CSI Cluster Init
   kubernetes.core.k8s:
@@ -39,10 +38,18 @@
 
 - name: Wait for cephfs pods become ready
   ansible.builtin.command: "kubectl wait --namespace={{ csi_rook_namespace }} --for=condition=Ready pods --selector app=csi-cephfsplugin --timeout=900s"
-  retries: 3
+  retries: 8
   delay: 120
   register: csi_ceph_wait
   until: csi_ceph_wait.rc == 0
+  changed_when: false
+
+- name: Wait for cephrdb pods become ready
+  ansible.builtin.command: "kubectl wait --namespace={{ csi_rook_namespace }} --for=condition=Ready pods --selector app=csi-rbdplugin --timeout=900s"
+  retries: 8
+  delay: 120
+  register: csi_rbd_wait
+  until: csi_rbd_wait.rc == 0
   changed_when: false
 
 - name: Rook Filesystem

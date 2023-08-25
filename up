@@ -105,6 +105,9 @@ fi
 
 # Launch vagrant vms
 ln -sf vagrantfiles/Vagrantfile_${SIZING} Vagrantfile
+if [[ "$PROVIDER" = "virtualbox" ]]; then
+  export VAGRANT_EXPERIMENTAL="disks"
+fi
 vagrant up --provider=$PROVIDER
 sleep 15
 

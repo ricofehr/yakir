@@ -8,5 +8,6 @@ sizing_k8s_manager_to_ip: "{{ sizing_k8s_managers | items2dict(key_name='name', 
 sizing_k8s_node1_ip: "{{ hostvars[groups[global_nodes_group_name][0]]['ansible_host'] }}"
 sizing_k8s_nodes:
   - { name: "{{ hostvars[groups[global_nodes_group_name][0]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node1_ip }}" }
+sizing_persistence_disk: false
 
 ...
