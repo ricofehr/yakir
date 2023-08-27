@@ -1,33 +1,56 @@
 #!/bin/bash -e
 
 # Default parameters value
-OSUSER="tenant0"
-OSPASSWORD="tenant0"
-OSAUTHURL="http://172.29.236.101:5000/v3"
-OSTENANT="tenant0"
-OSREGION="RegionOne"
-CNI_PLUGIN="flannel"
-CSI_PLUGIN="cinder"
-FLAVORMANAGERS="large"
-FLAVORNODES="xlarge"
-NODES_EXTRA_VARS=""
-PRIVATENETWORK="private"
-PUBLICNETWORK="public"
-SECURITYGROUP="k8s"
-LINUXIMAGE="jammy"
-SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
-ANSIBLEPATH="/usr/bin/ansible-playbook"
-VM_ETH="ens3"
-K8S_DOMAIN="k8s.local"
-MIRROR_REGISTRY=""
-MIRROR_APT=""
-MIRROR_PYPI=""
-FLOATINGIPID=""
-NETID=""
-SUBNETID=""
-OSCERTPATH=""
-SIZING="small"
-VIP_MANAGERS=""
+declare OSUSER="tenant0"
+declare OSPASSWORD="tenant0"
+declare OSAUTHURL="http://172.29.236.101:5000/v3"
+declare OSTENANT="tenant0"
+declare OSREGION="RegionOne"
+declare CNI_PLUGIN="flannel"
+declare CSI_PLUGIN="cinder"
+declare FLAVORMANAGERS="large"
+declare FLAVORNODES="xlarge"
+declare NODES_EXTRA_VARS=""
+declare PRIVATENETWORK="private"
+declare PUBLICNETWORK="public"
+declare SECURITYGROUP="k8s"
+declare LINUXIMAGE="jammy"
+declare SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
+declare ANSIBLEPATH="/usr/bin/ansible-playbook"
+declare VM_ETH="ens3"
+declare K8S_DOMAIN="k8s.local"
+declare MIRROR_REGISTRY=""
+declare MIRROR_REGISTRY_PARAM=""
+declare MIRROR_APT=""
+declare MIRROR_APT_PARAM=""
+declare MIRROR_PYPI=""
+declare MIRROR_PYPI_PARAM=""
+declare MIRROR_PARAMS=""
+declare FLOATINGIPID=""
+declare NETID=""
+declare SUBNETID=""
+declare OSCERTPATH=""
+declare SIZING="small"
+declare VIP_MANAGERS=""
+declare SSH_PARAMS="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no"
+declare K8SMANAGER1_IP=""
+declare K8SMANAGER1_PRIVATE_IP=""
+declare K8SMANAGER2_IP=""
+declare K8SMANAGER2_PRIVATE_IP=""
+declare K8SMANAGER3_IP=""
+declare K8SMANAGER3_PRIVATE_IP=""
+declare K8SNODE1_IP=""
+declare K8SNODE1_PRIVATE_IP=""
+declare K8SNODE2_IP=""
+declare K8SNODE2_PRIVATE_IP=""
+declare K8SNODE3_IP=""
+declare K8SNODE3_PRIVATE_IP=""
+declare K8SNODE4_IP=""
+declare K8SNODE4_PRIVATE_IP=""
+declare K8SNODE5_IP=""
+declare K8SNODE5_PRIVATE_IP=""
+declare VMS_EXTRA_VARS=""
+
 
 # Help function
 deployhelp() {
@@ -100,7 +123,7 @@ while (($# > 0)); do
       ;;
     -kd)
       shift
-      k8S_DOMAIN="$1"
+      K8S_DOMAIN="$1"
       shift
       ;;
     -vip1)
@@ -120,7 +143,7 @@ while (($# > 0)); do
       ;;
     -oscrt)
       shift
-      OSCERTPATH="${1}"
+      OSCERTPATH="$1"
       shift
       ;;
     -secgrp)
@@ -140,7 +163,7 @@ while (($# > 0)); do
       ;;
     -mr)
       shift
-      MIRROR_REGISTRY=$1
+      MIRROR_REGISTRY="$1"
       shift
       ;;
     -ma)
@@ -161,11 +184,6 @@ while (($# > 0)); do
     -k)
       shift
       SSHKEYFILE="$1"
-      shift
-      ;;
-    -kp)
-      shift
-      KEEPALIVED_PASSWORD="$1"
       shift
       ;;
     -w)
@@ -254,26 +272,23 @@ if [[ -z "$VIP_MANAGERS" ]]; then
   deployhelp
 fi
 
-MIRROR_REGISTRY_PARAM=""
-[[ -n "MIRROR_REGISTRY" ]] && MIRROR_REGISTRY_PARAM="-e crio_mirror=$MIRROR_REGISTRY"
+[[ -n "$MIRROR_REGISTRY" ]] && MIRROR_REGISTRY_PARAM="-e crio_mirror=$MIRROR_REGISTRY"
 
-MIRROR_APT_PARAM=""
-[[ -n "MIRROR_APT" ]] && MIRROR_APT_PARAM="-e internal_repos_apt=$MIRROR_APT"
+[[ -n "$MIRROR_APT" ]] && MIRROR_APT_PARAM="-e internal_repos_apt=$MIRROR_APT"
 
-MIRROR_PYPI_PARAM=""
-[[ -n "MIRROR_PYPI" ]] && MIRROR_PYPI_PARAM="-e internal_repos_pypi=$MIRROR_PYPI"
+[[ -n "$MIRROR_PYPI" ]] && MIRROR_PYPI_PARAM="-e internal_repos_pypi=$MIRROR_PYPI"
 
 MIRROR_PARAMS="$MIRROR_REGISTRY_PARAM $MIRROR_APT_PARAM $MIRROR_PYPI_PARAM"
 
 # Ensure valid sizing
-[[ -f ansible/sizing_vars/sizing_vars_${SIZING}.yml ]] || SIZING=small
+[[ -f "ansible/sizing_vars/sizing_vars_${SIZING}.yml" ]] || SIZING="small"
 
 
 # Create k8s vms
 pushd tf/openstack > /dev/null
 
 # Prepare setup and output
-ln -sf sizings/sizing_${SIZING} sizing.tf
+ln -sf "sizings/sizing_${SIZING}" sizing.tf
 
 terraform init
 terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
@@ -283,7 +298,7 @@ terraform apply -var provider_user="$OSUSER" -var provider_tenant="$OSTENANT" \
 -var public_network_name="$PUBLICNETWORK" -var security_group="$SECURITYGROUP" \
 -var private_network_id="$NETID" -var private_subnet_id="$SUBNETID" \
 -var vip_managers_ip="$VIP_MANAGERS" \
--var image="$LINUXIMAGE" -var keypair_sshkey="$(cat $SSHKEYFILE | tr -d "\n")" -auto-approve
+-var image="$LINUXIMAGE" -var keypair_sshkey="$(tr -d "\n" < "$SSHKEYFILE")" -auto-approve
 
 sleep 120
 
@@ -315,36 +330,54 @@ popd > /dev/null
 
 pushd ansible > /dev/null
 
-ln -sf sizing_vars/sizing_vars_${SIZING}.yml sizing_vars.yml
+ln -sf "sizing_vars/sizing_vars_${SIZING}.yml" sizing_vars.yml
 
 # Prepare inventory
-echo "[man01]" > tfinventory
-echo "k8s-manager1 ansible_host=${K8SMANAGER1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=MASTER keepalived_priority=100" >> tfinventory
+cat > tfinventory <<EOF
+[man01]
+k8s-manager1 ansible_host=${K8SMANAGER1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=MASTER keepalived_priority=100
+EOF
+
 VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_man01_ip=$K8SMANAGER1_PRIVATE_IP"
 if [[ "$SIZING" != "small" ]]; then
-  echo "[man02]" >> tfinventory
-  echo "k8s-manager2 ansible_host=${K8SMANAGER2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80" >> tfinventory
-  echo "[man03]" >> tfinventory
-  echo "k8s-manager3 ansible_host=${K8SMANAGER3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80" >> tfinventory
+  cat >> tfinventory <<EOF
+[man02]
+k8s-manager2 ansible_host=${K8SMANAGER2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80
+[man03]
+k8s-manager3 ansible_host=${K8SMANAGER3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80
+EOF
   VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_man02_ip=$K8SMANAGER2_PRIVATE_IP -e sizing_k8s_man03_ip=$K8SMANAGER3_PRIVATE_IP"
 fi
-echo "[managers:children]" >> tfinventory
-echo "man01" >> tfinventory
+  cat >> tfinventory <<EOF
+[leader:children]
+man01
+
+[managers:children]
+man01
+EOF
 if [[ "$SIZING" != "small" ]]; then
-  echo "man02" >> tfinventory
-  echo "man03" >> tfinventory
+  cat >> tfinventory <<EOF
+man02
+man03
+EOF
 fi
 
-echo "[nodes]" >> tfinventory
-echo "k8s-node1 ansible_host=${K8SNODE1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+cat >> tfinventory <<EOF
+[nodes]
+k8s-node1 ansible_host=${K8SNODE1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+EOF
 VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_node1_ip=$K8SNODE1_PRIVATE_IP"
 if [[ "$SIZING" != "small" ]]; then
-  echo "k8s-node2 ansible_host=${K8SNODE2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-  echo "k8s-node3 ansible_host=${K8SNODE3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+  cat >> tfinventory <<EOF
+k8s-node2 ansible_host=${K8SNODE2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+k8s-node3 ansible_host=${K8SNODE3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+EOF
   VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_node2_ip=$K8SNODE2_PRIVATE_IP -e sizing_k8s_node3_ip=$K8SNODE3_PRIVATE_IP"
   if [[ "$SIZING" != "medium" ]]; then
-    echo "k8s-node4 ansible_host=${K8SNODE4_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
-    echo "k8s-node5 ansible_host=${K8SNODE5_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3" >> tfinventory
+    cat >> tfinventory <<EOF
+k8s-node4 ansible_host=${K8SNODE4_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+k8s-node5 ansible_host=${K8SNODE5_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+EOF
     VMS_EXTRA_VARS="$VMS_EXTRA_VARS -e sizing_k8s_node4_ip=$K8SNODE4_PRIVATE_IP -e sizing_k8s_node5_ip=$K8SNODE5_PRIVATE_IP"
   fi
 fi
@@ -356,13 +389,13 @@ ansible-galaxy collection install -r requirements.yml -p ./collections/
 
 # Install one K8S manager and two K8S nodes
 $ANSIBLEPATH -i tfinventory \
---ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" playbook.yml \
+--ssh-extra-args="$SSH_PARAMS" playbook.yml \
 -e "global_controlplane_endpoint_ip=$VIP_MANAGERS" -e "csi_plugin=$CSI_PLUGIN" \
--e "global_cloud=os" -e "cni_plugin=$CNI_PLUGIN" $VMS_EXTRA_VARS \
+-e "global_cloud=os" -e "cni_plugin=$CNI_PLUGIN" \
 -e "keepalived_eth=$VM_ETH" -e "global_domain=$K8S_DOMAIN" \
 -e "k8s_os_cloud_username=$OSUSER" -e "k8s_os_cloud_password=$OSPASSWORD" \
 -e "k8s_os_cloud_authurl=$OSAUTHURL" -e "k8s_os_cloud_tenant_name=$OSTENANT" \
 -e "k8s_os_cloud_subnet_id=$SUBNETID" -e "k8s_os_cloud_floatingnetwork_id=$FLOATINGIPID" \
--e "global_persistence_disk=true" -e "k8s_cloud_crt_path=$OSCERTPATH" $MIRROR_PARAMS
+-e "global_persistence_disk=true" -e "k8s_cloud_crt_path=$OSCERTPATH" $VMS_EXTRA_VARS $MIRROR_PARAMS
 
 popd > /dev/null
