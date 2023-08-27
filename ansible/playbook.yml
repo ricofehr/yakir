@@ -6,19 +6,24 @@
   strategy: linear
   roles:
     - role: internal_repos
+      tags: ["core"]
     - role: base
+      tags: ["core"]
     - role: crio
+      tags: ["core"]
     - role: kubernetes
+      tags: ["core"]
       become: true
 
 - name: Install prerequisites on first manager node
   hosts:
-    - leader 
+    - leader
   run_once: true
   vars_files:
     - sizing_vars.yml
   roles:
     - role: cert
+      tags: ["certs"]
 
 - name: Init kubernetes on manager nodes
   hosts:
@@ -29,8 +34,11 @@
     - sizing_vars.yml
   roles:
     - role: helm
+      tags: ["controlplane"]
     - role: keepalived
+      tags: ["controlplane"]
     - role: k8s
+      tags: ["controlplane"]
 
 - name: Init kubernetes on worker nodes
   hosts:
@@ -40,21 +48,30 @@
     - sizing_vars.yml
   roles:
     - role: k8s
+      tags: ["worker"]
 
 - name: Postinstall fine-tuning and install tools & services
   hosts:
-    - leader 
-  #run_once: true
+    - leader
   vars_files:
     - sizing_vars.yml
   roles:
     - role: cni
+      tags: ["cluster", "cni"]
     - role: csi
+      tags: ["cluster", "csi"]
     - role: postinstall
+      tags: ["cluster", "postinstall"]
     - role: ingress
+      tags: ["cluster", "ingress"]
     - role: cert_manager
+      tags: ["cluster", "certmanager"]
     - role: kubedashboard
+      tags: ["cluster", "dashboard"]
     - role: opa
+      tags: ["cluster", "opa"]
     - role: monitoring
+      tags: ["cluster", "monitoring"]
     - role: logcollect
+      tags: ["cluster", "logcollect"]
 ...
