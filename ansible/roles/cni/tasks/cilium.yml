@@ -1,11 +1,18 @@
 ---
 
 - name: Taint nodes for cilium purpose
-  ansible.builtin.command: |
+  ansible.builtin.shell: |
     kubectl taint nodes {{ item.name }} {{ cni_cilium_node_taints }}
   args:
     creates: "{{ ansible_env.HOME }}/.cni_install"
   loop: "{{ cni_k8s_nodes }}"
+
+- name: Ensure taint is done only once
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.cni_install"
+    state: touch
+    mode: "0640"
+  changed_when: false
 
 - name: Add cilium chart repo
   kubernetes.core.helm_repository:
