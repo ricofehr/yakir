@@ -1,14 +1,15 @@
 #!/bin/bash -e
 
-PROVIDER="virtualbox"
-ISDESTROY=0
-SIZING=small
-K8S_DOMAIN="k8s.local"
-MIRROR_REGISTRY=""
-MIRROR_APT=""
-MIRROR_PYPI=""
-CNI_PLUGIN="calico"
-CSI_PLUGIN="none"
+declare PROVIDER="virtualbox"
+declare -i ISDESTROY=0
+declare SIZING="small"
+declare K8S_DOMAIN="k8s.local"
+declare MIRROR_REGISTRY=""
+declare MIRROR_APT=""
+declare MIRROR_PYPI=""
+declare CNI_PLUGIN="calico"
+declare CSI_PLUGIN="none"
+declare KEEPALIVED_PASSWORD=""
 KEEPALIVED_PASSWORD="$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 8 ; echo '')"
 
 # Help function
@@ -42,7 +43,7 @@ while (($# > 0)); do
       ;;
     -c)
       shift
-      CNI_PLUGIN=$1
+      CNI_PLUGIN="$1"
       shift
       ;;
     -kp)
@@ -57,7 +58,7 @@ while (($# > 0)); do
       ;;
     -mr)
       shift
-      MIRROR_REGISTRY=$1
+      MIRROR_REGISTRY="$1"
       shift
       ;;
     -ma)
@@ -72,12 +73,12 @@ while (($# > 0)); do
       ;;
     -s)
       shift
-      SIZING=$1
+      SIZING="$1"
       shift
       ;;
     -p)
       shift
-      PROVIDER=$1
+      PROVIDER="$1"
       shift
       ;;
     -h)
@@ -92,7 +93,7 @@ while (($# > 0)); do
 done
 
 # Ensure valid sizing
-[[ -f vagrantfiles/Vagrantfile_${SIZING} ]] || SIZING=small
+[[ -f "vagrantfiles/Vagrantfile_${SIZING}" ]] || SIZING="small"
 
 # Enable rook CSI if at least 3 workers
 [[ $SIZING = "small" ]] || CSI_PLUGIN="rook"
@@ -104,11 +105,11 @@ fi
 
 
 # Launch vagrant vms
-ln -sf vagrantfiles/Vagrantfile_${SIZING} Vagrantfile
+ln -sf "vagrantfiles/Vagrantfile_${SIZING}" Vagrantfile
 if [[ "$PROVIDER" = "virtualbox" ]]; then
   export VAGRANT_EXPERIMENTAL="disks"
 fi
-vagrant up --provider=$PROVIDER
+vagrant up --provider="$PROVIDER"
 sleep 15
 
 # Disable cowsay ansible output
@@ -129,11 +130,12 @@ MIRROR_PARAMS="$MIRROR_REGISTRY_PARAM $MIRROR_APT_PARAM $MIRROR_PYPI_PARAM"
 
 # Deploy an openstack installation
 pushd ansible >/dev/null
-ln -sf inventories/inventory_${SIZING} inventory
-ln -sf sizing_vars/sizing_vars_${SIZING}.yml sizing_vars.yml
+ln -sf "inventories/inventory_${SIZING}" inventory
+ln -sf "sizing_vars/sizing_vars_${SIZING}.yml" sizing_vars.yml
 mkdir -p collections/ansible_collections
 ansible-galaxy collection install -r requirements.yml -p ./collections/
 ansible-playbook --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" \
-  $MIRROR_PARAMS -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" -e "global_domain=$K8S_DOMAIN" -e "csi_plugin=$CSI_PLUGIN" -i inventory playbook.yml 2>&1
+  $MIRROR_PARAMS -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" \
+  -e "global_domain=$K8S_DOMAIN" -e "csi_plugin=$CSI_PLUGIN" -i inventory playbook.yml 2>&1
 popd >/dev/null
 
