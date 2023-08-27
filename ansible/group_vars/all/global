@@ -7,8 +7,8 @@ global_nodes_group_name: "nodes"
 global_controlplane_endpoint_ip: "192.168.58.250"
 global_controlplane_endpoint_port: 6443
 
-global_kubernetes_version: 1.27.2
-global_openstack_provider_version: v1.27.1
+global_kubernetes_version: 1.28.1
+global_openstack_provider_version: v1.28.0
 global_kubernetes_cni_version: 1.2.0-00
 global_kubernetes_python_version: 26.1.0
 global_weave_version: v2.8.1
