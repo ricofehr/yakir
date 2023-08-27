@@ -13,13 +13,12 @@
 
 - name: Install prerequisites on first manager node
   hosts:
-    - man01
+    - leader 
   run_once: true
   vars_files:
     - sizing_vars.yml
   roles:
     - role: cert
-    - role: helm
 
 - name: Init kubernetes on manager nodes
   hosts:
@@ -29,6 +28,7 @@
   vars_files:
     - sizing_vars.yml
   roles:
+    - role: helm
     - role: keepalived
     - role: k8s
 
@@ -43,8 +43,8 @@
 
 - name: Postinstall fine-tuning and install tools & services
   hosts:
-    - man01
-  run_once: true
+    - leader 
+  #run_once: true
   vars_files:
     - sizing_vars.yml
   roles:
@@ -56,6 +56,4 @@
     - role: kubedashboard
     - role: opa
     - role: monitoring
-      tags: ["monitoring"]
-
 ...

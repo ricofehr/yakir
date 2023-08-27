@@ -12,6 +12,9 @@ man01
 man02
 man03
 
+[leader:children]
+man01
+
 [nodes]
 k8s-node1 ansible_host=192.168.58.20 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_python_interpreter=/usr/bin/python3
 k8s-node2 ansible_host=192.168.58.21 ansible_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key ansible_python_interpreter=/usr/bin/python3
