@@ -43,9 +43,11 @@
     release_namespace: "{{ monitoring_namespace }}"
     values:
       replicas: 2
-      ingress.ingressClassName: nginx
-      ingress.enabled: true
-      ingress.hosts: ["{{ monitoring_grafana_domain }}"]
-      persistence.enabled: "{{ monitoring_persistence_disk }}"
+      ingress:
+        ingressClassName: nginx
+        enabled: true
+        hosts: ["{{ monitoring_grafana_domain }}"]
+      persistence:
+        enabled: "{{ monitoring_persistence_disk }}"
 
 ...
