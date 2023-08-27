@@ -5,10 +5,7 @@ ingress:
     kubernetes.io/ingress.class: nginx
     kubernetes.io/tls-acme: '{{ kubedashboard_ssl }}'
 
-  paths:
-    - /
-    - /*
-
+  className: "nginx"
   hosts:
     - {{ kubedashboard_domain }}
 
@@ -16,6 +13,9 @@ ingress:
     - secretName: {{ ingress_cert_name }}
       hosts:
         - {{ kubedashboard_domain }}
+
+  paths:
+    - /
 
 rbac:
   # Specifies whether RBAC resources should be created
