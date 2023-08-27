@@ -9,6 +9,8 @@ declare MIRROR_APT=""
 declare MIRROR_PYPI=""
 declare CNI_PLUGIN="calico"
 declare CSI_PLUGIN="none"
+declare ANSIBLE_TAG=""
+declare SSH_PARAMS="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no"
 declare KEEPALIVED_PASSWORD=""
 KEEPALIVED_PASSWORD="$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 8 ; echo '')"
 
@@ -29,6 +31,7 @@ Usage: $0 [options]
               - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
               - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
               - large : 3 managers and 5 nodes, host with 24Go ram / 6 cores
+-t xxxx      ansible tag, default is none
 EOF
 
 exit 1
@@ -81,6 +84,11 @@ while (($# > 0)); do
       PROVIDER="$1"
       shift
       ;;
+    -t)
+      shift
+      ANSIBLE_TAG="$1"
+      shift
+      ;;
     -h)
       shift
       deployhelp
@@ -128,14 +136,22 @@ MIRROR_PYPI_PARAM=""
 
 MIRROR_PARAMS="$MIRROR_REGISTRY_PARAM $MIRROR_APT_PARAM $MIRROR_PYPI_PARAM"
 
+[[ -n "$ANSIBLE_TAG" ]] && MIRROR_PARAMS="$MIRROR_PARAMS -t $ANSIBLE_TAG"
+
 # Deploy an openstack installation
 pushd ansible >/dev/null
 ln -sf "inventories/inventory_${SIZING}" inventory
 ln -sf "sizing_vars/sizing_vars_${SIZING}.yml" sizing_vars.yml
 mkdir -p collections/ansible_collections
 ansible-galaxy collection install -r requirements.yml -p ./collections/
-ansible-playbook --ssh-extra-args="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no" \
-  $MIRROR_PARAMS -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" \
-  -e "global_domain=$K8S_DOMAIN" -e "csi_plugin=$CSI_PLUGIN" -i inventory playbook.yml 2>&1
+if [[ -n "$MIRROR_PARAMS" ]]; then
+  eval "ansible-playbook --ssh-extra-args=\"$SSH_PARAMS\" \
+    $MIRROR_PARAMS -e cni_plugin=$CNI_PLUGIN -e keepalived_pass=$KEEPALIVED_PASSWORD \
+    -e global_domain=$K8S_DOMAIN -e csi_plugin=$CSI_PLUGIN -i inventory playbook.yml 2>&1"
+else
+  ansible-playbook --ssh-extra-args="$SSH_PARAMS" \
+    -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" \
+    -e "global_domain=$K8S_DOMAIN" -e "csi_plugin=$CSI_PLUGIN" -i inventory playbook.yml 2>&1
+fi
 popd >/dev/null
 
