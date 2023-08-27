@@ -1,0 +1,7 @@
+---
+
+logcollect_namespace: "kube-logcollect"
+logcollect_domain: logcollect.{{ global_domain }}
+
+...
+

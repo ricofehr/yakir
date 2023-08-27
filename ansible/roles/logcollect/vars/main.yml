@@ -1,0 +1,6 @@
+---
+
+logcollect_fluentbit_repo: "https://fluent.github.io/helm-charts"
+logcollect_fluentbit_version: "0.37.1"
+
+...

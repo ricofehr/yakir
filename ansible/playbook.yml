@@ -56,4 +56,5 @@
     - role: kubedashboard
     - role: opa
     - role: monitoring
+    - role: logcollect
 ...

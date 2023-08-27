@@ -1,0 +1,45 @@
+---
+
+- name: Create logcollect namespace
+  kubernetes.core.k8s:
+    name: "{{ logcollect_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Add fluentbit chart repo
+  kubernetes.core.helm_repository:
+    name: fluentbit
+    repo_url: "{{ logcollect_fluentbit_repo }}"
+
+- name: Deploy fluentbit
+  kubernetes.core.helm:
+    name: fluentbit
+    chart_ref: fluentbit/fluent-bit
+    chart_version: "{{ logcollect_fluentbit_version }}"
+    release_namespace: "{{ logcollect_namespace }}"
+    values:
+      securityContext:
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 1000
+      ingress:
+        ingressClassName: nginx
+        enabled: true
+        hosts: ["{{ logcollect_domain }}"]
+      fluent-bit.conf: |
+        [INPUT]
+          Name tail
+          Path /var/log/containers/*.log
+          Parser cri
+          Tag kube.*
+          Mem_Buf_Limit 5MB
+          Skip_Long_Lines On
+      parsers.conf: |
+        [PARSER]
+          Name cri
+          Format regex
+          Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
+          Time_Key    time
+          Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+...

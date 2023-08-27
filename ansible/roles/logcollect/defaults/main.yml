@@ -1,0 +1,8 @@
+---
+
+logcollect_namespace: "logcollect"
+
+logcollect_persistence_disk: false
+logcollect_domain: "logcollect.k8s.local"
+
+...
