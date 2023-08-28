@@ -1,9 +1,31 @@
 ---
 
-- name: Install cert-manager
-  run_once: true
+- name: Create cert_manager namespace
   kubernetes.core.k8s:
+    name: "{{ cert_manager_namespace }}"
+    api_version: v1
+    kind: Namespace
     state: present
-    src: "{{ cert_manager_manifest }}"
 
+- name: Add chart repo
+  kubernetes.core.helm_repository:
+    name: cert-manager
+    repo_url: "{{ cert_manager_repo }}"
+
+- name: Deploy cert_manager
+  kubernetes.core.helm:
+    name: cert-manager
+    chart_ref: cert-manager/cert-manager
+    chart_version: "{{ cert_manager_version }}"
+    release_namespace: "{{ cert_manager_namespace }}"
+    values:
+      installCRDs: true
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 1000
 ...

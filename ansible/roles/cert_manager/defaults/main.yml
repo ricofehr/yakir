@@ -1,0 +1,6 @@
+---
+
+cert_manager_namespace: "kube-cert"
+cert_manager_persistence_disk: false
+
+...
