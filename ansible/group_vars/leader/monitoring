@@ -4,6 +4,7 @@ monitoring_namespace: "kube-monitoring"
 monitoring_grafana_domain: monitoring.{{ global_domain }}
 monitoring_exporter_domain: exporter.{{ global_domain }}
 monitoring_persistence_disk: "{{ global_persistence_disk }}"
+monitoring_cert_issuer: "{{ global_cert_issuer }}"
 
 ...
 

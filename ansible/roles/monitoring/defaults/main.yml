@@ -5,5 +5,6 @@ monitoring_namespace: "monitoring"
 monitoring_persistence_disk: false
 monitoring_grafana_domain: "monitoring.k8s.local"
 monitoring_exporter_domain: "exporter.k8s.local"
+monitoring_cert_issuer: "selfsigned-ca"
 
 ...

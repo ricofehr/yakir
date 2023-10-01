@@ -13,30 +13,6 @@
           pod-security.kubernetes.io/enforce: baseline
         name: "{{ ingress_namespace }}"
 
-- name: Slurp tls key into variable
-  ansible.builtin.slurp:
-    src: "{{ ingress_cert_key }}"
-  register: ingress_tls_key
-
-- name: Slurp tls cert into variable
-  ansible.builtin.slurp:
-    src: "{{ ingress_cert_path }}"
-  register: ingress_tls_cert
-
-- name: Create ingress tls secret
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      kind: Secret
-      type: kubernetes.io/tls
-      apiVersion: v1
-      metadata:
-        name: ingress-certificate
-        namespace: "{{ ingress_namespace }}"
-      data:
-        tls.crt: "{{ ingress_tls_cert.content }}"
-        tls.key: "{{ ingress_tls_key.content }}"
-
 - name: Add nginx ingress chart repo
   kubernetes.core.helm_repository:
     name: ingress-nginx
@@ -49,6 +25,15 @@
     chart_version: "{{ ingress_chart_version }}"
     release_namespace: "{{ ingress_namespace }}"
     create_namespace: true
+    values:
+      controller:
+        publishService:
+          enabled: "true"
+        service:
+          type: "NodePort"
+          nodePorts:
+            http: "{{ ingress_http_port }}"
+            https: "{{ ingress_https_port }}"
 
 - name: Wait for ingress become created
   ansible.builtin.command: |

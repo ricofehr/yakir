@@ -1,0 +1,8 @@
+---
+
+haproxy_ip: "10.10.0.250"
+haproxy_eth: "eth0"
+haproxy_http_fw_port: 30080
+haproxy_https_fw_port: 30443
+
+...

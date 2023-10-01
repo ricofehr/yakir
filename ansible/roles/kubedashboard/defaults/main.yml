@@ -3,6 +3,7 @@
 kubedashboard_domain: dashboard.k8s.local
 kubedashboard_proto_url: https
 kubedashboard_ssl: true
+kubedashboard_cert_issuer: "selfsigned-ca"
 kubedashboard_persistence_disk: false
 kubedashboard_cloud: 'no'
 

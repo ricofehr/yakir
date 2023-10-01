@@ -1,9 +1,0 @@
----
-
-certs_folder: /tmp/certs
-cert_key: "{{ certs_folder }}/cert.pem"
-cert_csr: "{{ certs_folder }}/cert.csr"
-cert_path: "{{ certs_folder }}/cert.crt"
-cert_domain: '*.domain.local'
-
-...

@@ -28,4 +28,19 @@
         readOnlyRootFilesystem: true
         runAsNonRoot: true
         runAsUser: 1000
+
+- name: Create CRD cert Staging Issuer
+  kubernetes.core.k8s:
+    state: present
+    template: issuer-staging.yml.j2
+
+- name: Create CRD cert Prod Issuer
+  kubernetes.core.k8s:
+    state: present
+    template: issuer-production.yml.j2
+
+- name: Create CRD cert self-signed Issuer
+  kubernetes.core.k8s:
+    state: present
+    template: issuer-selfsigned.yml.j2
 ...

@@ -1,5 +1,6 @@
 ---
 
-ingress_cert_name: ingress-certificate
-ingress_cert_path: "{{ global_cert_path }}"
-ingress_cert_key: "{{ global_cert_key }}"
+ingress_http_port: "{{ global_ingress_http_nodeport }}"
+ingress_https_port: "{{ global_ingress_https_nodeport }}"
+
+...

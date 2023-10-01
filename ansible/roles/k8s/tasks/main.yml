@@ -20,9 +20,6 @@
   when: k8s_managers_group_name in group_names
   ansible.builtin.import_tasks: kubeconfig.yml
 
-- name: Add metrics addon
-  ansible.builtin.import_tasks: metrics.yml
-
 - name: No Cloud provider
   when:
     - k8s_managers_group_name in group_names

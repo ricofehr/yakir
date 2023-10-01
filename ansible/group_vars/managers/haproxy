@@ -1,0 +1,7 @@
+---
+
+haproxy_ip: "{{ sizing_k8s_manager_to_ip[keepalived_node_name] }}"
+haproxy_http_fw_port: "{{ global_ingress_http_nodeport }}"
+haproxy_https_fw_port: "{{ global_ingress_https_nodeport }}"
+
+...

@@ -6,6 +6,13 @@ global_managers_group_name: "managers"
 global_nodes_group_name: "nodes"
 global_controlplane_endpoint_ip: "192.168.58.250"
 global_controlplane_endpoint_port: 6443
+global_ingress_http_nodeport: 30080
+global_ingress_https_nodeport: 30443
+
+global_cert_manager_selfsigned_issuer: "my-ca-issuer"
+global_cert_manager_staging_issuer: "letsencrypt-staging"
+global_cert_manager_production_issuer: "letsencrypt-prod"
+global_cert_issuer: "{{ global_cert_manager_selfsigned_issuer }}"
 
 global_kubernetes_version: 1.28.1
 global_openstack_provider_version: v1.28.0
@@ -19,10 +26,6 @@ global_gatekeeper_version: 3.12.0
 
 global_domain: k8s.local
 global_persistence_disk: "{{ sizing_persistence_disk }}"
-global_certs_folder: "{{ ansible_env.HOME }}/k8scerts"
-global_cert_path: "{{ global_certs_folder }}/k8s-ingress.crt"
-global_cert_key: "{{ global_certs_folder }}/k8s-ingress.pem"
-global_cert_csr: "{{ global_certs_folder }}/k8s-ingress.csr"
 global_k8s_managers: "{{ sizing_k8s_managers }}"
 global_k8s_nodes: "{{ sizing_k8s_nodes }}"
 

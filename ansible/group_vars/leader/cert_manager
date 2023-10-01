@@ -1,5 +1,13 @@
 ---
 
 cert_manager_namespace: "kube-cert"
+cert_manager_email: "ricofehr@nextdeploy.io"
+cert_manager_selfsigned_issuer: "{{ global_cert_manager_selfsigned_issuer }}"
+cert_manager_staging_issuer: "{{ global_cert_manager_staging_issuer }}"
+cert_manager_production_issuer: "{{ global_cert_manager_production_issuer }}"
+
+cert_manager_cert_name: "root-secret"
+cert_manager_cert_path: "{{ global_cert_path }}"
+cert_manager_cert_key: "{{ global_cert_key }}"
 
 ...

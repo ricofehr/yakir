@@ -1,5 +1,10 @@
 ---
 
+- name: Add metrics addon
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ postinstall_metric_repo }}/releases/download/{{ postinstall_metric_server_version }}/components.yaml"
+
 - name: Sign pending certificates
   ansible.builtin.shell: |
     set -e -o pipefail

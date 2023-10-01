@@ -4,13 +4,15 @@ ingress:
   annotations:
     kubernetes.io/ingress.class: nginx
     kubernetes.io/tls-acme: '{{ kubedashboard_ssl }}'
+    cert-manager.io/issuer: '{{ kubedashboard_cert_issuer }}'
+    cert-manager.io/issuer-kind: ClusterIssuer
 
   className: "nginx"
   hosts:
     - {{ kubedashboard_domain }}
 
   tls:
-    - secretName: {{ ingress_cert_name }}
+    - secretName: dashboard-cert
       hosts:
         - {{ kubedashboard_domain }}
 

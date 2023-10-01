@@ -27,6 +27,15 @@
           ingressClassName: nginx
           enabled: true
           hosts: ["{{ monitoring_exporter_domain }}"]
+          annotations:
+            kubernetes.io/ingress.class: nginx
+            kubernetes.io/tls-acme: "true"
+            cert-manager.io/issuer: "{{ monitoring_cert_issuer }}"
+            cert-manager.io/issuer-kind: ClusterIssuer
+          tls:
+            - secretName: prometheus-cert
+              hosts:
+                - "{{ monitoring_exporter_domain }}"
         persistentVolume:
           storageClass: "rook-ceph-block"
 
@@ -47,6 +56,15 @@
         ingressClassName: nginx
         enabled: true
         hosts: ["{{ monitoring_grafana_domain }}"]
+        annotations:
+          kubernetes.io/ingress.class: nginx
+          kubernetes.io/tls-acme: "true"
+          cert-manager.io/issuer: "{{ monitoring_cert_issuer }}"
+          cert-manager.io/issuer-kind: ClusterIssuer
+        tls:
+          - secretName: grafana-cert
+            hosts:
+              - "{{ monitoring_grafana_domain }}"
       persistence:
         enabled: "{{ monitoring_persistence_disk }}"
 

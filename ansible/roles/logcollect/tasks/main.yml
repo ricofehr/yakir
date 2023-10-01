@@ -27,6 +27,15 @@
         ingressClassName: nginx
         enabled: true
         hosts: ["{{ logcollect_domain }}"]
+        annotations:
+          kubernetes.io/ingress.class: nginx
+          kubernetes.io/tls-acme: "true"
+          cert-manager.io/issuer: "{{ logcollect_cert_issuer }}"
+          cert-manager.io/issuer-kind: ClusterIssuer
+        tls:
+          - secretName: logcollect-cert
+            hosts:
+              - "{{ logcollect_domain }}"
       fluent-bit.conf: |
         [INPUT]
           Name tail

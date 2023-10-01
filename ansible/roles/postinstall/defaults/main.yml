@@ -1,0 +1,4 @@
+---
+postinstall_metric_server_version: "v0.6.1"
+postinstall_metric_repo: https://github.com/kubernetes-sigs/metrics-server
+...

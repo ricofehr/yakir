@@ -2,5 +2,13 @@
 
 cert_manager_namespace: "kube-cert"
 cert_manager_persistence_disk: false
+cert_manager_email: "user@example.com"
+cert_manager_selfsigned_issuer: "selfsigned-ca"
+cert_manager_staging_issuer: "staging-issuer"
+cert_manager_production_issuer: "production-issuer"
+
+cert_manager_cert_name: "root-secret"
+cert_manager_cert_path: "/etc/ssl/certs/selfsigned.crt"
+cert_manager_cert_key: "/etc/ssl/provate/selfsigned.key"
 
 ...

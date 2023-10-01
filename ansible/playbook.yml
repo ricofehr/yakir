@@ -15,16 +15,6 @@
       tags: ["core"]
       become: true
 
-- name: Install prerequisites on first manager node
-  hosts:
-    - leader
-  run_once: true
-  vars_files:
-    - sizing_vars.yml
-  roles:
-    - role: cert
-      tags: ["certs"]
-
 - name: Init kubernetes on manager nodes
   hosts:
     - managers
@@ -38,6 +28,8 @@
     - role: keepalived
       tags: ["controlplane"]
     - role: k8s
+      tags: ["controlplane"]
+    - role: haproxy
       tags: ["controlplane"]
 
 - name: Init kubernetes on worker nodes
@@ -65,13 +57,13 @@
     - role: ingress
       tags: ["cluster", "ingress"]
     - role: cert_manager
-      tags: ["cluster", "certmanager"]
+      tags: ["cluster", "certs", "certmanager"]
     - role: kubedashboard
       tags: ["cluster", "dashboard"]
     - role: opa
       tags: ["cluster", "opa"]
     - role: monitoring
-      tags: ["cluster", "monitoring"]
+      tags: ["cluster", "certs", "monitoring"]
     - role: logcollect
       tags: ["cluster", "logcollect"]
 ...

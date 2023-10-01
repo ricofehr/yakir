@@ -1,0 +1,5 @@
+---
+
+postinstall_metric_server_version: "{{ global_metric_server_version }}"
+
+...
