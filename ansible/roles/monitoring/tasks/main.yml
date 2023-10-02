@@ -44,6 +44,11 @@
     name: grafana
     repo_url: "{{ monitoring_grafana_repo }}"
 
+- name: Deploy CM grafana for k8s dashboard
+  kubernetes.core.k8s:
+    state: present
+    template: grafana-k8s-dashboard.yml.j2
+
 - name: Deploy Grafana
   kubernetes.core.helm:
     name: grafana
@@ -68,4 +73,30 @@
       persistence:
         enabled: "{{ monitoring_persistence_disk }}"
 
+      sidecar:
+        dashboards:
+          enabled: true
+          label: grafana_dashboard
+
+      dashboardProviders:
+        dashboardproviders.yaml:
+          apiVersion: 1
+          providers:
+            - name: 'default'
+              orgId: 1
+              folder: ''
+              type: file
+              disableDeletion: false
+              editable: true
+              options:
+                path: /var/lib/grafana/dashboards/default
+
+      datasources:
+        datasources.yaml:
+          apiVersion: 1
+          datasources:
+            - name: Prometheus
+              type: prometheus
+              url: http://prometheus-server.{{ monitoring_namespace }}.svc.cluster.local  # Replace with your Prometheus server URL
+              access: proxy
 ...
