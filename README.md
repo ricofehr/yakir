@@ -24,16 +24,19 @@ yakir/
     +---inventories/        Inventory files, scoped about small, medium, larger targeted form factor
     +---roles/              Ansible roles folder
         +---base            Prerequisites for the Linux OS : global attributes (locale, hostname, time, swap usage, ...), user management, system packages
-        +---cert            Manage self-signed certificate creation (used for wildcard ingress FQDN)
+        +---cert_manager    Deploy certificate-manager helm chart and define Issuers for both letsencrypt and autosigned type
         +---cni             Manage network plugins for Kubernetes : Weave, Flannel, Cilium, Calico
         +---crio            Manage container engine installation
         +---csi             Manage storage plugins for Kubernetes : Rook or Cinder
+        +---haproxy         Install and configure haproxy on each manager nodes : expose https (port 443) of the cluster and route traffic to ingress controller
         +---helm            Install helm command and add global helm repositories
         +---ingress         Deploy nginx ingress component on Kubernetes
         +---k8s             Install and configure a Kubernetes deployment with Kubeadm
         +---keepalived      Install keepalived service on manager hosts for a no cloud deployment : ensure a failover IP for control-plane endpoint
         +---kubernetes      External dependencies from a galaxy role (gantsign repository) : install kubernetes binary packages on VMs
         +---kubedashboard   Install and secure Dashboard deployment for Kubernetes
+        +---logcollect      Deploy fluentbit, elastic, and kibana helm chart, and configure fluentbit for kubernetes logs
+        +---monitoring      Deploy prometheus and grafana helm charts, and import grafana dashboard for kubernetes metrics
         +---opa             Install Gatekeeper and define some open policy rules
         +---postinstall     Some validations and post-config topics after Kubernetes deployment
     +---inventory           File created (symlink to targeted file on inventories folder) by the deployment script : used by ansible-playbook to scope the infra
@@ -50,15 +53,20 @@ Vagrantfile                 File created (symlink to targeted file on vagrantfil
 ## Components
 
 Deployment of Kubernetes with crio as container engine, and multiple CNI choices
-- Kubernetes v1.27.2
+- Kubernetes v1.28.1
 - Crio v1.27
 - Calico v3.25.1
 - Weave v2.8.1
 - Flannel v0.22.0
-- Cilium v1.13.2
+- Cilium v1.13.4
 - Gatekeeper v3.12.0
 - Rook v1.11.9
 - Cert Manager v1.12.0
+- Ingress Controller v1.4.0
+- Fluentbit v2.1.8
+- Elastic v8.5.1
+- Prometheus v2.46.0
+- Grafana v10.0.3
 
 ## Vagrant deployment
 
@@ -73,9 +81,11 @@ $ git submodule update --init
 $ ./up
 ```
 
-Once setup done
-- Dashboard is reached here
-http://192.168.58.10:8001/api/v1/namespaces/kube-dashboard/services/https:dashboard-kubernetes-dashboard:https/proxy
+Once setup done, get ui endpoints
+```
+$ kubectl get ingress -A
+```
+
 
 ### Options
 
@@ -84,6 +94,7 @@ Usage: ./up [options]
 -h           this is some help text.
 -d           destroy all previously provisioned vms
 -c xxxx      CNI plugin, choices are weave, flannel, calico (default), cilium
+-i xxxx      Issuer for managing SSL certs, choices are my-ca-issuer (default), letsencrypt-staging, letsencrypt-prod
 -p xxxx      vagrant provider, default is virtualbox
 -kp xxxx     keepalived password, default is randomly generated
 -kd xxxx     global kubernetes domain, default is k8s.local
@@ -96,9 +107,9 @@ Usage: ./up [options]
               - large : 3 managers and 5 nodes, host with 24Go ram / 6 cores
 ```
 
-For example, an overwritten install on apple silion with local repository, custom domain, flannel CNI, and medium sizing
+For example, an install on apple silion with local repository, custom domain, flannel CNI, and medium sizing, letsencrypt prod for certs management
 ```
-$ ./up -d -c flannel -p parallels -kp UdTelzAu -kd k8s.mydomain.io -mr registry.mydomain.io -ma https://nexus.mydomain.io/repository/jammy -mp https://nexus.mydomain.io/repository/pypi-all -s medium
+$ ./up -d -c flannel -i letsencrypt-prod -p parallels -kp UdTelzAu -kd k8s.mydomain.io -mr registry.mydomain.io -ma https://nexus.mydomain.io/repository/jammy -mp https://nexus.mydomain.io/repository/pypi-all -s medium
 ```
 
 ## Openstack deployment
@@ -128,7 +139,7 @@ Usage: ./deploy-to-openstack [options]
 -w xxxx	     override ansible path
 ```
 
-Tested with an openstack deployment from the repo https://github.com/ricofehr/os-ansible-poc
+Tested with an openstack deployment from the repo https://github.com/ricofehr/mos
 
 Once installed, the terraform state file is into tf/openstack, for example destroy the k8s deployment
 ```
@@ -137,10 +148,7 @@ cd tf/openstack && terraform destroy
 
 ## TODO
 
-- Add monitoring stack (prometheus, grafana)
-- Add logging collector stack (fluentbit)
 - Add backup process (backup etcd and storage repositories)
 - Add hardening stuff on Linux OS, and k8s settings
-- Add cert-manager and ingress integration for letsencrypt process -> WIP
-- Work on a kvm deployment
+- Work on a native kvm deployment -> WIP
 - Work on opentelemetry integration
