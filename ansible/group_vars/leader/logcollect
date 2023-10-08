@@ -1,7 +1,7 @@
 ---
 
 logcollect_namespace: "kube-logcollect"
-logcollect_domain: logcollect.{{ global_domain }}
+logcollect_kibana_domain: logcollect.{{ global_domain }}
 logcollect_cert_issuer: "{{ global_cert_issuer }}"
 
 ...
