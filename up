@@ -10,6 +10,7 @@ declare MIRROR_PYPI=""
 declare CNI_PLUGIN="calico"
 declare CSI_PLUGIN="none"
 declare ANSIBLE_TAG=""
+declare CERT_ISSUER="my-ca-issuer"
 declare SSH_PARAMS="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no"
 declare KEEPALIVED_PASSWORD=""
 KEEPALIVED_PASSWORD="$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 8 ; echo '')"
@@ -21,6 +22,7 @@ Usage: $0 [options]
 -h           this is some help text.
 -d           destroy all previously provisioned vms
 -c xxxx      CNI plugin, choices are weave, flannel, calico (default), cilium
+-i xxxx      Issuer for managing SSL certs, choices are my-ca-issuer (default), letsencrypt-staging, letsencrypt-prod
 -p xxxx      vagrant provider, default is virtualbox
 -kp xxxx     keepalived password, default is randomly generated
 -kd xxxx     global kubernetes domain, default is $K8S_DOMAIN
@@ -47,6 +49,16 @@ while (($# > 0)); do
     -c)
       shift
       CNI_PLUGIN="$1"
+      shift
+      ;;
+    -i)
+      shift
+      if [[ "$1" = "letsencrypt-staging" ]]; then
+        CERT_ISSUER="$1"
+      fi
+      if [[ "$1" = "letsencrypt-prod" ]]; then
+        CERT_ISSUER="$1"
+      fi
       shift
       ;;
     -kp)
@@ -145,11 +157,11 @@ ln -sf "sizing_vars/sizing_vars_${SIZING}.yml" sizing_vars.yml
 mkdir -p collections/ansible_collections
 ansible-galaxy collection install -r requirements.yml -p ./collections/
 if [[ -n "$MIRROR_PARAMS" ]]; then
-  eval "ansible-playbook --ssh-extra-args=\"$SSH_PARAMS\" \
+  eval "ansible-playbook --ssh-extra-args=\"$SSH_PARAMS\" -e global_cert_issuer=$CERT_ISSUER \
     $MIRROR_PARAMS -e cni_plugin=$CNI_PLUGIN -e keepalived_pass=$KEEPALIVED_PASSWORD \
     -e global_domain=$K8S_DOMAIN -e csi_plugin=$CSI_PLUGIN -i inventory playbook.yml 2>&1"
 else
-  ansible-playbook --ssh-extra-args="$SSH_PARAMS" \
+  ansible-playbook --ssh-extra-args="$SSH_PARAMS" -e "global_cert_issuer=$CERT_ISSUER" \
     -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" \
     -e "global_domain=$K8S_DOMAIN" -e "csi_plugin=$CSI_PLUGIN" -i inventory playbook.yml 2>&1
 fi
