@@ -1,7 +1,7 @@
 ---
 
 csi_plugin: "rook"
-csi_rook_chart_version: v1.11.9
+csi_rook_chart_version: v1.12.6
 csi_rook_namespace: kube-rook
 
 csi_cinder_provider_version: "v1.24.0"

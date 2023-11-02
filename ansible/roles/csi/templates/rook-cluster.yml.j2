@@ -37,5 +37,21 @@ spec:
         enabled: false
       requireMsgr2: false
   storage:
-    useAllNodes: true
-    useAllDevices: true
+    useAllNodes: false
+    useAllDevices: false
+    nodes:
+    - name: "k8s-node1"
+      devices:
+      - name: "vdb"
+    - name: "k8s-node2"
+      devices:
+      - name: "vdb"
+    - name: "k8s-node3"
+      devices:
+      - name: "vdb"
+    - name: "k8s-node4"
+      devices:
+      - name: "vdb"
+    - name: "k8s-node5"
+      devices:
+      - name: "vdb"
