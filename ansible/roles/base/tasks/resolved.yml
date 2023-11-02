@@ -1,0 +1,17 @@
+---
+
+- name: Create custom resolved.conf.d configuration
+  become: true
+  ansible.builtin.copy:
+    content: |
+      [Resolve]
+      DNS={{ base_dns_resolved_server }}
+    dest: /etc/systemd/resolved.conf
+    mode: '0644'
+  notify: Restart systemd-resolved service
+
+- name: Force all notified handlers to run at this point, not waiting for normal sync points
+  become: true
+  ansible.builtin.meta: flush_handlers
+
+...

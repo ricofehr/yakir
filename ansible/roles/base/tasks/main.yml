@@ -1,5 +1,8 @@
 ---
 
+- name: Set DNS resolved server
+  ansible.builtin.import_tasks: resolved.yml
+
 - name: Define operating system attributes
   ansible.builtin.import_tasks: attributes.yml
 
