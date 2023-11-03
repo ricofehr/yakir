@@ -27,6 +27,8 @@ ansible/sizing_vars.yml
 # tf files
 tf/openstack/sizing.tf
 tf/openstack/.terraform.lock.hcl
+tf/libvirt/sizing.tf
+tf/libvirt/.terraform.lock.hcl
 
 #  Local .terraform directories
 **/.terraform/*

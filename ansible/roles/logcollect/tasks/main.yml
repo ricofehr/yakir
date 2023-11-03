@@ -31,7 +31,7 @@
               authz_exception: true
 
 - name: Wait for elasticsearch pods become ready
-  ansible.builtin.command: "kubectl wait pod --all --namespace={{ logcollect_namespace }} --for=condition=Ready --timeout=600s"
+  ansible.builtin.command: "kubectl wait pod --all --namespace={{ logcollect_namespace }} --for=condition=Ready --timeout=900s"
   changed_when: false
 
 - name: Deploy kibana

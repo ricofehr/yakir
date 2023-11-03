@@ -1,0 +1,183 @@
+#!/bin/bash -e
+
+# Default parameters value
+declare CNI_PLUGIN="flannel"
+declare CSI_PLUGIN="rook"
+declare NODES_EXTRA_VARS=""
+declare SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
+declare ANSIBLEPATH="/usr/bin/ansible-playbook"
+declare VM_ETH="ens3"
+declare K8S_DOMAIN="kubernetes.local"
+declare MIRROR_REGISTRY=""
+declare MIRROR_REGISTRY_PARAM=""
+declare MIRROR_APT=""
+declare MIRROR_APT_PARAM=""
+declare MIRROR_PYPI=""
+declare MIRROR_PYPI_PARAM=""
+declare MIRROR_PARAMS=""
+declare SIZING="large"
+declare VIP_MANAGERS="192.168.2.250"
+declare SSH_PARAMS="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no"
+declare K8SMANAGER1_IP="192.168.2.210"
+declare K8SMANAGER2_IP="192.168.2.211"
+declare K8SMANAGER3_IP="192.168.2.212"
+declare K8SNODE1_IP="192.168.2.220"
+declare K8SNODE2_IP="192.168.2.221"
+declare K8SNODE3_IP="192.168.2.222"
+declare K8SNODE4_IP="192.168.2.223"
+declare K8SNODE5_IP="192.168.2.224"
+declare CERTISSUER="my-selfsigned-ca"
+declare VMS_EXTRA_VARS=""
+
+
+# Help function
+deployhelp() {
+  cat <<EOF
+Usage: $0 [options]
+-h           this is some help text.
+-c xxx       CNI plugin, choices are cilium / weave / flannel, default is $CNI_PLUGIN
+-i xxxx      certificate issuer, choices are my-selfsigned-ca / letsencrypt-staging / letsencrypt-prod, default is $CERTISSUER
+-k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
+-kd xxxx     global kubernetes domain, default is $K8S_DOMAIN
+-mr xxxx     container private mirror registry
+-ma xxxx     mirror repository URL for apt packages
+-mp xxxx     mirror repository URL for pypi packages
+-vip1 xxxx   failover ip for managers nodes, default is $VIP_MANAGERS
+-w xxxx	     override ansible path
+EOF
+
+exit 1
+}
+
+# Parse cmd options
+while (($# > 0)); do
+  case "$1" in
+    -c)
+      shift
+      CNI_PLUGIN="$1"
+      shift
+      ;;
+    -i)
+      shift
+      CERTISSUER="$1"
+      shift
+      ;;
+    -k)
+      shift
+      SSHKEYFILE="$1"
+      shift
+      ;;
+    -kd)
+      shift
+      K8S_DOMAIN="$1"
+      shift
+      ;;
+    -mr)
+      shift
+      MIRROR_REGISTRY="$1"
+      shift
+      ;;
+    -ma)
+      shift
+      MIRROR_APT="$1"
+      shift
+      ;;
+    -mp)
+      shift
+      MIRROR_PYPI="$1"
+      shift
+      ;;
+    -vip1)
+      shift
+      VIP_MANAGERS="$1"
+      shift
+      ;;
+    -w)
+      shift
+      ANSIBLEPATH="$1"
+      shift
+      ;;
+    -h)
+      shift
+      deployhelp
+      ;;
+    *)
+      shift
+      deployhelp
+      ;;
+  esac
+done
+
+if [[ -z "$SSHKEYFILE" ]]; then
+  echo "-k ssh key parameter is missing"
+  deployhelp
+fi
+
+if [[ -z "$VIP_MANAGERS" ]]; then
+  echo "-vip1 vip managers ip is missing"
+  deployhelp
+fi
+
+[[ -n "$MIRROR_REGISTRY" ]] && MIRROR_REGISTRY_PARAM="-e crio_mirror=$MIRROR_REGISTRY"
+
+[[ -n "$MIRROR_APT" ]] && MIRROR_APT_PARAM="-e internal_repos_apt=$MIRROR_APT"
+
+[[ -n "$MIRROR_PYPI" ]] && MIRROR_PYPI_PARAM="-e internal_repos_pypi=$MIRROR_PYPI"
+
+MIRROR_PARAMS="$MIRROR_REGISTRY_PARAM $MIRROR_APT_PARAM $MIRROR_PYPI_PARAM"
+
+# Create k8s vms
+pushd tf/libvirt > /dev/null
+
+[[ -f terraform.tfvars ]] || cp terraform.tfvars.dist terraform.tfvars
+
+terraform init
+terraform apply -auto-approve
+
+sleep 120
+
+popd > /dev/null
+
+pushd ansible > /dev/null
+
+ln -sf "sizing_vars/sizing_vars_${SIZING}.yml" sizing_vars.yml
+
+# Prepare inventory
+cat > tfinventory <<EOF
+[man01]
+k8s-manager1 ansible_host=${K8SMANAGER1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=MASTER keepalived_priority=100
+[man02]
+k8s-manager2 ansible_host=${K8SMANAGER2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80
+[man03]
+k8s-manager3 ansible_host=${K8SMANAGER3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80
+
+[leader:children]
+man01
+
+[managers:children]
+man01
+man02
+man03
+
+[nodes]
+k8s-node1 ansible_host=${K8SNODE1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+k8s-node2 ansible_host=${K8SNODE2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+k8s-node3 ansible_host=${K8SNODE3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+k8s-node4 ansible_host=${K8SNODE4_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+k8s-node5 ansible_host=${K8SNODE5_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+EOF
+
+# Disable cowsay ansible output
+export ANSIBLE_NOCOWS=1
+
+mkdir -p collections/ansible_collections
+ansible-galaxy collection install -r requirements.yml -p ./collections/
+
+# Install one K8S manager and two K8S nodes
+$ANSIBLEPATH -i tfinventory \
+--ssh-extra-args="$SSH_PARAMS" playbook.yml \
+-e "global_controlplane_endpoint_ip=$VIP_MANAGERS" -e "cni_plugin=$CNI_PLUGIN" \
+-e "keepalived_eth=$VM_ETH" -e "global_domain=$K8S_DOMAIN" -e "global_cert_issuer=$CERTISSUER" \
+-e "csi_plugin=$CSI_PLUGIN" -e "global_persistence_disk=true" $MIRROR_PARAMS
+
+popd > /dev/null

@@ -44,7 +44,9 @@ yakir/
     +---requirements.yml    Collections dependencies, to install in collections folder (ansible-galaxy command is executed by deployment scripts on the root folder)
 +--tf/                      Terraform folder which contains HCL provisioning tasks
     +---openstack/          HCL instructions for provisioning VMs and resources on Openstack as prerequisites for k8s installation
+    +---libvirt/            HCL instructions for provisioning VMs and resources on KVM as prerequisites for k8s installation
 +--vagrantfiles/            Deployment flavors vagrantfile for small, medium, large scopes
+deploy-to-libvirt           Script for installation on a lived KVM with Terraform (See options below on this page)
 deploy-to-openstack         Script for installation on a lived openstack with Terraform (See options below on this page)
 up                          Script for local installation with Vagrant (See options below on this page) 
 Vagrantfile                 File created (symlink to targeted file on vagrantfiles folder) by the deployment script : used by Vagrant to scope the VMs provisioning
@@ -112,9 +114,87 @@ For example, an install on apple silion with local repository, custom domain, fl
 $ ./up -d -c flannel -i letsencrypt-prod -p parallels -kp UdTelzAu -kd k8s.mydomain.io -mr registry.mydomain.io -ma https://nexus.mydomain.io/repository/jammy -mp https://nexus.mydomain.io/repository/pypi-all -s medium
 ```
 
+## Kvm deployment
+
+At first, copy the terraform default vars file, so we can change it to match our infra and network
+```
+$ cp tf/libvirt/terraform.tfvars.dist tf/libvirt/terraform.tfvars
+```
+
+Form factor is fixed at 8 nodes (3 managers, and 5 workers), but could be changed easily with edit this files
+- deploy-to-libvirt : changes vms ips and count
+- tf/libvirt/terraform.tfvars : changes vms list
+
+Without change (keeping the terraform.tfvars.dist content), the deployment needs following resources
+- 8 VMs : 3 managers and 5 workers
+- use of 36 vcpus (well count for ~10 real cpu cores), 64Go RAM, and 1To of disk
+
+Edit tf/libvirt/terraform.tfvars file before deployment
+- Adapt CPU / RAM / DISK
+- Change yakir_domain variable to match your network domain
+- Change naming or MAC addresses to match your convention and guidelines
+
+
+Need some prerequisites
+- A libvirt and kvm installation on Linux System
+- A linux bridge on the KVM Host system, for example folowing an netplan configuration
+```
+network:
+  version: 2
+  renderer: networkd
+
+  ethernets:
+    eno1:
+      dhcp4: false
+      dhcp6: false
+
+  bridges:
+    bridge:
+      interfaces: [eno1]
+      parameters:
+        stp: true
+        forward-delay: 4
+      dhcp4: true
+      dhcp6: false
+```
+- A DHCP server setted with MAC addresses of VMs as following (if keeping MAC addresses in terraform.tfvars.dist and IPs in deploy-to-libvirt script)
+  - k8s-man-01 : "42:34:00:e2:a1:11" -> 192.168.2.210 
+  - k8s-man-02 : "42:34:00:a6:d5:21" -> 192.168.2.211
+  - k8s-man-03 : "42:34:00:4c:95:a1" -> 192.168.2.212
+  - k8s-wrk-01 : "42:34:00:84:5f:13" -> 192.168.2.220
+  - k8s-wrk-02 : "42:34:00:28:2d:2c" -> 192.168.2.221
+  - k8s-wrk-03 : "42:34:00:31:97:53" -> 192.168.2.222
+  - k8s-wrk-04 : "42:34:00:04:3e:1d" -> 192.168.2.223
+  - k8s-wrk-95 : "42:34:00:ba:48:c2" -> 192.168.2.224
+- For use with public exposed IP
+  - defined a wildcard *.K8S_DOMAIN which is binding to the public IP
+  - add a nat PREROUTING rule to forward incoming public IP on port 80 and 443 connection to the private VIP IP (default is 192.168.2.250)
+  - allow port 443 and 80 on Firewall
+  - set the issuer for certificate-manager on "letsencrypt-prod"
+
+Use 'deploy-to-libvirt' script for launch deployment
+```
+Usage: ./deploy-to-libvirt [options]
+-h           this is some help text.
+-c xxx       CNI plugin, choices are cilium / weave / flannel, default is flannel
+-i xxxx      certificate issuer, choices are my-selfsigned-ca / letsencrypt-staging / letsencrypt-prod, default is my-selfsigned-ca
+-k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
+-kd xxxx     global kubernetes domain, default is kubernetes.local
+-mr xxxx     container private mirror registry
+-ma xxxx     mirror repository URL for apt packages
+-mp xxxx     mirror repository URL for pypi packages
+-vip1 xxxx   failover ip for managers nodes, default is 192.168.2.250
+-w xxxx	     override ansible path
+```
+
+Example
+```
+./deploy-to-libvirt -n flannel -c letsencrypt-prod -mr registry.mydomain.io -ma https://nexus.mydomain.io/repository/jammy -mp https://nexus.mydomain.io/repository/pypi-all -kd k8s.mydomain.io
+```
+
 ## Openstack deployment
 
-An openstack deployment is setted with Terraform, use 'deployos' script for managed this
+An openstack deployment is setted with Terraform, use 'deploy-to-openstack' script for managed this
 ```
 Usage: ./deploy-to-openstack [options]
 -h           this is some help text.

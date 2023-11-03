@@ -1,0 +1,33 @@
+provider_uri = "qemu:///system"
+libvirt_pool_path = "/var/lib/libvirt/kvm/pool"
+
+yakir_os_img = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+
+# Used by fqdn hostname on VMs
+yakir_domain = "domain.io"
+
+# bridge name of the KVM Host
+yakir_vm_br_device = "bridge"
+
+# 15Go : Linux disk size (on all vms)
+yakir_vm_os_disk_size = 16106127360
+
+# 150Go : Ceph disk size (on each worker vms)
+yakir_vm_ceph_disk_size = 161061273600
+
+# RAM / CPU for manager and worker nodes
+yakir_vm_man_ram = 6144
+yakir_vm_man_cpu = 2
+yakir_vm_wrk_ram = 8192
+yakir_vm_wrk_cpu = 4
+
+# Disk names, vm names, and mac addresses
+yakir_vm_os_man_disks = ["k8s-man-01-os-disk", "k8s-man-02-os-disk", "k8s-man-03-os-disk"]
+yakir_vm_man_names = ["k8s-man-01", "k8s-man-02", "k8s-man-03"]
+yakir_vm_man_macs = ["42:34:00:e2:a1:11", "42:34:00:a6:d5:21", "42:34:00:4c:95:a1"]
+
+yakir_vm_os_wrk_disks = [ "k8s-wrk-01-os-disk", "k8s-wrk-02-os-disk", "k8s-wrk-03-os-disk", "k8s-wrk-04-os-disk", "k8s-wrk-05-os-disk"]
+yakir_vm_ceph_wrk_disks = ["k8s-wrk-01-ceph-disk", "k8s-wrk-02-ceph-disk", "k8s-wrk-03-ceph-disk", "k8s-wrk-04-ceph-disk", "k8s-wrk-05-ceph-disk"]
+yakir_vm_wrk_names = ["k8s-wrk-01", "k8s-wrk-02", "k8s-wrk-03", "k8s-wrk-04", "k8s-wrk-05"]
+yakir_vm_wrk_macs = ["42:34:00:84:5f:13", "42:34:00:28:2d:2c", "42:34:00:31:97:53", "42:34:00:04:3e:1d", "42:34:00:ba:48:c2"]
+
