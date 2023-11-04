@@ -2,6 +2,7 @@
 
 - name: Set DNS resolved server
   ansible.builtin.import_tasks: resolved.yml
+  when: base_dns_resolved_server != ""
 
 - name: Define operating system attributes
   ansible.builtin.import_tasks: attributes.yml
