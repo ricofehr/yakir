@@ -159,11 +159,11 @@ ansible-galaxy collection install -r requirements.yml -p ./collections/
 if [[ -n "$MIRROR_PARAMS" ]]; then
   eval "ansible-playbook --ssh-extra-args=\"$SSH_PARAMS\" -e global_cert_issuer=$CERT_ISSUER \
     $MIRROR_PARAMS -e cni_plugin=$CNI_PLUGIN -e keepalived_pass=$KEEPALIVED_PASSWORD \
-    -e global_domain=$K8S_DOMAIN -e csi_plugin=$CSI_PLUGIN -i inventory playbook.yml 2>&1"
+    -e global_domain=$K8S_DOMAIN -e csi_plugin=$CSI_PLUGIN -e csi_rook_disk=sdb -i inventory playbook.yml 2>&1"
 else
   ansible-playbook --ssh-extra-args="$SSH_PARAMS" -e "global_cert_issuer=$CERT_ISSUER" \
     -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" \
-    -e "global_domain=$K8S_DOMAIN" -e "csi_plugin=$CSI_PLUGIN" -i inventory playbook.yml 2>&1
+    -e "global_domain=$K8S_DOMAIN" -e "csi_plugin=$CSI_PLUGIN" -e "csi_rook_disk=sdb" -i inventory playbook.yml 2>&1
 fi
 popd >/dev/null
 

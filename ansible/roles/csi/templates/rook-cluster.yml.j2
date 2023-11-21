@@ -40,18 +40,8 @@ spec:
     useAllNodes: false
     useAllDevices: false
     nodes:
-    - name: "k8s-node1"
+{% for csi_k8s_node in csi_k8s_nodes %}
+    - name: "{{ csi_k8s_node.name }}"
       devices:
-      - name: "vdb"
-    - name: "k8s-node2"
-      devices:
-      - name: "vdb"
-    - name: "k8s-node3"
-      devices:
-      - name: "vdb"
-    - name: "k8s-node4"
-      devices:
-      - name: "vdb"
-    - name: "k8s-node5"
-      devices:
-      - name: "vdb"
+      - name: "{{ csi_rook_disk }}"
+{% endfor %}

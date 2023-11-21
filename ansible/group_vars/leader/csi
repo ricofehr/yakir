@@ -2,5 +2,6 @@
 
 csi_k8s_nodes: "{{ global_k8s_nodes }}"
 csi_cinder_provider_version: "{{ global_openstack_provider_version }}"
+csi_rook_disk: "vdb"
 
 ...
