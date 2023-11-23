@@ -32,6 +32,8 @@
 
 - name: Wait for elasticsearch pods become ready
   ansible.builtin.command: "kubectl wait pod --all --namespace={{ logcollect_namespace }} --for=condition=Ready --timeout=900s"
+  retries: 2
+  delay: 10
   changed_when: false
 
 - name: Deploy kibana
