@@ -24,5 +24,6 @@ sizing_k8s_nodes:
   - { name: "{{ hostvars[groups[global_nodes_group_name][4]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node5_ip }}" }
 
 sizing_persistence_disk: true
+sizing_cluster_sizing: "large"
 
 ...

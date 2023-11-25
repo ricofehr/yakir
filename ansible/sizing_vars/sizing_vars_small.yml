@@ -9,5 +9,6 @@ sizing_k8s_node1_ip: "{{ hostvars[groups[global_nodes_group_name][0]]['ansible_h
 sizing_k8s_nodes:
   - { name: "{{ hostvars[groups[global_nodes_group_name][0]]['inventory_hostname'] }}", ip: "{{ sizing_k8s_node1_ip }}" }
 sizing_persistence_disk: false
+sizing_cluster_sizing: "small"
 
 ...

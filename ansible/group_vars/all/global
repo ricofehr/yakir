@@ -28,6 +28,7 @@ global_domain: k8s.local
 global_persistence_disk: "{{ sizing_persistence_disk }}"
 global_k8s_managers: "{{ sizing_k8s_managers }}"
 global_k8s_nodes: "{{ sizing_k8s_nodes }}"
+global_cluster_sizing: "{{ sizing_cluster_sizing }}"
 
 global_man01_hostname: "{{ global_k8s_managers[0]['name'] }}"
 global_man01_ip: "{{ global_k8s_managers[0]['ip'] }}"

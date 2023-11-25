@@ -64,6 +64,9 @@
       tags: ["cluster", "opa"]
     - role: monitoring
       tags: ["cluster", "certs", "monitoring"]
+      when: global_cluster_sizing != "small"
     - role: logcollect
       tags: ["cluster", "logcollect"]
+      when: global_cluster_sizing == "large"
+
 ...
