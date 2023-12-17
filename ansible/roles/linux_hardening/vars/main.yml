@@ -1,0 +1,101 @@
+---
+
+linux_hardening_kernel_sysctl:
+  - name: vm.swappiness
+    value: 5
+  - name: net.ipv6.conf.all.disable_ipv6
+    value: 1
+  - name: net.ipv4.ip_forward
+    value: 1
+  - name: net.ipv4.conf.all.rp_filter
+    value: 1
+  - name: net.ipv4.conf.default.rp_filter
+    value: 1
+  - name: net.ipv4.conf.all.send_redirects
+    value: 0
+  - name: net.ipv4.conf.default.send_redirects
+    value: 0
+  - name: net.ipv4.conf.all.accept_source_route
+    value: 0
+  - name: net.ipv4.conf.default.accept_source_route
+    value: 0
+  - name: net.ipv4.conf.all.accept_redirects
+    value: 0
+  - name: net.ipv4.conf.all.secure_redirects
+    value: 0
+  - name: net.ipv4.conf.default.accept_redirects
+    value: 0
+  - name: net.ipv4.conf.default.secure_redirects
+    value: 0
+  - name: net.ipv4.conf.all.log_martians
+    value: 1
+  - name: net.ipv4.tcp_rfc1337
+    value: 1
+  - name: net.ipv4.icmp_ignore_bogus_error_responses
+    value: 1
+  - name: net.ipv4.ip_local_port_range
+    value: "32768 65535"
+  - name: net.ipv4.tcp_syncookies
+    value: 1
+  - name: net.ipv6.conf.all.router_solicitations
+    value: 0
+  - name: net.ipv6.conf.default.router_solicitations
+    value: 0
+  - name: net.ipv6.conf.all.accept_ra_rtr_pref
+    value: 0
+  - name: net.ipv6.conf.default.accept_ra_rtr_pref
+    value: 0
+  - name: net.ipv6.conf.all.accept_ra_pinfo
+    value: 0
+  - name: net.ipv6.conf.default.accept_ra_pinfo
+    value: 0
+  - name: net.ipv6.conf.all.accept_ra_defrtr
+    value: 0
+  - name: net.ipv6.conf.default.accept_ra_defrtr
+    value: 0
+  - name: net.ipv6.conf.all.autoconf
+    value: 0
+  - name: net.ipv6.conf.default.autoconf
+    value: 0
+  - name: net.ipv6.conf.all.accept_redirects
+    value: 0
+  - name: net.ipv6.conf.default.accept_redirects
+    value: 0
+  - name: net.ipv6.conf.all.accept_source_route
+    value: 0
+  - name: net.ipv6.conf.default.accept_source_route
+    value: 0
+  - name: net.ipv6.conf.all.max_addresses
+    value: 1
+  - name: net.ipv6.conf.default.max_addresses
+    value: 1
+  - name: kernel.sysrq
+    value: 0
+  - name: fs.suid_dumpable
+    value: 0
+  - name: fs.protected_symlinks
+    value: 1
+  - name: fs.protected_hardlinks
+    value: 1
+  - name: kernel.randomize_va_space
+    value: 2
+  - name: vm.mmap_min_addr
+    value: 65536
+  - name: kernel.pid_max
+    value: 65536
+  - name: kernel.kptr_restrict
+    value: 1
+  - name: kernel.dmesg_restrict
+    value: 1
+  - name: kernel.perf_event_paranoid
+    value: 2
+  - name: kernel.perf_event_max_sample_rate
+    value: 1
+  - name: kernel.perf_cpu_time_max_percent
+    value: 1
+  - name: kernel.modules_disabled
+    value: 1
+  - name: kernel.yama.ptrace_scope
+    value: 1
+
+...

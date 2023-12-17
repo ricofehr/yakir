@@ -1,0 +1,20 @@
+---
+
+- name: Update grub
+  become: true
+  ansible.builtin.shell: |
+    update-grub2
+  changed_when: true
+
+- name: Reboot vm
+  become: true
+  ansible.builtin.reboot:
+    reboot_timeout: 420
+
+- name: Restart ssh
+  become: true
+  ansible.builtin.systemd:
+    name: ssh
+    state: restarted
+
+...

@@ -1,0 +1,12 @@
+---
+
+- name: Enable yama module at boot
+  become: true
+  ansible.builtin.template:
+    src: grub_default
+    dest: /etc/default/grub
+    mode: '0644'
+  notify:
+    - Update grub
+
+...

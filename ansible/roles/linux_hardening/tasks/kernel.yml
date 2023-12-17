@@ -1,0 +1,11 @@
+---
+
+- name: Kernel hardening
+  become: true
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+  loop: "{{ linux_hardening_kernel_sysctl }}"
+
+...

@@ -1,0 +1,15 @@
+---
+
+- name: Hardening pam config
+  ansible.builtin.include_tasks: pam.yml
+
+- name: Hardening ssh config
+  ansible.builtin.include_tasks: ssh.yml
+
+- name: Hardening kernel config
+  ansible.builtin.include_tasks: kernel.yml
+
+- name: Hardening grub config
+  ansible.builtin.include_tasks: grub2.yml
+
+...

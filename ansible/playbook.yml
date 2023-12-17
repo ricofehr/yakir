@@ -9,6 +9,8 @@
       tags: ["core"]
     - role: base
       tags: ["core"]
+    - role: linux_hardening
+      tags: ["core", "hardening"]
     - role: crio
       tags: ["core"]
     - role: kubernetes

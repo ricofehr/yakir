@@ -1,0 +1,49 @@
+---
+
+- name: Block wheel group for sudo cmd
+  become: true
+  ansible.builtin.blockinfile:
+    path: "{{ item }}"
+    block: |
+      auth required pam_wheel.so
+  loop:
+    - /etc/pam.d/sudo
+    - /etc/pam.d/su
+
+- name: Password policy
+  become: true
+  ansible.builtin.blockinfile:
+    path: /etc/pam.d/passwd
+    block: |
+      password required pam_cracklib.so minlen=12 minclass=3 \
+                         dcredit=0 ucredit=0 lcredit=0 \
+                         ocredit=0 maxrepeat=1 \
+                         maxsequence=1 gecoscheck \
+                         reject_username enforce_for_root
+
+- name: Block account login attempts after 3 fails
+  become: true
+  ansible.builtin.blockinfile:
+    path: "{{ item }}"
+    block: |
+      auth required pam_tally.so deny=3 lock_time=300
+  loop:
+    - /etc/pam.d/login
+    - /etc/pam.d/sshd
+
+- name: Password PAM hash
+  become: true
+  ansible.builtin.blockinfile:
+    path: /etc/pam.d/common-password
+    block: |
+      password required pam_unix.so obscure sha512 rounds=65536
+
+- name: Password Login hash
+  become: true
+  ansible.builtin.blockinfile:
+    path: /etc/login.defs
+    block: |
+      ENCRYPT_METHOD SHA512
+      SHA_CRYPT_MIN_ROUNDS 65536
+
+...
