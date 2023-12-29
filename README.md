@@ -229,6 +229,7 @@ cd tf/openstack && terraform destroy
 ## TODO
 
 - Add backup process (backup etcd and storage repositories)
-- Add hardening stuff on Linux OS, and k8s settings
-- Work on a native kvm deployment -> WIP
+- Add kube-bench features on k8s settings
 - Work on opentelemetry integration
+- Add CI/CD tools stack : gitlab, argo-cd, sonar, ...
+
