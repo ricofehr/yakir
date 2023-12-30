@@ -93,25 +93,26 @@ $ kubectl get ingress -A
 
 ```
 Usage: ./up [options]
--h           this is some help text.
--d           destroy all previously provisioned vms
--c xxxx      CNI plugin, choices are weave, flannel, calico (default), cilium
--i xxxx      Issuer for managing SSL certs, choices are my-ca-issuer (default), letsencrypt-staging, letsencrypt-prod
--p xxxx      vagrant provider, default is virtualbox
--kp xxxx     keepalived password, default is randomly generated
--kd xxxx     global kubernetes domain, default is k8s.local
--mr xxxx     container private mirror registry
--ma xxxx     mirror repository URL for apt packages
--mp xxxx     mirror repository URL for pypi packages
--s xxxx      sizing deployment, default is small
-              - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
-              - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
-              - large : 3 managers and 5 nodes, host with 24Go ram / 6 cores
+-h                                this is some help text.
+-d                                destroy all previously provisioned vms
+-c xxxx                           CNI plugin, choices are weave, flannel, calico (default), cilium
+-p xxxx                           vagrant provider, default is virtualbox
+-s xxxx                           sizing deployment, default is small
+                                  - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
+                                  - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
+                                  - large : 3 managers and 5 nodes, host with 24Go ram / 6 cores
+-t xxxx                           ansible tag, default is none
+--keepalived-password xxxx        keepalived password, default is randomly generated
+--kube-domain xxxx                global kubernetes domain, default is k8s.local
+--container-registry-mirror xxxx  container private mirror registry
+--apt-repository-mirror xxxx      mirror repository URL for apt packages
+--pypi-repository-mirror xxxx     mirror repository URL for pypi packages
+--cert-issuer-type xxxx           Issuer for managing SSL certs, choices are my-ca-issuer (default), letsencrypt-staging, letsencrypt-prod
 ```
 
-For example, an install on apple silion with local repository, custom domain, flannel CNI, and medium sizing, letsencrypt prod for certs management
+For example, an install on apple silicon with local repository, custom domain, flannel CNI, and medium sizing, letsencrypt prod for certs management
 ```
-$ ./up -d -c flannel -i letsencrypt-prod -p parallels -kp UdTelzAu -kd k8s.mydomain.io -mr registry.mydomain.io -ma https://nexus.mydomain.io/repository/jammy -mp https://nexus.mydomain.io/repository/pypi-all -s medium
+$ ./up -d -c flannel --cert-issuer-type letsencrypt-prod -p parallels --keepalived-password UdTelzAu --kube-domain k8s.mydomain.io --container-registry-mirror registry.mydomain.io --apt-repository-mirror https://nexus.mydomain.io/repository/jammy --pypi-repository-mirror https://nexus.mydomain.io/repository/pypi-all -s medium
 ```
 
 ## Kvm deployment
@@ -175,21 +176,27 @@ network:
 Use 'deploy-to-libvirt' script for launch deployment
 ```
 Usage: ./deploy-to-libvirt [options]
--h           this is some help text.
--c xxx       CNI plugin, choices are cilium / weave / flannel, default is flannel
--i xxxx      certificate issuer, choices are my-selfsigned-ca / letsencrypt-staging / letsencrypt-prod, default is my-selfsigned-ca
--k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
--kd xxxx     global kubernetes domain, default is kubernetes.local
--mr xxxx     container private mirror registry
--ma xxxx     mirror repository URL for apt packages
--mp xxxx     mirror repository URL for pypi packages
--vip1 xxxx   failover ip for managers nodes, default is 192.168.2.250
--w xxxx	     override ansible path
+-h                                this is some help text.
+-c xxx                            CNI plugin, choices are cilium / weave / flannel, default is flannel
+--failover-ip xxxx                failover ip for managers nodes, default is 192.168.2.250
+--ansible-path xxxx               override ansible path
+--keepalived-password xxxx        keepalived password, default is randomly generated
+--kube-domain xxxx                global kubernetes domain, default is kubernetes.local
+--container-registry-mirror xxxx  container private mirror registry
+--apt-repository-mirror xxxx      mirror repository URL for apt packages
+--pypi-repository-mirror xxxx     mirror repository URL for pypi packages
+--cert-issuer-type xxxx           Issuer for managing SSL certs, choices are my-ca-issuer (default), letsencrypt-staging, letsencrypt-prod
+--ssh-key-pub xxxx                public rsa key path, default is ~/.ssh/id_rsa.pub
 ```
 
 Example
 ```
-./deploy-to-libvirt -n flannel -c letsencrypt-prod -mr registry.mydomain.io -ma https://nexus.mydomain.io/repository/jammy -mp https://nexus.mydomain.io/repository/pypi-all -kd k8s.mydomain.io
+./deploy-to-libvirt -c flannel \
+      --cert-issuer-type letsencrypt-prod \
+      --container-registry-mirror registry.mydomain.io \
+      --apt-repository-mirror https://nexus.mydomain.io/repository/jammy \
+      --pypi-repository-mirror https://nexus.mydomain.io/repository/pypi-all \
+      --kube-domain k8s.mydomain.io
 ```
 
 ## Openstack deployment

@@ -34,16 +34,17 @@ declare VMS_EXTRA_VARS=""
 deployhelp() {
   cat <<EOF
 Usage: $0 [options]
--h           this is some help text.
--c xxx       CNI plugin, choices are cilium / weave / flannel, default is $CNI_PLUGIN
--i xxxx      certificate issuer, choices are my-selfsigned-ca / letsencrypt-staging / letsencrypt-prod, default is $CERTISSUER
--k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
--kd xxxx     global kubernetes domain, default is $K8S_DOMAIN
--mr xxxx     container private mirror registry
--ma xxxx     mirror repository URL for apt packages
--mp xxxx     mirror repository URL for pypi packages
--vip1 xxxx   failover ip for managers nodes, default is $VIP_MANAGERS
--w xxxx	     override ansible path
+-h                                this is some help text.
+-c xxx                            CNI plugin, choices are cilium / weave / flannel, default is $CNI_PLUGIN
+--failover-ip xxxx                failover ip for managers nodes, default is $VIP_MANAGERS
+--ansible-path xxxx               override ansible path
+--keepalived-password xxxx        keepalived password, default is randomly generated
+--kube-domain xxxx                global kubernetes domain, default is $K8S_DOMAIN
+--container-registry-mirror xxxx  container private mirror registry
+--apt-repository-mirror xxxx      mirror repository URL for apt packages
+--pypi-repository-mirror xxxx     mirror repository URL for pypi packages
+--cert-issuer-type xxxx           Issuer for managing SSL certs, choices are my-ca-issuer (default), letsencrypt-staging, letsencrypt-prod
+--ssh-key-pub xxxx                public rsa key path, default is ~/.ssh/id_rsa.pub
 EOF
 
 exit 1
@@ -57,42 +58,42 @@ while (($# > 0)); do
       CNI_PLUGIN="$1"
       shift
       ;;
-    -i)
+    --cert-issuer-type)
       shift
       CERTISSUER="$1"
       shift
       ;;
-    -k)
+    --ssh-key-pub)
       shift
       SSHKEYFILE="$1"
       shift
       ;;
-    -kd)
+    --kube-domain)
       shift
       K8S_DOMAIN="$1"
       shift
       ;;
-    -mr)
+    --container-registry-mirror)
       shift
       MIRROR_REGISTRY="$1"
       shift
       ;;
-    -ma)
+    --apt-repository-mirror)
       shift
       MIRROR_APT="$1"
       shift
       ;;
-    -mp)
+    --pypi-repository-mirror)
       shift
       MIRROR_PYPI="$1"
       shift
       ;;
-    -vip1)
+    --failover-ip)
       shift
       VIP_MANAGERS="$1"
       shift
       ;;
-    -w)
+    --ansible-path)
       shift
       ANSIBLEPATH="$1"
       shift

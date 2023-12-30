@@ -19,21 +19,21 @@ KEEPALIVED_PASSWORD="$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 8 ; ech
 deployhelp() {
   cat <<EOF
 Usage: $0 [options]
--h           this is some help text.
--d           destroy all previously provisioned vms
--c xxxx      CNI plugin, choices are weave, flannel, calico (default), cilium
--i xxxx      Issuer for managing SSL certs, choices are my-ca-issuer (default), letsencrypt-staging, letsencrypt-prod
--p xxxx      vagrant provider, default is virtualbox
--kp xxxx     keepalived password, default is randomly generated
--kd xxxx     global kubernetes domain, default is $K8S_DOMAIN
--mr xxxx     container private mirror registry
--ma xxxx     mirror repository URL for apt packages
--mp xxxx     mirror repository URL for pypi packages
--s xxxx      sizing deployment, default is small
-              - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
-              - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
-              - large : 3 managers and 5 nodes, host with 24Go ram / 6 cores
--t xxxx      ansible tag, default is none
+-h                                this is some help text.
+-d                                destroy all previously provisioned vms
+-c xxxx                           CNI plugin, choices are weave, flannel, calico (default), cilium
+-p xxxx                           vagrant provider, default is virtualbox
+-s xxxx                           sizing deployment, default is small
+                                  - small : 1 manager and 1 nodes, host with 8Go ram / 2 cores
+                                  - medium : 3 managers and 2 nodes host with 16Go ram / 4 cores
+                                  - large : 3 managers and 5 nodes, host with 24Go ram / 6 cores
+-t xxxx                           ansible tag, default is none
+--keepalived-password xxxx        keepalived password, default is randomly generated
+--kube-domain xxxx                global kubernetes domain, default is $K8S_DOMAIN
+--container-registry-mirror xxxx  container private mirror registry
+--apt-repository-mirror xxxx      mirror repository URL for apt packages
+--pypi-repository-mirror xxxx     mirror repository URL for pypi packages
+--cert-issuer-type xxxx           Issuer for managing SSL certs, choices are my-ca-issuer (default), letsencrypt-staging, letsencrypt-prod
 EOF
 
 exit 1
@@ -51,7 +51,7 @@ while (($# > 0)); do
       CNI_PLUGIN="$1"
       shift
       ;;
-    -i)
+    --cert-issuer-type)
       shift
       if [[ "$1" = "letsencrypt-staging" ]]; then
         CERT_ISSUER="$1"
@@ -61,27 +61,27 @@ while (($# > 0)); do
       fi
       shift
       ;;
-    -kp)
+    --keepalived-password)
       shift
       KEEPALIVED_PASSWORD="$1"
       shift
       ;;
-    -kd)
+    --kube-domain)
       shift
       K8S_DOMAIN="$1"
       shift
       ;;
-    -mr)
+    --container-registry-mirror)
       shift
       MIRROR_REGISTRY="$1"
       shift
       ;;
-    -ma)
+    --apt-repository-mirror)
       shift
       MIRROR_APT="$1"
       shift
       ;;
-    -mp)
+    --pypi-repository-mirror)
       shift
       MIRROR_PYPI="$1"
       shift
