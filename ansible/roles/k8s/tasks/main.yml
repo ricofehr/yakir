@@ -9,10 +9,6 @@
 - name: Manage local hosts file
   ansible.builtin.import_tasks: local_hosts_file.yml
 
-- name: Import cloud certificate
-  when: k8s_cloud_crt_path != ''
-  ansible.builtin.import_tasks: cloud_cert.yml
-
 - name: Kubernetes install via kubeadm
   ansible.builtin.import_tasks: kubeadm.yml
 
@@ -20,16 +16,9 @@
   when: k8s_managers_group_name in group_names
   ansible.builtin.import_tasks: kubeconfig.yml
 
-- name: No Cloud provider
+- name: Kubeproxy setting
   when:
     - k8s_managers_group_name in group_names
-    - k8s_cloud == 'no'
-  ansible.builtin.import_tasks: "no_provider.yml"
-
-- name: Openstack Cloud provider
-  when:
-    - k8s_managers_group_name in group_names
-    - k8s_cloud == 'os'
-  ansible.builtin.import_tasks: "os_provider.yml"
+  ansible.builtin.import_tasks: "kubeproxy.yml"
 
 ...

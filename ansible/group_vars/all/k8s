@@ -19,14 +19,4 @@ k8s_calico_version: "{{ global_calico_version }}"
 k8s_openstack_provider_version: "{{ global_openstack_provider_version }}"
 k8s_metric_server_version: "{{ global_metric_server_version }}"
 
-k8s_cloud: "{{ global_cloud }}"
-k8s_os_cloud_username: tenant0
-k8s_os_cloud_password: tenant0
-k8s_os_cloud_authurl: http://172.29.236.101:5000/v3
-k8s_os_cloud_tenant_name: tenant0
-k8s_os_cloud_domain_name: Default
-k8s_os_cloud_subnet_id: 3e8a056a-cd24-40da-8720-2b9e91d702dc
-k8s_os_cloud_floatingnetwork_id: 94061fac-b246-479c-8845-4e70aeb7f180
-k8s_cloud_crt_path: ''
-
 ...

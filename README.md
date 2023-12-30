@@ -199,44 +199,10 @@ Example
       --kube-domain k8s.mydomain.io
 ```
 
-## Openstack deployment
-
-An openstack deployment is setted with Terraform, use 'deploy-to-openstack' script for managed this
-```
-Usage: ./deploy-to-openstack [options]
--h           this is some help text.
--a xxxx      openstack auth url, default is http://172.29.236.101:5000/v3
--u xxxx      openstack user, default is tenant0
--p xxxx      openstack password, default is tenant0
--t xxxx      openstack tenant, default is tenant0
--r xxxx      openstack region, default is RegionOne
--s xxxx      deployment sizing, choices are small / medium / large, default is small
--fm xxxx     openstack flavor for manager instance, default is large
--fn xxxx     openstack flavor for nodes instance, default is xlarge
--fip xxxx    openstack floatingip network id, no default
--kd xxxx     global kubernetes domain, default is k8s.local
--vip1 xxxx   failover ip for managers nodes
--oscrt xxxx  openstack ssl certificate path
--secgrp xxxx openstack tenant security group, default is k8s
--net xxxx    openstack net id, no default
--snet xxxx   openstack subnet id, no default
--m xxxx      mirror registry for docker.io, quay.io, registry.k8s.io images
--o xxxx      openstack operating system image, default is jammy
--k xxxx      public rsa key path, default is ~/.ssh/id_rsa.pub
--w xxxx	     override ansible path
-```
-
-Tested with an openstack deployment from the repo https://github.com/ricofehr/mos
-
-Once installed, the terraform state file is into tf/openstack, for example destroy the k8s deployment
-```
-cd tf/openstack && terraform destroy
-```
-
 ## TODO
 
-- Add backup process (backup etcd and storage repositories)
-- Add kube-bench features on k8s settings
+- Add backup process 
+- Secure k8s settings with CIS benchmark requirements
 - Work on opentelemetry integration
-- Add CI/CD tools stack : gitlab, argo-cd, sonar, ...
+- Add Gitops tools
 

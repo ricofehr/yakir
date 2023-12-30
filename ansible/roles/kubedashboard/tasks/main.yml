@@ -44,12 +44,4 @@
     values_files:
       - helm-values/dashboard.yml
 
-- name: Get url dashboard
-  when: kubedashboard_cloud == 'no'
-  ansible.builtin.debug:
-    msg: >
-      You can reach the dashboard with
-      http://{{ ansible_host }}:8001/api/v1/namespaces/
-      {{ kubedashboard_namespace }}/services/http:dashboard-kubernetes-dashboard:http/proxy/
-
 ...

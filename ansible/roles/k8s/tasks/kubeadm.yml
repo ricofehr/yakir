@@ -4,7 +4,7 @@
   become: true
   when: k8s_managers_group_name in group_names
   ansible.builtin.template:
-    src: templates/{{ k8s_cloud }}-cloud-kubeadm.conf.j2
+    src: templates/kubeadm.conf.j2
     dest: /etc/kubernetes/kubeadm.conf
     mode: '0644'
     force: false
@@ -65,7 +65,7 @@
   become: true
   when: inventory_hostname != k8s_man01_hostname
   ansible.builtin.template:
-    src: templates/{{ k8s_cloud }}-cloud-kubeadm-join.conf.j2
+    src: templates/kubeadm-join.conf.j2
     dest: /etc/kubernetes/kubeadm.conf
     force: false
     mode: '0644'
