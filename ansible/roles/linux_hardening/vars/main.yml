@@ -93,8 +93,6 @@ linux_hardening_kernel_sysctl:
     value: 1
   - name: kernel.perf_cpu_time_max_percent
     value: 1
-  - name: kernel.modules_disabled
-    value: 1
   - name: kernel.yama.ptrace_scope
     value: 1
 
