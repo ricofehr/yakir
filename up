@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 declare PROVIDER="virtualbox"
 declare -i ISDESTROY=0
