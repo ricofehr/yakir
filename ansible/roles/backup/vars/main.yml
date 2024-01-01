@@ -1,0 +1,11 @@
+---
+
+backup_velero_cli_fqdn: "velero-v{{ backup_velero_version }}-linux-{{ backup_velero_arch }}"
+backup_velero_cli_url: "https://github.com/vmware-tanzu/velero/releases/download/v{{ backup_velero_version }}/{{ backup_velero_cli_fqdn }}.tar.gz"
+backup_namespace: kube-velero
+backup_s3_name: s3
+backup_s3_provider: aws
+backup_s3_plugin_name: velero-plugin-for-aws
+backup_velero_helm_repo_url: https://vmware-tanzu.github.io/helm-charts
+
+...

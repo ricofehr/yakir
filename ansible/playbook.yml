@@ -70,5 +70,8 @@
     - role: logcollect
       tags: ["cluster", "logcollect"]
       when: global_cluster_sizing == "large"
+    - role: backup
+      tags: ["cluster", "backup"]
+      when: backup_s3_accesskey_secret != ""
 
 ...

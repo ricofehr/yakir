@@ -5,7 +5,7 @@
 
 A base k8s install on Ubuntu distribution (Tested on Jammy).
 
-Can be deployed on local with Vagrant (Bento/Ubuntu boxes) or on Openstack 
+Can be deployed on local with Vagrant (Bento/Ubuntu boxes) or on KVM hypervisor with Terraform 
 - 3 different sizings
   - small: 1 Managers and 1 Worker (for a Vagrant deployment, fit to 8Go RAM Laptop with 2 cpu cores)
   - medium : 3 Managers and 3 Workers (for a Vagrant deployment, fit to 16Go RAM Laptop with 4 cpu cores)
@@ -23,6 +23,7 @@ yakir/
     +---collections/        Folder where collections are downloaded from ansible-galaxy command
     +---inventories/        Inventory files, scoped about small, medium, larger targeted form factor
     +---roles/              Ansible roles folder
+        +---backup          Deploy velero chart helm, install velero cli command on manager1, and configure a daily backup which post on external S3 bucket 
         +---base            Prerequisites for the Linux OS : global attributes (locale, hostname, time, swap usage, ...), user management, system packages
         +---cert_manager    Deploy certificate-manager helm chart and define Issuers for both letsencrypt and autosigned type
         +---cni             Manage network plugins for Kubernetes : Weave, Flannel, Cilium, Calico
@@ -31,10 +32,12 @@ yakir/
         +---haproxy         Install and configure haproxy on each manager nodes : expose https (port 443) of the cluster and route traffic to ingress controller
         +---helm            Install helm command and add global helm repositories
         +---ingress         Deploy nginx ingress component on Kubernetes
+        +---internal_repos  Configure internal repositories on vms for pypi and apt mirroring requirements 
         +---k8s             Install and configure a Kubernetes deployment with Kubeadm
         +---keepalived      Install keepalived service on manager hosts for a no cloud deployment : ensure a failover IP for control-plane endpoint
         +---kubernetes      External dependencies from a galaxy role (gantsign repository) : install kubernetes binary packages on VMs
         +---kubedashboard   Install and secure Dashboard deployment for Kubernetes
+        +---linux_hardening Apply hardening rules for linux kernel, pam logins, and ssh 
         +---logcollect      Deploy fluentbit, elastic, and kibana helm chart, and configure fluentbit for kubernetes logs
         +---monitoring      Deploy prometheus and grafana helm charts, and import grafana dashboard for kubernetes metrics
         +---opa             Install Gatekeeper and define some open policy rules
@@ -43,11 +46,9 @@ yakir/
     +---sizing_vars.yml     File created (symlink to targeted file on sizing_vars folder) by the deployment script : used by ansible-playbook to scope the infra metadata
     +---requirements.yml    Collections dependencies, to install in collections folder (ansible-galaxy command is executed by deployment scripts on the root folder)
 +--tf/                      Terraform folder which contains HCL provisioning tasks
-    +---openstack/          HCL instructions for provisioning VMs and resources on Openstack as prerequisites for k8s installation
     +---libvirt/            HCL instructions for provisioning VMs and resources on KVM as prerequisites for k8s installation
 +--vagrantfiles/            Deployment flavors vagrantfile for small, medium, large scopes
 deploy-to-libvirt           Script for installation on a lived KVM with Terraform (See options below on this page)
-deploy-to-openstack         Script for installation on a lived openstack with Terraform (See options below on this page)
 up                          Script for local installation with Vagrant (See options below on this page) 
 Vagrantfile                 File created (symlink to targeted file on vagrantfiles folder) by the deployment script : used by Vagrant to scope the VMs provisioning
 ```
@@ -69,23 +70,25 @@ Deployment of Kubernetes with crio as container engine, and multiple CNI choices
 - Elastic v8.5.1
 - Prometheus v2.46.0
 - Grafana v10.0.3
+- Velero v1.12.2
 
 ## Vagrant deployment
 
-2 providers are defined in Vagrantfiles (using bento boxes)
-- virtualbox : targeted for x86 systems (amd64 Ubuntu vagrant box)
+3 providers are defined in Vagrantfiles (using bento boxes)
+- virtualbox / libvirt : targeted for x86 systems (amd64 Ubuntu vagrant box)
 - parallels : targeted for apple silicon systems (arm64 Ubuntu vagrant box)
 
 ### Run
 
-```
-$ git submodule update --init
-$ ./up
+```bash
+git submodule update --init
+./up
 ```
 
-Once setup done, get ui endpoints
-```
-$ kubectl get ingress -A
+Once setup done, get ui endpoints and secrets for ui credentials
+```bash
+kubectl get ingress -A
+kubectl get secrets -A
 ```
 
 
@@ -108,18 +111,30 @@ Usage: ./up [options]
 --apt-repository-mirror xxxx      mirror repository URL for apt packages
 --pypi-repository-mirror xxxx     mirror repository URL for pypi packages
 --cert-issuer-type xxxx           Issuer for managing SSL certs, choices are my-ca-issuer (default), letsencrypt-staging, letsencrypt-prod
+--backup-server xxxx              External S3 Server (MinIO / AWS S3) URL
+--backup-access-key xxxx          S3 Access Key Id
+--backup-access-secret xxxx       S3 Access Key Secret
+--backup-region xxxx              S3 Bucket Region, default is minio
 ```
 
 For example, an install on apple silicon with local repository, custom domain, flannel CNI, and medium sizing, letsencrypt prod for certs management
 ```
-$ ./up -d -c flannel --cert-issuer-type letsencrypt-prod -p parallels --keepalived-password UdTelzAu --kube-domain k8s.mydomain.io --container-registry-mirror registry.mydomain.io --apt-repository-mirror https://nexus.mydomain.io/repository/jammy --pypi-repository-mirror https://nexus.mydomain.io/repository/pypi-all -s medium
+$ ./up -d -c flannel \
+  --cert-issuer-type letsencrypt-prod \
+  -p parallels \
+  -s medium \
+  --keepalived-password UdTelzAu \
+  --kube-domain k8s.mydomain.io \
+  --container-registry-mirror registry.mydomain.io \
+  --apt-repository-mirror https://nexus.mydomain.io/repository/jammy \
+  --pypi-repository-mirror https://nexus.mydomain.io/repository/pypi-all
 ```
 
 ## Kvm deployment
 
 At first, copy the terraform default vars file, so we can change it to match our infra and network
-```
-$ cp tf/libvirt/terraform.tfvars.dist tf/libvirt/terraform.tfvars
+```bash
+cp tf/libvirt/terraform.tfvars.dist tf/libvirt/terraform.tfvars
 ```
 
 Form factor is fixed at 8 nodes (3 managers, and 5 workers), but could be changed easily with edit this files
@@ -187,10 +202,14 @@ Usage: ./deploy-to-libvirt [options]
 --pypi-repository-mirror xxxx     mirror repository URL for pypi packages
 --cert-issuer-type xxxx           Issuer for managing SSL certs, choices are my-ca-issuer (default), letsencrypt-staging, letsencrypt-prod
 --ssh-key-pub xxxx                public rsa key path, default is ~/.ssh/id_rsa.pub
+--backup-server xxxx              External S3 Server (MinIO / AWS S3) URL
+--backup-access-key xxxx          S3 Access Key Id
+--backup-access-secret xxxx       S3 Access Key Secret
+--backup-region xxxx              S3 Bucket Region, default is minio
 ```
 
 Example
-```
+```bash
 ./deploy-to-libvirt -c flannel \
       --cert-issuer-type letsencrypt-prod \
       --container-registry-mirror registry.mydomain.io \
@@ -199,10 +218,29 @@ Example
       --kube-domain k8s.mydomain.io
 ```
 
+## Backup
+
+Prerequisites
+- have a S3 instance reachable (MinIO or AWS S3)
+- generate access key credentials (ID and Secret) with the S3 instance
+- create a bucket named "velero"
+- provide server URL, credentials, and region (for MinIO, you can create a "minio" region) on up / deploy-to-libvirt commands (See parameters below on README)
+
+Add parameters to enable a daily backup with Velero, for example (same backup parameters are availabe with deploy-to-libvirt command)
+```bash
+./up -s large \
+  -c cilium \
+  --kube-domain k8s.local \
+  -p libvirt \
+  --backup-server https://minio.local \
+  --backup-access-key xxxxxxxxxxxxx \
+  --backup-access-secret xxxxxxxxxxxxxxxxxxxxx \
+  --backup-region minio
+```
+
 ## TODO
 
-- Add backup process 
-- Secure k8s settings with CIS benchmark requirements
+- Secure k8s settings with CIS benchmark recommandations
 - Work on opentelemetry integration
 - Add Gitops tools
 

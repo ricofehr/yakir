@@ -15,6 +15,10 @@ declare MIRROR_APT_PARAM=""
 declare MIRROR_PYPI=""
 declare MIRROR_PYPI_PARAM=""
 declare MIRROR_PARAMS=""
+declare BACKUP_SERVER_URL=""
+declare BACKUP_ACCESS_KEY=""
+declare BACKUP_ACCESS_SECRET=""
+declare BACKUP_REGION="minio"
 declare SIZING="large"
 declare VIP_MANAGERS="192.168.2.250"
 declare SSH_PARAMS="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no"
@@ -45,6 +49,10 @@ Usage: $0 [options]
 --pypi-repository-mirror xxxx     mirror repository URL for pypi packages
 --cert-issuer-type xxxx           Issuer for managing SSL certs, choices are my-ca-issuer (default), letsencrypt-staging, letsencrypt-prod
 --ssh-key-pub xxxx                public rsa key path, default is ~/.ssh/id_rsa.pub
+--backup-server xxxx              External S3 Server (MinIO / AWS S3) URL
+--backup-access-key xxxx          S3 Access Key Id
+--backup-access-secret xxxx       S3 Access Key Secret
+--backup-region xxxx              S3 Bucket Region, default is $BACKUP_REGION 
 EOF
 
 exit 1
@@ -96,6 +104,26 @@ while (($# > 0)); do
     --ansible-path)
       shift
       ANSIBLEPATH="$1"
+      shift
+      ;;
+    --backup-server)
+      shift
+      BACKUP_SERVER_URL="$1"
+      shift
+      ;;
+    --backup-access-key)
+      shift
+      BACKUP_ACCESS_KEY="$1"
+      shift
+      ;;
+    --backup-access-secret)
+      shift
+      BACKUP_ACCESS_SECRET="$1"
+      shift
+      ;;
+    --backup-region)
+      shift
+      BACKUP_REGION="$1"
       shift
       ;;
     -h)
@@ -179,6 +207,8 @@ $ANSIBLEPATH -i tfinventory \
 --ssh-extra-args="$SSH_PARAMS" playbook.yml \
 -e "global_controlplane_endpoint_ip=$VIP_MANAGERS" -e "cni_plugin=$CNI_PLUGIN" \
 -e "keepalived_eth=$VM_ETH" -e "global_domain=$K8S_DOMAIN" -e "global_cert_issuer=$CERTISSUER" \
+-e "backup_s3_url=$BACKUP_SERVER_URL" -e "backup_s3_accesskey_id=$BACKUP_ACCESS_KEY" \
+-e "backup_s3_accesskey_secret=$BACKUP_ACCESS_SECRET" -e "backup_s3_region=$BACKUP_REGION" \
 -e "csi_plugin=$CSI_PLUGIN" -e "global_persistence_disk=true" $MIRROR_PARAMS
 
 popd > /dev/null

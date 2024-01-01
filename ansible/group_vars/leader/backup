@@ -1,0 +1,9 @@
+---
+
+backup_velero_version: 1.12.2
+backup_velero_helm_version: 5.2.0
+backup_s3_plugin_image: velero/{{ backup_s3_plugin_name }}:v1.8.2
+backup_velero_arch: "amd64"
+backup_s3_region: minio
+
+...

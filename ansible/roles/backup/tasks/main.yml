@@ -1,0 +1,86 @@
+---
+
+- name: Add velero chart repo
+  kubernetes.core.helm_repository:
+    name: velero
+    repo_url: "{{ backup_velero_helm_repo_url }}"
+
+- name: Create velero namespace
+  kubernetes.core.k8s:
+    name: "{{ backup_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Deploy Velero
+  kubernetes.core.helm:
+    name: velero
+    chart_ref: velero/velero
+    chart_version: "{{ backup_velero_helm_version }}"
+    release_namespace: "{{ backup_namespace }}"
+    values:
+      initContainers:
+        - name: "{{ backup_s3_plugin_name }}"
+          image: "{{ backup_s3_plugin_image }}"
+          volumeMounts:
+            - mountPath: /target
+              name: plugins
+      configuration:
+        backupStorageLocation:
+          - name: "{{ backup_s3_name }}"
+            provider: "{{ backup_s3_provider }}"
+            bucket: velero
+            default: true
+            config:
+              region: "{{ backup_s3_region }}"
+              s3ForcePathStyle: "true"
+              s3Url: "{{ backup_s3_url }}"
+        volumeSnapshotLocation:
+          - name: "{{ backup_s3_name }}"
+            provider: "{{ backup_s3_provider }}"
+            config:
+              region: "{{ backup_s3_region }}"
+      credentials:
+        useSecret: true
+        secretContents:
+          cloud: |
+            [default]
+            aws_access_key_id = {{ backup_s3_accesskey_id }}
+            aws_secret_access_key = {{ backup_s3_accesskey_secret }}
+      serviceAccount:
+        server:
+          create: true
+          name: velero
+
+- name: Wait for velero pods become ready
+  ansible.builtin.command: "kubectl wait pod --all --namespace={{ backup_namespace }} --for=condition=Ready --timeout=900s"
+  retries: 2
+  delay: 10
+  changed_when: false
+
+- name: Download Velero CLI
+  ansible.builtin.get_url:
+    url: "{{ backup_velero_cli_url }}"
+    dest: "/tmp/{{ backup_velero_cli_fqdn }}.tar.gz"
+    mode: '0755'
+
+- name: Extract Velero CLI
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ backup_velero_cli_fqdn }}.tar.gz"
+    dest: "/tmp/"
+    remote_src: true
+
+- name: Move Velero binary to /usr/local/bin
+  become: true
+  ansible.builtin.command: mv /tmp/{{ backup_velero_cli_fqdn }}/velero /usr/local/bin/velero
+  args:
+    creates: /usr/local/bin/velero
+
+- name: Create a daily backup
+  ansible.builtin.shell: |
+    velero schedule create daily-full-cluster-backup --schedule="@daily"
+    touch {{ ansible_env.HOME }}/.velero_daily
+  args:
+    creates: "{{ ansible_env.HOME }}/.velero_daily"
+
+...
