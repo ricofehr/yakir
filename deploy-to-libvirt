@@ -3,7 +3,6 @@
 # Default parameters value
 declare CNI_PLUGIN="flannel"
 declare CSI_PLUGIN="rook"
-declare NODES_EXTRA_VARS=""
 declare SSHKEYFILE="${HOME}/.ssh/id_rsa.pub"
 declare ANSIBLEPATH="/usr/bin/ansible-playbook"
 declare VM_ETH="ens3"
@@ -31,7 +30,6 @@ declare K8SNODE3_IP="192.168.2.222"
 declare K8SNODE4_IP="192.168.2.223"
 declare K8SNODE5_IP="192.168.2.224"
 declare CERTISSUER="my-selfsigned-ca"
-declare VMS_EXTRA_VARS=""
 
 
 # Help function
