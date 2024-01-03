@@ -5,11 +5,15 @@
 
 A base k8s install on Ubuntu distribution (Tested on Jammy).
 
-Can be deployed on local with Vagrant (Bento/Ubuntu boxes) or on KVM hypervisor with Terraform 
+Can be deployed on local with Vagrant (Bento/Ubuntu boxes)
 - 3 different sizings
   - small: 1 Managers and 1 Worker (for a Vagrant deployment, fit to 8Go RAM Laptop with 2 cpu cores)
   - medium : 3 Managers and 3 Workers (for a Vagrant deployment, fit to 16Go RAM Laptop with 4 cpu cores)
   - large : 3 Managers and 5 Workers (for a Vagrant deployment, fit to 32Go RAM Laptop with 6 cpu cores)
+
+Can be deployed on KVM hypervisor with Terraform
+- Need a dhcp serveur configured with 8 VMs MAC/IP associations : 3 managers and 5 nodes
+- Use of 36 vcpus (fit to ~10 real cpu cores), 64Go RAM, and 1To of disk
 
 ## Repository structure
 
@@ -117,10 +121,9 @@ Usage: ./up [options]
 --backup-region xxxx              S3 Bucket Region, default is minio
 ```
 
-For example, an install on apple silicon with local repository, custom domain, flannel CNI, and medium sizing, letsencrypt prod for certs management
-```
-$ ./up -d -c flannel \
-  --cert-issuer-type letsencrypt-prod \
+For example, an install on apple silicon with local repository, custom domain, flannel CNI, and medium sizing
+```bash
+./up -d -c flannel \
   -p parallels \
   -s medium \
   --keepalived-password UdTelzAu \
@@ -143,7 +146,7 @@ Form factor is fixed at 8 nodes (3 managers, and 5 workers), but could be change
 
 Without change (keeping the terraform.tfvars.dist content), the deployment needs following resources
 - 8 VMs : 3 managers and 5 workers
-- use of 36 vcpus (well count for ~10 real cpu cores), 64Go RAM, and 1To of disk
+- use of 36 vcpus (fit to ~10 real cpu cores), 64Go RAM, and 1To of disk
 
 Edit tf/libvirt/terraform.tfvars file before deployment
 - Adapt CPU / RAM / DISK
