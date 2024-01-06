@@ -176,15 +176,19 @@ network:
       dhcp4: true
       dhcp6: false
 ```
-- A DHCP server setted with MAC addresses of VMs as following (if keeping MAC addresses in terraform.tfvars.dist and IPs in deploy-to-libvirt script)
-  - k8s-man-01 : "42:34:00:e2:a1:11" -> 192.168.2.210 
-  - k8s-man-02 : "42:34:00:a6:d5:21" -> 192.168.2.211
-  - k8s-man-03 : "42:34:00:4c:95:a1" -> 192.168.2.212
-  - k8s-wrk-01 : "42:34:00:84:5f:13" -> 192.168.2.220
-  - k8s-wrk-02 : "42:34:00:28:2d:2c" -> 192.168.2.221
-  - k8s-wrk-03 : "42:34:00:31:97:53" -> 192.168.2.222
-  - k8s-wrk-04 : "42:34:00:04:3e:1d" -> 192.168.2.223
-  - k8s-wrk-95 : "42:34:00:ba:48:c2" -> 192.168.2.224
+- A DHCP server with following lease list : adapt it if changing default MAC addresses and/or IPs
+
+| VM HostName | MAC Address | IP Address |
+|-------------|-------------|------------|
+| k8s-man-01 | 42:34:00:e2:a1:11 | 192.168.2.210 |
+| k8s-man-02 | 42:34:00:a6:d5:21 | 192.168.2.211 |
+| k8s-man-03 | 42:34:00:4c:95:a1 | 192.168.2.212 |
+| k8s-wrk-01 | 42:34:00:84:5f:13 | 192.168.2.220 |
+| k8s-wrk-02 | 42:34:00:28:2d:2c | 192.168.2.221 |
+| k8s-wrk-03 | 42:34:00:31:97:53 | 192.168.2.222 |
+| k8s-wrk-04 | 42:34:00:04:3e:1d | 192.168.2.223 |
+| k8s-wrk-05 | 42:34:00:ba:48:c2 | 192.168.2.224 |
+
 - For use with public exposed IP
   - defined a wildcard *.K8S_DOMAIN which is binding to the public IP
   - add a nat PREROUTING rule to forward incoming public IP on port 80 and 443 connection to the private VIP IP (default is 192.168.2.250)
