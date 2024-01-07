@@ -29,6 +29,7 @@ yakir/
     +---roles/              Ansible roles folder
         +---backup          Deploy velero chart helm, install velero cli command on manager1, and configure a daily backup which post on external S3 bucket 
         +---base            Prerequisites for the Linux OS : global attributes (locale, hostname, time, swap usage, ...), user management, system packages
+        +---bench           Launch, display, and save a kube-bench analysis
         +---cert_manager    Deploy certificate-manager helm chart and define Issuers for both letsencrypt and autosigned type
         +---cni             Manage network plugins for Kubernetes : Weave, Flannel, Cilium, Calico
         +---crio            Manage container engine installation
@@ -59,22 +60,24 @@ Vagrantfile                 File created (symlink to targeted file on vagrantfil
 
 ## Components
 
-Deployment of Kubernetes with crio as container engine, and multiple CNI choices
-- Kubernetes v1.28.1
-- Crio v1.27
-- Calico v3.25.1
-- Weave v2.8.1
-- Flannel v0.22.0
-- Cilium v1.13.4
-- Gatekeeper v3.12.0
-- Rook v1.11.9
-- Cert Manager v1.12.0
-- Ingress Controller v1.4.0
-- Fluentbit v2.1.8
-- Elastic v8.5.1
-- Prometheus v2.46.0
-- Grafana v10.0.3
-- Velero v1.12.2
+| Name | Version | Description |
+|------|---------|-------------|
+| Kubernetes | v1.28.1 | Container Orchestrator |
+| Crio | v1.27 | Container Runtime |
+| Cilium | v1.13.4 | CNI Plugin (set this one with "-c cilium") |
+| Calico | v3.25.1 | CNI Plugin (set this one with "-c calico") |
+| Weave | v2.8.1 | CNI Plugin (set this one with "-c weave") |
+| Flannel | v0.22.0 | CNI Plugin (set this one with "-c flannel") |
+| Getekeeper | v3.12.0 | Apply OpenPolicyAgent rules |
+| Rook | v1.11.9 | Distributed Storage with Ceph, CSI plugin for the Kubernetes installation |
+| Cert Manager | v1.12.0 | Generate SSL certs for ingress object with auto-signed CA or lets-encrypt (set with bash parameter) |
+| Ingress Controller | v1.4.0 | Nginx Ingress Controller |
+| Fluentbit | v2.1.8 | Cluster Log collector service |
+| Elastic | v8.5.1 | Cluster Log storage (ElasticSearch) and log visualization (Kibana) |
+| Prometheus | v2.46.0 | Cluster Monitoring metrics storage |
+| Grafana | v10.0.3 | Cluster Monitoring metrics visualization |
+| Velero | v1.12.2 | Cluster Backup service, set a complete daily backup on external S3 service |
+| Kube-bench | v0.7.0 | Install kube-bench on first manager node, and launch analysis (with result output) on each playbook execution |
 
 ## Vagrant deployment
 
@@ -133,7 +136,7 @@ For example, an install on apple silicon with local repository, custom domain, f
   --pypi-repository-mirror https://nexus.mydomain.io/repository/pypi-all
 ```
 
-## Kvm deployment
+## Kvm deployment (amd64 arch only)
 
 At first, copy the terraform default vars file, so we can change it to match our infra and network
 ```bash
@@ -199,7 +202,7 @@ Use 'deploy-to-libvirt' script for launch deployment
 ```
 Usage: ./deploy-to-libvirt [options]
 -h                                this is some help text.
--c xxx                            CNI plugin, choices are cilium / weave / flannel, default is flannel
+-c xxx                            CNI plugin, choices are cilium / calico / weave / flannel, default is flannel
 --failover-ip xxxx                failover ip for managers nodes, default is 192.168.2.250
 --ansible-path xxxx               override ansible path
 --keepalived-password xxxx        keepalived password, default is randomly generated

@@ -73,5 +73,7 @@
     - role: backup
       tags: ["cluster", "backup"]
       when: backup_s3_accesskey_secret != ""
+    - role: bench
+      tags: ["cluster", "bench"]
 
 ...

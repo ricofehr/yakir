@@ -1,5 +1,6 @@
 ---
 
+global_linux_arch: "amd64"
 global_managers_group_name: "managers"
 global_nodes_group_name: "nodes"
 global_controlplane_endpoint_ip: "192.168.58.250"

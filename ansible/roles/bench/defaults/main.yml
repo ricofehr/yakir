@@ -1,0 +1,7 @@
+---
+
+bench_arch: "amd64"
+bench_version: "0.7.0"
+bench_cis_version: "1.8"
+
+...

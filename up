@@ -11,7 +11,7 @@ declare BACKUP_SERVER_URL=""
 declare BACKUP_ACCESS_KEY=""
 declare BACKUP_ACCESS_SECRET=""
 declare BACKUP_REGION="minio"
-declare BACKUP_ARCH="amd64"
+declare LINUX_ARCH="amd64"
 declare CNI_PLUGIN="calico"
 declare CSI_PLUGIN="none"
 declare ANSIBLE_TAG=""
@@ -147,11 +147,11 @@ done
 # Check if we are in arm system
 arch_system="$(uname -m)"
 if [[ "$arch_system" = "arm64" ]]; then
-  BACKUP_ARCH="arm64"
+  LINUX_ARCH="arm64"
 fi
 
 if [[ "$arch_system" = "aarch64" ]]; then
-  BACKUP_ARCH="arm64"
+  LINUX_ARCH="arm64"
 fi
 
 
@@ -201,14 +201,14 @@ if [[ -n "$MIRROR_PARAMS" ]]; then
     $MIRROR_PARAMS -e cni_plugin=$CNI_PLUGIN -e keepalived_pass=$KEEPALIVED_PASSWORD \
     -e backup_s3_url=$BACKUP_SERVER_URL -e backup_s3_accesskey_id=$BACKUP_ACCESS_KEY \
     -e backup_s3_accesskey_secret=$BACKUP_ACCESS_SECRET -e backup_s3_region=$BACKUP_REGION \
-    -e backup_velero_arch=$BACKUP_ARCH \
+    -e global_linux_arch=$LINUX_ARCH \
     -e global_domain=$K8S_DOMAIN -e csi_plugin=$CSI_PLUGIN -e csi_rook_disk=sdb -i inventory playbook.yml 2>&1"
 else
   ansible-playbook --ssh-extra-args="$SSH_PARAMS" -e "global_cert_issuer=$CERT_ISSUER" \
     -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" \
     -e "backup_s3_url=$BACKUP_SERVER_URL" -e "backup_s3_accesskey_id=$BACKUP_ACCESS_KEY" \
     -e "backup_s3_accesskey_secret=$BACKUP_ACCESS_SECRET" -e "backup_s3_region=$BACKUP_REGION" \
-    -e "backup_velero_arch=$BACKUP_ARCH" \
+    -e "global_linux_arch=$LINUX_ARCH" \
     -e "global_domain=$K8S_DOMAIN" -e "csi_plugin=$CSI_PLUGIN" -e "csi_rook_disk=sdb" -i inventory playbook.yml 2>&1
 fi
 popd >/dev/null

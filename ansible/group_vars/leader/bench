@@ -1,0 +1,7 @@
+---
+
+bench_arch: "{{ global_linux_arch }}"
+bench_version: "0.7.0"
+becnh_cis_version: "1.8"
+
+...

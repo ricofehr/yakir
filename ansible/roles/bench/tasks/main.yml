@@ -1,0 +1,47 @@
+---
+
+- name: Download Kube-bench
+  ansible.builtin.get_url:
+    url: "{{ bench_release_url }}"
+    dest: "{{ ansible_env.HOME }}/kube-bench.tar.gz"
+    mode: '0644'
+
+- name: Extract Kube-bench
+  ansible.builtin.unarchive:
+    src: "kube-bench.tar.gz"
+    dest: "{{ ansible_env.HOME }}"
+    remote_src: true
+
+- name: Install kube-bench
+  become: true
+  ansible.builtin.command:
+    cmd: mv -f kube-bench /usr/local/bin/
+    chdir: "{{ ansible_env.HOME }}"
+  args:
+    creates: /usr/local/bin/kube-bench
+
+- name: Run kube-bench and capture output
+  become: true
+  ansible.builtin.command:
+    cmd: kube-bench --benchmark cis-{{ bench_cis_version }} --config ./cfg/config.yaml --config-dir=./cfg
+    chdir: "{{ ansible_env.HOME }}"
+  environment:
+    KUBECONFIG: "{{ ansible_env.HOME }}/.kube/config"
+  register: bench_output
+  changed_when: false
+
+- name: Display kube-bench output
+  ansible.builtin.debug:
+    msg: "{{ bench_output.stdout_lines }}"
+
+- name: Save kube-bench output to file
+  ansible.builtin.copy:
+    content: "{{ bench_output.stdout }}"
+    dest: "/tmp/kube-bench-output-{{ inventory_hostname }}.txt"
+    mode: '0644'
+
+- name: Bench result is saved
+  ansible.builtin.debug:
+    msg: "Kube-bench result is saved on /tmp/kube-bench-output-{{ inventory_hostname }}.txt file on {{ inventory_hostname }} node"
+
+...

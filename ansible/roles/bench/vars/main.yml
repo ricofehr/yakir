@@ -1,0 +1,6 @@
+---
+
+bench_binary: kube-bench_{{ bench_version }}_linux_{{ bench_arch }}.tar.gz
+bench_release_url: https://github.com/aquasecurity/kube-bench/releases/download/v{{ bench_version }}/{{ bench_binary }}
+
+...
