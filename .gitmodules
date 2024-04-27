@@ -1,3 +1,0 @@
-[submodule "ansible/roles/kubernetes"]
-	path = ansible/roles/kubernetes
-	url = https://github.com/ricofehr/ansible-role-kubernetes
