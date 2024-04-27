@@ -1,5 +1,8 @@
 ---
 
+- name: Install k8s packages
+  ansible.builtin.import_tasks: packages.yml
+
 - name: Apply k8s prerequisites
   ansible.builtin.import_tasks: prerequisites.yml
 

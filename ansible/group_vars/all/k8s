@@ -1,5 +1,8 @@
 ---
 
+k8s_kubernetes_version: "{{ global_kubernetes_version }}"
+k8s_kubernetes_exact_version: "{{ global_kubernetes_exact_version }}"
+
 k8s_controlplane_endpoint: "control-plane"
 k8s_controlplane_endpoint_ip: "{{ global_controlplane_endpoint_ip }}"
 k8s_controlplane_port: "{{ global_controlplane_endpoint_port }}"

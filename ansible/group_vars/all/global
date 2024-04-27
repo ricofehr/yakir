@@ -13,9 +13,9 @@ global_cert_manager_staging_issuer: "letsencrypt-staging"
 global_cert_manager_production_issuer: "letsencrypt-prod"
 global_cert_issuer: "{{ global_cert_manager_selfsigned_issuer }}"
 
-global_kubernetes_version: 1.28.1
-global_openstack_provider_version: v1.28.0
-global_kubernetes_cni_version: 1.2.0-00
+global_kubernetes_version: 1.28
+global_kubernetes_exact_version: "{{ global_kubernetes_version }}.1"
+#global_kubernetes_cni_version: 1.2.0-00
 global_kubernetes_python_version: 28.1.0
 global_weave_version: v2.8.1
 global_calico_version: v3.25.1

@@ -13,9 +13,6 @@
       tags: ["core", "hardening"]
     - role: crio
       tags: ["core"]
-    - role: kubernetes
-      tags: ["core"]
-      become: true
 
 - name: Init kubernetes on manager nodes
   hosts:

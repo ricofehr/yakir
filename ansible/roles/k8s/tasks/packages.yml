@@ -1,0 +1,50 @@
+---
+
+- name: Ensure apt keyring folder exists
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: "/etc/apt/keyrings"
+    mode: '0755'
+
+- name: Install gnupg
+  become: true
+  ansible.builtin.apt:
+    state: present
+    name:
+      - apt-transport-https
+      - gnupg2
+
+- name: Get kubernetes key
+  become: true
+  ansible.builtin.get_url:
+    url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_kubernetes_version }}/deb/Release.key"
+    dest: "/etc/apt/keyrings/kubernetes-apt-keyring.key"
+    mode: '0644'
+    force: true
+
+- name: Add kubernetes key
+  become: true
+  ansible.builtin.command:
+    cmd: "gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /etc/apt/keyrings/kubernetes-apt-keyring.key"
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add kubernetes repo
+  become: true
+  ansible.builtin.copy:
+    dest: "/etc/apt/sources.list.d/kubernetes.list"
+    content: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ k8s_kubernetes_version }}/deb/ /"
+    mode: '0644'
+
+- name: Install kubernetes
+  become: true
+  ansible.builtin.apt:
+    state: present
+    name:
+      - kubelet={{ k8s_kubernetes_exact_version }}*
+      - kubectl={{ k8s_kubernetes_exact_version }}*
+      - kubeadm={{ k8s_kubernetes_exact_version }}*
+    update_cache: true
+
+...
