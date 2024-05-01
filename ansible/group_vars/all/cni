@@ -2,4 +2,10 @@
 
 cni_plugin: "calico"
 
+
+cni_flannel_version: "{{ global_flannel_version }}"
+cni_weave_version: "{{ global_weave_version }}"
+cni_calico_version: "{{ global_calico_version }}"
+cni_cilium_version: "{{ global_cilium_version }}"
+
 ...

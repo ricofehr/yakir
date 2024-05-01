@@ -1,10 +1,6 @@
 ---
 
 logcollect_fluentbit_repo: "https://fluent.github.io/helm-charts"
-logcollect_fluentbit_version: "0.37.1"
-
 logcollect_elastic_repo: "https://helm.elastic.co"
-logcollect_elasticsearch_version: "8.5.1"
-logcollect_kibana_version: "8.5.1"
 
 ...

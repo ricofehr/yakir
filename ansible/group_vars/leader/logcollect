@@ -4,5 +4,9 @@ logcollect_namespace: "kube-logcollect"
 logcollect_kibana_domain: logcollect.{{ global_domain }}
 logcollect_cert_issuer: "{{ global_cert_issuer }}"
 
+logcollect_fluentbit_version: "{{ global_fluentbit_version }}"
+logcollect_elasticsearch_version: "{{ global_elastic_version }}"
+logcollect_kibana_version: "{{ global_elastic_version }}"
+
 ...
 

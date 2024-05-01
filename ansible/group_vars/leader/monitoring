@@ -5,6 +5,8 @@ monitoring_grafana_domain: monitoring.{{ global_domain }}
 monitoring_exporter_domain: exporter.{{ global_domain }}
 monitoring_persistence_disk: "{{ global_persistence_disk }}"
 monitoring_cert_issuer: "{{ global_cert_issuer }}"
+monitoring_prometheus_version: "{{ global_prometheus_version }}"
+monitoring_grafana_version: "{{ global_grafana_version }}"
 
 ...
 

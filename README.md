@@ -40,7 +40,6 @@ yakir/
         +---internal_repos  Configure internal repositories on vms for pypi and apt mirroring requirements 
         +---k8s             Install and configure a Kubernetes deployment with Kubeadm
         +---keepalived      Install keepalived service on manager hosts for a no cloud deployment : ensure a failover IP for control-plane endpoint
-        +---kubernetes      External dependencies from a galaxy role (gantsign repository) : install kubernetes binary packages on VMs
         +---kubedashboard   Install and secure Dashboard deployment for Kubernetes
         +---linux_hardening Apply hardening rules for linux kernel, pam logins, and ssh 
         +---logcollect      Deploy fluentbit, elastic, and kibana helm chart, and configure fluentbit for kubernetes logs
@@ -62,22 +61,22 @@ Vagrantfile                 File created (symlink to targeted file on vagrantfil
 
 | Name | Version | Description |
 |------|---------|-------------|
-| Kubernetes | v1.28.1 | Container Orchestrator |
-| Crio | v1.27 | Container Runtime |
-| Cilium | v1.13.4 | CNI Plugin (set this one with "-c cilium") |
-| Calico | v3.25.1 | CNI Plugin (set this one with "-c calico") |
+| Kubernetes | v1.30.0 | Container Orchestrator |
+| Crio | v1.28 | Container Runtime |
+| Cilium | v1.15.4 | CNI Plugin (set this one with "-c cilium") |
+| Calico | v3.27.3 | CNI Plugin (set this one with "-c calico") |
 | Weave | v2.8.1 | CNI Plugin (set this one with "-c weave") |
-| Flannel | v0.22.0 | CNI Plugin (set this one with "-c flannel") |
-| Getekeeper | v3.12.0 | Apply OpenPolicyAgent rules |
-| Rook | v1.11.9 | Distributed Storage with Ceph, CSI plugin for the Kubernetes installation |
+| Flannel | v0.25.1 | CNI Plugin (set this one with "-c flannel") |
+| Getekeeper | v3.14.2 | Apply OpenPolicyAgent rules |
+| Rook | v1.14.2 | Distributed Storage with Ceph, CSI plugin for the Kubernetes installation |
 | Cert Manager | v1.12.0 | Generate SSL certs for ingress object with auto-signed CA or lets-encrypt (set with bash parameter) |
 | Ingress Controller | v1.4.0 | Nginx Ingress Controller |
-| Fluentbit | v2.1.8 | Cluster Log collector service |
+| Fluentbit | v3.0.2 | Cluster Log collector service |
 | Elastic | v8.5.1 | Cluster Log storage (ElasticSearch) and log visualization (Kibana) |
-| Prometheus | v2.46.0 | Cluster Monitoring metrics storage |
-| Grafana | v10.0.3 | Cluster Monitoring metrics visualization |
+| Prometheus | v2.51.2 | Cluster Monitoring metrics storage |
+| Grafana | v10.4.1 | Cluster Monitoring metrics visualization |
 | Velero | v1.12.2 | Cluster Backup service, set a complete daily backup on external S3 service |
-| Kube-bench | v0.7.0 | Install kube-bench on first manager node, and launch analysis (with result output) on each playbook execution |
+| Kube-bench | v0.7.3 | Install kube-bench on first manager node, and launch analysis (with result output) on each playbook execution |
 
 ## Vagrant deployment
 

@@ -1,5 +1,6 @@
 ---
 
 csi_plugin: "rook"
+csi_rook_chart_version: "{{ global_rook_version }}"
 
 ...
