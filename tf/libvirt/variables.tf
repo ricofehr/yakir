@@ -30,7 +30,7 @@ variable "yakir_vm_ceph_wrk_disks" {
 
 variable "yakir_os_img" {
   description = "Ubuntu kvm img url"
-  default = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64-disk-kvm.img"
+  default = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64-disk-kvm.img"
 }
 
 variable "yakir_vm_man_names" {

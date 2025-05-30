@@ -1,7 +1,7 @@
 provider_uri = "qemu:///system"
 libvirt_pool_path = "/var/lib/libvirt/kvm/pool"
 
-yakir_os_img = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+yakir_os_img = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
 
 # Used by fqdn hostname on VMs
 yakir_domain = "domain.io"

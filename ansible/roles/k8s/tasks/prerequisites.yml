@@ -3,6 +3,7 @@
 - name: Install kubernetes python package
   ansible.builtin.pip:
     name: kubernetes=={{ k8s_kubernetes_python_version }}
+    break_system_packages: true
 
 - name: Ensure /etc/kubernetes folder is present
   become: true
