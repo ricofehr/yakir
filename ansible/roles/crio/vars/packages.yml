@@ -2,4 +2,3 @@
 
 crio_packages:
     - cri-o
-    - cri-o-runc

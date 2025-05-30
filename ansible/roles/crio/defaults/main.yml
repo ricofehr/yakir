@@ -1,14 +1,12 @@
 ---
 
-crio_version: 1.27
-crio_os: xUbuntu_22.04
+crio_version: 1.32
 
 crio_mirror: ""
 crio_mirror_insecure: false
 
-crio_repo_url: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable
+crio_repo_url: "https://download.opensuse.org/repositories/isv:/cri-o:/stable:"
 
-crio_keyring_key1_path: /usr/share/keyrings/libcontainers-archive-keyring.gpg
-crio_keyring_key2_path: /usr/share/keyrings/libcontainers-crio-archive-keyring.gpg
+crio_keyring_key_path: /usr/share/keyrings/crio-keyring.gpg
 
 ...
