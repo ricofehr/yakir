@@ -56,27 +56,26 @@ deploy-to-libvirt           Script for installation on a lived KVM with Terrafor
 up                          Script for local installation with Vagrant (See options below on this page) 
 Vagrantfile                 File created (symlink to targeted file on vagrantfiles folder) by the deployment script : used by Vagrant to scope the VMs provisioning
 ```
-
 ## Components
 
 | Name | Version | Description |
 |------|---------|-------------|
-| Kubernetes | v1.30.0 | Container Orchestrator |
-| Crio | v1.28 | Container Runtime |
-| Cilium | v1.15.4 | CNI Plugin (set this one with "-c cilium") |
-| Calico | v3.27.3 | CNI Plugin (set this one with "-c calico") |
-| Weave | v2.8.1 | CNI Plugin (set this one with "-c weave") |
-| Flannel | v0.25.1 | CNI Plugin (set this one with "-c flannel") |
-| Getekeeper | v3.14.2 | Apply OpenPolicyAgent rules |
-| Rook | v1.14.2 | Distributed Storage with Ceph, CSI plugin for the Kubernetes installation |
-| Cert Manager | v1.12.0 | Generate SSL certs for ingress object with auto-signed CA or lets-encrypt (set with bash parameter) |
-| Ingress Controller | v1.4.0 | Nginx Ingress Controller |
-| Fluentbit | v3.0.2 | Cluster Log collector service |
+| Kubernetes | v1.33.1 | Container Orchestrator |
+| Crio | v1.33 | Container Runtime |
+| Cilium | v1.17.4 | CNI Plugin (set this one with "-c cilium") |
+| Calico | v3.30.0 | CNI Plugin (set this one with "-c calico") |
+| Flannel | v0.26.7 | CNI Plugin (set this one with "-c flannel") |
+| Getekeeper | v3.19.1 | Apply OpenPolicyAgent rules |
+| Rook | v1.17.3 | Distributed Storage with Ceph, CSI plugin for the Kubernetes installation |
+| Ceph | v19.2.2 | Distributed Storage |
+| Cert Manager | v1.17.2 | Generate SSL certs for ingress object with auto-signed CA or lets-encrypt (set with bash parameter) |
+| Ingress Controller | v1.12.2 | Nginx Ingress Controller |
+| Fluentbit | v4.0.1 | Cluster Log collector service |
 | Elastic | v8.5.1 | Cluster Log storage (ElasticSearch) and log visualization (Kibana) |
-| Prometheus | v2.51.2 | Cluster Monitoring metrics storage |
-| Grafana | v10.4.1 | Cluster Monitoring metrics visualization |
-| Velero | v1.12.2 | Cluster Backup service, set a complete daily backup on external S3 service |
-| Kube-bench | v0.7.3 | Install kube-bench on first manager node, and launch analysis (with result output) on each playbook execution |
+| Prometheus | v3.4.1 | Cluster Monitoring metrics storage |
+| Grafana | v12.0.0 | Cluster Monitoring metrics visualization |
+| Velero | v1.16.0 | Cluster Backup service, set a complete daily backup on external S3 service |
+| Kube-bench | v0.10.6 | Install kube-bench on first manager node, and launch analysis (with result output) on each playbook execution |
 
 ## Vagrant deployment
 
