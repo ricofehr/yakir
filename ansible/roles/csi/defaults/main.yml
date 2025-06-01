@@ -4,5 +4,6 @@ csi_plugin: "rook"
 csi_rook_chart_version: v1.12.6
 csi_rook_namespace: kube-rook
 csi_rook_disk: "vdb"
+csi_ceph_version: v17.2.0
 
 ...

@@ -1,6 +1,9 @@
 ---
 
+csi_plugin: "rook"
+csi_rook_chart_version: "{{ global_rook_version }}"
 csi_k8s_nodes: "{{ global_k8s_nodes }}"
 csi_rook_disk: "vdb"
+csi_ceph_version: "{{ global_ceph_version }}"
 
 ...
