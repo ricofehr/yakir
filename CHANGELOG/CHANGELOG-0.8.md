@@ -10,6 +10,6 @@
 
 ### Improvement
 
-- Set IPIP encapsulation for Calico CNI, instead of VXLAN 
+- Set IPIP encapsulation for Calico CNI, instead of VXLAN
 
 ### Other

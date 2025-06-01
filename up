@@ -42,7 +42,7 @@ Usage: $0 [options]
 --backup-server xxxx              External S3 Server (MinIO / AWS S3) URL
 --backup-access-key xxxx          S3 Access Key Id
 --backup-access-secret xxxx       S3 Access Key Secret
---backup-region xxxx              S3 Bucket Region, default is $BACKUP_REGION 
+--backup-region xxxx              S3 Bucket Region, default is $BACKUP_REGION
 EOF
 
 exit 1

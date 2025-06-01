@@ -14,14 +14,14 @@ resource "libvirt_volume" "yakir_os_man_images" {
   format = "qcow2"
 }
 
-# Define a child volume of OS image with resizing 
+# Define a child volume of OS image with resizing
 resource "libvirt_volume" "yakir_os_man_volumes" {
   count = length(var.yakir_vm_os_man_disks)
 
   name   = var.yakir_vm_os_man_disks[count.index]
   pool   = libvirt_pool.yakir_pool.name
   base_volume_id  = libvirt_volume.yakir_os_man_images[count.index].id
-  size            = var.yakir_vm_os_disk_size 
+  size            = var.yakir_vm_os_disk_size
 }
 
 data "template_file" "user_data_man" {
@@ -52,7 +52,7 @@ data "template_file" "network_config_man" {
 
 resource "libvirt_cloudinit_disk" "commoninit_man" {
   count = length(var.yakir_vm_man_names)
-  
+
   name = "${var.yakir_vm_man_names[count.index]}-commoninit.iso"
   pool   = libvirt_pool.yakir_pool.name
   user_data      = data.template_cloudinit_config.config_man[count.index].rendered
@@ -98,13 +98,13 @@ resource "libvirt_domain" "yakir_man_domains" {
   disk {
     volume_id = lookup(element(libvirt_volume.yakir_os_man_volumes, index(libvirt_volume.yakir_os_man_volumes.*.name, var.yakir_vm_os_man_disks[count.index])), "id")
   }
-  
+
   graphics {
     type        = "spice"
     listen_type = "address"
     autoport    = true
   }
-  
+
 #  provisioner "remote-exec" {
 #    inline = [
 #      "cloud-init status --wait",
@@ -129,7 +129,7 @@ resource "libvirt_volume" "yakir_os_wrk_images" {
   format = "qcow2"
 }
 
-# Define a child volume of OS image with resizing 
+# Define a child volume of OS image with resizing
 resource "libvirt_volume" "yakir_os_wrk_volumes" {
   count = length(var.yakir_vm_os_wrk_disks)
 
@@ -177,7 +177,7 @@ data "template_file" "network_config_wrk" {
 
 resource "libvirt_cloudinit_disk" "commoninit_wrk" {
   count = length(var.yakir_vm_wrk_names)
-  
+
   name = "${var.yakir_vm_wrk_names[count.index]}-commoninit.iso"
   pool   = libvirt_pool.yakir_pool.name
   user_data      = data.template_cloudinit_config.config_wrk[count.index].rendered
@@ -223,7 +223,7 @@ resource "libvirt_domain" "yakir_wrk_domains" {
   disk {
     volume_id = lookup(element(libvirt_volume.yakir_os_wrk_volumes, index(libvirt_volume.yakir_os_wrk_volumes.*.name, var.yakir_vm_os_wrk_disks[count.index])), "id")
   }
-  
+
   disk {
     volume_id = lookup(element(libvirt_volume.yakir_ceph_wrk_volumes, index(libvirt_volume.yakir_ceph_wrk_volumes.*.name, var.yakir_vm_ceph_wrk_disks[count.index])), "id")
   }
@@ -233,7 +233,7 @@ resource "libvirt_domain" "yakir_wrk_domains" {
     listen_type = "address"
     autoport    = true
   }
-  
+
 #  provisioner "remote-exec" {
 #    inline = [
 #      "cloud-init status --wait",

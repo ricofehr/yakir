@@ -4,7 +4,7 @@
 
 ### New Feature
 
-- Cert-manager deployment : manage creation and renew of certificate with an autosigned CA or letsencrypt 
+- Cert-manager deployment : manage creation and renew of certificate with an autosigned CA or letsencrypt
 - Propose to use internal mirroring repository for apt (ubuntu) and pypi packages
 - Add CSI distributed storage feature with Rook : build Ceph clusters and add storageclass for object, file, and block storages
 - Add monitoring stack : prometeheus and grafana with a default k8s dashboard

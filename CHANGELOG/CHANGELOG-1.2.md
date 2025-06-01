@@ -8,7 +8,7 @@
 
 ### Improvement
 
-- Bump versions of Kubernetes (v1.33.1) and all components 
+- Bump versions of Kubernetes (v1.33.1) and all components
 - Bump ansible collections versions
 - Bump vms OS from Ubuntu jammy to noble
 

@@ -26,7 +26,7 @@
 
 - Large Ansible refactoring work : improve modularity and idempotency
 - Install Flannel with helm repository instead of a one large manifest
-- Update weave version : v2.8.1 
+- Update weave version : v2.8.1
 - Add ansible.cfg file to define collections folder for this project
 
 ### Other

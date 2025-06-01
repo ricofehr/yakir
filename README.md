@@ -27,7 +27,7 @@ yakir/
     +---collections/        Folder where collections are downloaded from ansible-galaxy command
     +---inventories/        Inventory files, scoped about small, medium, larger targeted form factor
     +---roles/              Ansible roles folder
-        +---backup          Deploy velero chart helm, install velero cli command on manager1, and configure a daily backup which post on external S3 bucket 
+        +---backup          Deploy velero chart helm, install velero cli command on manager1, and configure a daily backup which post on external S3 bucket
         +---base            Prerequisites for the Linux OS : global attributes (locale, hostname, time, swap usage, ...), user management, system packages
         +---bench           Launch, display, and save a kube-bench analysis
         +---cert_manager    Deploy certificate-manager helm chart and define Issuers for both letsencrypt and autosigned type
@@ -37,11 +37,11 @@ yakir/
         +---haproxy         Install and configure haproxy on each manager nodes : expose https (port 443) of the cluster and route traffic to ingress controller
         +---helm            Install helm command and add global helm repositories
         +---ingress         Deploy nginx ingress component on Kubernetes
-        +---internal_repos  Configure internal repositories on vms for pypi and apt mirroring requirements 
+        +---internal_repos  Configure internal repositories on vms for pypi and apt mirroring requirements
         +---k8s             Install and configure a Kubernetes deployment with Kubeadm
         +---keepalived      Install keepalived service on manager hosts for a no cloud deployment : ensure a failover IP for control-plane endpoint
         +---kubedashboard   Install and secure Dashboard deployment for Kubernetes
-        +---linux_hardening Apply hardening rules for linux kernel, pam logins, and ssh 
+        +---linux_hardening Apply hardening rules for linux kernel, pam logins, and ssh
         +---logcollect      Deploy fluentbit, elastic, and kibana helm chart, and configure fluentbit for kubernetes logs
         +---monitoring      Deploy prometheus and grafana helm charts, and import grafana dashboard for kubernetes metrics
         +---opa             Install Gatekeeper and define some open policy rules
@@ -53,7 +53,7 @@ yakir/
     +---libvirt/            HCL instructions for provisioning VMs and resources on KVM as prerequisites for k8s installation
 +--vagrantfiles/            Deployment flavors vagrantfile for small, medium, large scopes
 deploy-to-libvirt           Script for installation on a lived KVM with Terraform (See options below on this page)
-up                          Script for local installation with Vagrant (See options below on this page) 
+up                          Script for local installation with Vagrant (See options below on this page)
 Vagrantfile                 File created (symlink to targeted file on vagrantfiles folder) by the deployment script : used by Vagrant to scope the VMs provisioning
 ```
 ## Components

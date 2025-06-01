@@ -9,6 +9,6 @@
 ### Improvement
 
 - Add github action to ensure linter quality for Ansible code
-- Large Ansible rework : update and improve Syntax, apply linter best practices 
+- Large Ansible rework : update and improve Syntax, apply linter best practices
 
 ### Other
