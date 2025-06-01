@@ -68,6 +68,10 @@ resource "libvirt_domain" "yakir_man_domains" {
   vcpu   = var.yakir_vm_man_cpu
   autostart = true
 
+  cpu {
+    mode = "host-passthrough"
+  }
+
   network_interface {
     bridge = var.yakir_vm_br_device
     mac   = var.yakir_vm_man_macs[count.index]
@@ -188,6 +192,10 @@ resource "libvirt_domain" "yakir_wrk_domains" {
   memory = var.yakir_vm_wrk_ram
   vcpu   = var.yakir_vm_wrk_cpu
   autostart = true
+
+  cpu {
+    mode = "host-passthrough"
+  }
 
   network_interface {
     bridge = var.yakir_vm_br_device
