@@ -29,18 +29,32 @@
         runAsNonRoot: true
         runAsUser: 1000
 
+- name: Get current email of the repository
+  ansible.builtin.command: git config --get user.email # noqa: command-instead-of-module
+  args:
+    chdir: "{{ inventory_dir }}"
+  register: cert_manager_current_email
+  delegate_to: localhost
+  changed_when: false
+
 - name: Create CRD cert Staging Issuer
   kubernetes.core.k8s:
     state: present
     template: issuer-staging.yml.j2
+  vars:
+    cert_manager_email: "{{ cert_manager_current_email.stdout }}"
 
 - name: Create CRD cert Prod Issuer
   kubernetes.core.k8s:
     state: present
     template: issuer-production.yml.j2
+  vars:
+    cert_manager_email: "{{ cert_manager_current_email.stdout }}"
 
 - name: Create CRD cert self-signed Issuer
   kubernetes.core.k8s:
     state: present
     template: issuer-selfsigned.yml.j2
+  vars:
+    cert_manager_email: "{{ cert_manager_current_email.stdout }}"
 ...

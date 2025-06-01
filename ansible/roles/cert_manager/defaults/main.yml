@@ -2,7 +2,6 @@
 
 cert_manager_namespace: "kube-cert"
 cert_manager_persistence_disk: false
-cert_manager_email: "user@example.com"
 cert_manager_selfsigned_issuer: "selfsigned-ca"
 cert_manager_staging_issuer: "staging-issuer"
 cert_manager_production_issuer: "production-issuer"

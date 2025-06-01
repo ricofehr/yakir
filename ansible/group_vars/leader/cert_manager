@@ -2,7 +2,6 @@
 
 cert_manager_version: "{{ global_cert_manager_version }}"
 cert_manager_namespace: "kube-cert"
-cert_manager_email: "ricofehr@nextdeploy.io"
 cert_manager_selfsigned_issuer: "{{ global_cert_manager_selfsigned_issuer }}"
 cert_manager_staging_issuer: "{{ global_cert_manager_staging_issuer }}"
 cert_manager_production_issuer: "{{ global_cert_manager_production_issuer }}"
