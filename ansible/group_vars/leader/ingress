@@ -1,5 +1,6 @@
 ---
 
+ingress_chart_version: "{{ global_ingress_version }}"
 ingress_http_port: "{{ global_ingress_http_nodeport }}"
 ingress_https_port: "{{ global_ingress_https_nodeport }}"
 
