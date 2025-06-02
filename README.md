@@ -3,7 +3,7 @@
 
 # Yakir - Yet Another Kubernetes Installation Repository
 
-A base k8s install on Ubuntu distribution (Tested on Jammy).
+A base k8s install on Ubuntu distribution (Tested on Noble).
 
 Can be deployed on local with Vagrant (Bento/Ubuntu boxes)
 - 3 different sizings
@@ -130,7 +130,7 @@ For example, an install on apple silicon with local repository, custom domain, f
   --keepalived-password UdTelzAu \
   --kube-domain k8s.mydomain.io \
   --container-registry-mirror registry.mydomain.io \
-  --apt-repository-mirror https://nexus.mydomain.io/repository/jammy \
+  --apt-repository-mirror https://nexus.mydomain.io/repository/noble \
   --pypi-repository-mirror https://nexus.mydomain.io/repository/pypi-all
 ```
 
@@ -221,7 +221,7 @@ Example
 ./deploy-to-libvirt -c flannel \
       --cert-issuer-type letsencrypt-prod \
       --container-registry-mirror registry.mydomain.io \
-      --apt-repository-mirror https://nexus.mydomain.io/repository/jammy \
+      --apt-repository-mirror https://nexus.mydomain.io/repository/noble \
       --pypi-repository-mirror https://nexus.mydomain.io/repository/pypi-all \
       --kube-domain k8s.mydomain.io
 ```

@@ -21,9 +21,9 @@ Vagrant.configure("2") do |config|
 
     arch = `arch`.strip()
     if arch == 'arm64' || (arch == 'i386' && running_rosetta())
-      config.vm.box = "bento/ubuntu-22.04-arm64"
+      config.vm.box = "bento/ubuntu-24.04-arm64"
     else
-      config.vm.box = "bento/ubuntu-22.04"
+      config.vm.box = "bento/ubuntu-24.04"
     end
 
     managers.each do |name, ip|

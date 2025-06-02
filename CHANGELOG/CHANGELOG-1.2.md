@@ -1,3 +1,12 @@
+# v1.2.1
+
+## Changes by Kind
+
+### Improvement
+
+- Change vagrant OS to Ubuntu Noble 
+
+
 # v1.2
 
 ## Changes by Kind
