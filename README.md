@@ -86,7 +86,6 @@ Vagrantfile                 File created (symlink to targeted file on vagrantfil
 ### Run
 
 ```bash
-git submodule update --init
 ./up
 ```
 
