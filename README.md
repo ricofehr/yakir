@@ -1,3 +1,4 @@
+![Human Code](./assets/human-code-badge.png)
 [![Linter Status](https://github.com/ricofehr/yakir/workflows/Linter/badge.svg)](https://github.com/ricofehr/yakir/actions?workflow=Linter)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/ricofehr/yakir/main/LICENSE)
 
@@ -31,7 +32,7 @@ yakir/
         +---base            Prerequisites for the Linux OS : global attributes (locale, hostname, time, swap usage, ...), user management, system packages
         +---bench           Launch, display, and save a kube-bench analysis
         +---cert_manager    Deploy certificate-manager helm chart and define Issuers for both letsencrypt and autosigned type
-        +---cni             Manage network plugins for Kubernetes : Weave, Flannel, Cilium, Calico
+        +---cni             Manage network plugins for Kubernetes : Flannel, Cilium, Calico
         +---crio            Manage container engine installation
         +---csi             Manage storage plugins for Kubernetes : Rook or Cinder
         +---haproxy         Install and configure haproxy on each manager nodes : expose https (port 443) of the cluster and route traffic to ingress controller

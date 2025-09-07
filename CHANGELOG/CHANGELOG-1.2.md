@@ -1,10 +1,23 @@
+# v1.2.2
+
+## Changes by Kind
+
+### Bug Fix
+
+- Update deprecated Helm apt signature url with the new one
+
+### Other
+
+- Add Human Code badge
+
+
 # v1.2.1
 
 ## Changes by Kind
 
 ### Improvement
 
-- Change vagrant OS to Ubuntu Noble 
+- Change vagrant OS to Ubuntu Noble
 
 
 # v1.2

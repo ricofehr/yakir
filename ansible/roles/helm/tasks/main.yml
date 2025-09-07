@@ -1,15 +1,32 @@
 ---
 
-- name: Add helm apt key
+- name: Add Buildkite Helm GPG key
+  become: true
+  ansible.builtin.get_url:
+    url: https://packages.buildkite.com/helm-linux/helm-debian/gpgkey
+    dest: /tmp/helm.gpg
+    mode: '0644'
+
+- name: Convert Helm GPG key to dearmored format
+  become: true
+  ansible.builtin.shell: |
+    set -o pipefail
+    cat /tmp/helm.gpg | gpg --dearmor > /usr/share/keyrings/helm.gpg
+  args:
+    executable: /bin/bash
+    creates: /usr/share/keyrings/helm.gpg
+
+- name: Convert Helm GPG key to dearmored format
   become: true
   ansible.builtin.apt_key:
-    url: https://baltocdn.com/helm/signing.asc
+    file: /usr/share/keyrings/helm.gpg
     state: present
 
-- name: Add helm apt repository
+- name: Add Helm repository
   become: true
   ansible.builtin.apt_repository:
-    repo: deb https://baltocdn.com/helm/stable/debian/ all main
+    repo: "deb [signed-by=/usr/share/keyrings/helm.gpg] https://packages.buildkite.com/helm-linux/helm-debian/any/ any main"
+    filename: helm-stable-debian
     state: present
 
 - name: Install helm package
