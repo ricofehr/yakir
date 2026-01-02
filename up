@@ -190,7 +190,6 @@ MIRROR_PARAMS="$MIRROR_REGISTRY_PARAM $MIRROR_APT_PARAM $MIRROR_PYPI_PARAM"
 
 [[ -n "$ANSIBLE_TAG" ]] && MIRROR_PARAMS="$MIRROR_PARAMS -t $ANSIBLE_TAG"
 
-# Deploy an openstack installation
 pushd ansible >/dev/null
 ln -sf "inventories/inventory_${SIZING}" inventory
 ln -sf "sizing_vars/sizing_vars_${SIZING}.yml" sizing_vars.yml

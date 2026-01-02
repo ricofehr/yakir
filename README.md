@@ -54,35 +54,45 @@ yakir/
     +---libvirt/            HCL instructions for provisioning VMs and resources on KVM as prerequisites for k8s installation
 +--vagrantfiles/            Deployment flavors vagrantfile for small, medium, large scopes
 deploy-to-libvirt           Script for installation on a lived KVM with Terraform (See options below on this page)
+requirements.txt            Python requirements for ansible installation
 up                          Script for local installation with Vagrant (See options below on this page)
 Vagrantfile                 File created (symlink to targeted file on vagrantfiles folder) by the deployment script : used by Vagrant to scope the VMs provisioning
 ```
+
 ## Components
 
 | Name | Version | Description |
 |------|---------|-------------|
-| Kubernetes | v1.33.1 | Container Orchestrator |
-| Crio | v1.33 | Container Runtime |
-| Cilium | v1.17.4 | CNI Plugin (set this one with "-c cilium") |
-| Calico | v3.30.0 | CNI Plugin (set this one with "-c calico") |
-| Flannel | v0.26.7 | CNI Plugin (set this one with "-c flannel") |
-| Getekeeper | v3.19.1 | Apply OpenPolicyAgent rules |
-| Rook | v1.17.3 | Distributed Storage with Ceph, CSI plugin for the Kubernetes installation |
-| Ceph | v19.2.2 | Distributed Storage |
-| Cert Manager | v1.17.2 | Generate SSL certs for ingress object with auto-signed CA or lets-encrypt (set with bash parameter) |
-| Ingress Controller | v1.12.2 | Nginx Ingress Controller |
+| Kubernetes | v1.35.0 | Container Orchestrator |
+| Crio | v1.35 | Container Runtime |
+| Cilium | v1.18.5 | CNI Plugin (set this one with "-c cilium") |
+| Calico | v3.31.3 | CNI Plugin (set this one with "-c calico") |
+| Flannel | v0.27.4 | CNI Plugin (set this one with "-c flannel") |
+| Getekeeper | v3.21.0 | Apply OpenPolicyAgent rules |
+| Rook | v1.18.8 | Distributed Storage with Ceph, CSI plugin for the Kubernetes installation |
+| Ceph | v20.2.0 | Distributed Storage |
+| Cert Manager | v1.19.2 | Generate SSL certs for ingress object with auto-signed CA or lets-encrypt (set with bash parameter) |
+| Ingress Controller | v1.14.1 | Nginx Ingress Controller |
 | Fluentbit | v4.0.1 | Cluster Log collector service |
 | Elastic | v8.5.1 | Cluster Log storage (ElasticSearch) and log visualization (Kibana) |
-| Prometheus | v3.4.1 | Cluster Monitoring metrics storage |
-| Grafana | v12.0.0 | Cluster Monitoring metrics visualization |
-| Velero | v1.16.0 | Cluster Backup service, set a complete daily backup on external S3 service |
-| Kube-bench | v0.10.6 | Install kube-bench on first manager node, and launch analysis (with result output) on each playbook execution |
+| Prometheus | v3.8.1 | Cluster Monitoring metrics storage |
+| Grafana | v12.3.1 | Cluster Monitoring metrics visualization |
+| Velero | v1.17.1 | Cluster Backup service, set a complete daily backup on external S3 service |
+| Kube-bench | v0.14.1 | Install kube-bench on first manager node, and launch analysis (with result output) on each playbook execution |
 
 ## Vagrant deployment
 
 3 providers are defined in Vagrantfiles (using bento boxes)
 - virtualbox / libvirt : targeted for x86 systems (amd64 Ubuntu vagrant box)
 - parallels : targeted for apple silicon systems (arm64 Ubuntu vagrant box)
+
+## Ansible install
+
+```bash
+python3 -mvenv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+```
 
 ### Run
 
@@ -95,7 +105,6 @@ Once setup done, get ui endpoints and secrets for ui credentials
 kubectl get ingress -A
 kubectl get secrets -A
 ```
-
 
 ### Options
 

@@ -5,6 +5,9 @@ Vagrantfile
 # tmp folder
 /tmp
 
+# virtualenv folder
+venv/
+
 # local assets files
 ansible/assets
 

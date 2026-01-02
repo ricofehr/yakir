@@ -37,24 +37,17 @@
     template: templates/rook-cluster.yml.j2
   register: csi_cluster
 
-- name: Wait for rook operator pod become ready
-  ansible.builtin.command: "kubectl wait --namespace={{ csi_rook_namespace }} --for=condition=Ready pods --selector app=rook-ceph-operator --timeout=900s"
-  changed_when: false
-
 - name: Wait for cephfs pods become ready
-  ansible.builtin.command: "kubectl wait --namespace={{ csi_rook_namespace }} --for=condition=Ready pods --selector app=csi-cephfsplugin --timeout=900s"
+  ansible.builtin.command: |
+    kubectl wait --namespace={{ csi_rook_namespace }} --for=condition=Ready pods --selector app={{ item }} --timeout=900s
   retries: 8
   delay: 120
-  register: csi_ceph_wait
-  until: csi_ceph_wait.rc == 0
-  changed_when: false
-
-- name: Wait for cephrdb pods become ready
-  ansible.builtin.command: "kubectl wait --namespace={{ csi_rook_namespace }} --for=condition=Ready pods --selector app=csi-rbdplugin --timeout=900s"
-  retries: 8
-  delay: 120
-  register: csi_rbd_wait
-  until: csi_rbd_wait.rc == 0
+  register: csi_wait
+  until: csi_wait.rc == 0
+  loop:
+    - rook-ceph-operator
+    - kube-rook.cephfs.csi.ceph.com-nodeplugin
+    - kube-rook.rbd.csi.ceph.com-nodeplugin
   changed_when: false
 
 - name: Rook Filesystem

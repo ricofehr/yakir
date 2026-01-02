@@ -25,6 +25,10 @@
           volumeMounts:
             - mountPath: /target
               name: plugins
+      kubectl:
+        image:
+          repository: docker.io/bitnamilegacy/kubectl
+          tag: "{{ backup_kubectl_version }}"
       configuration:
         backupStorageLocation:
           - name: "{{ backup_s3_name }}"
