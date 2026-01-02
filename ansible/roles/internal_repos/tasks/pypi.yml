@@ -2,14 +2,14 @@
 
 - name: Ensure .pip folder exists
   ansible.builtin.file:
-    path: "{{ ansible_env.HOME }}/.pip"
+    path: "{{ ansible_facts['env']['HOME'] }}/.pip"
     state: directory
     mode: '0755'
 
 - name: Write pip.conf with internal repositories
   ansible.builtin.template:
     src: pip.conf.j2
-    dest: "{{ ansible_env.HOME }}/.pip/pip.conf"
+    dest: "{{ ansible_facts['env']['HOME'] }}/.pip/pip.conf"
     mode: '0640'
 
 ...

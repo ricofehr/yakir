@@ -23,7 +23,7 @@
 
 - name: Proxy manager node
   become: true
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     state: started
     daemon_reload: true
     name: kubeproxy

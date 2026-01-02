@@ -16,7 +16,7 @@
   when: k8s_managers_group_name in group_names
   ansible.builtin.command: kubeadm init --config /etc/kubernetes/kubeadm.conf
   args:
-    creates: "{{ ansible_env.HOME }}/.kubeadm_init"
+    creates: "{{ ansible_facts['env']['HOME'] }}/.kubeadm_init"
   run_once: true
   delegate_to: "{{ k8s_man01_hostname }}"
 
@@ -24,7 +24,7 @@
   when: k8s_managers_group_name in group_names
   ansible.builtin.copy:
     content: ""
-    dest: "{{ ansible_env.HOME }}/.kubeadm_init"
+    dest: "{{ ansible_facts['env']['HOME'] }}/.kubeadm_init"
     force: false
     mode: '0640'
   run_once: true
@@ -76,13 +76,13 @@
   ansible.builtin.command:
     cmd: kubeadm join {{ k8s_controlplane_endpoint }}:{{ k8s_controlplane_port }} --config /etc/kubernetes/kubeadm.conf
   args:
-    creates: "{{ ansible_env.HOME }}/.kubeadm_join"
+    creates: "{{ ansible_facts['env']['HOME'] }}/.kubeadm_join"
 
 - name: Create a state file for the kubeadm command execution
   when: inventory_hostname != k8s_man01_hostname
   ansible.builtin.copy:
     content: ""
-    dest: "{{ ansible_env.HOME }}/.kubeadm_join"
+    dest: "{{ ansible_facts['env']['HOME'] }}/.kubeadm_join"
     force: false
     mode: '0640'
 

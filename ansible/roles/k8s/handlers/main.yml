@@ -2,7 +2,7 @@
 
 - name: Restart kubelet service
   become: true
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: kubelet
     state: restarted
     enabled: true

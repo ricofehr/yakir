@@ -13,7 +13,7 @@
 
 - name: Restart ssh
   become: true
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: ssh
     state: restarted
 

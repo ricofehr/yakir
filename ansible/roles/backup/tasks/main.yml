@@ -83,8 +83,8 @@
 - name: Create a daily backup
   ansible.builtin.shell: |
     velero schedule create daily-full-cluster-backup --schedule="@daily" -n {{ backup_namespace }}
-    touch {{ ansible_env.HOME }}/.velero_daily
+    touch {{ ansible_facts['env']['HOME'] }}/.velero_daily
   args:
-    creates: "{{ ansible_env.HOME }}/.velero_daily"
+    creates: "{{ ansible_facts['env']['HOME'] }}/.velero_daily"
 
 ...

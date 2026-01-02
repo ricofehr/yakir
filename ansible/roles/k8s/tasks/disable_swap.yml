@@ -4,9 +4,9 @@
   become: true
   ansible.builtin.shell: |
     swapoff -a
-    touch {{ ansible_env.HOME }}/.swap_disabled
+    touch {{ ansible_facts['env']['HOME'] }}/.swap_disabled
   args:
-    creates: "{{ ansible_env.HOME }}/.swap_disabled"
+    creates: "{{ ansible_facts['env']['HOME'] }}/.swap_disabled"
 
 - name: Remove Swap from fstab
   become: true

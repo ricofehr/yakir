@@ -3,20 +3,20 @@
 - name: Download Kube-bench
   ansible.builtin.get_url:
     url: "{{ bench_release_url }}"
-    dest: "{{ ansible_env.HOME }}/kube-bench.tar.gz"
+    dest: "{{ ansible_facts['env']['HOME'] }}/kube-bench.tar.gz"
     mode: '0644'
 
 - name: Extract Kube-bench
   ansible.builtin.unarchive:
     src: "kube-bench.tar.gz"
-    dest: "{{ ansible_env.HOME }}"
+    dest: "{{ ansible_facts['env']['HOME'] }}"
     remote_src: true
 
 - name: Install kube-bench
   become: true
   ansible.builtin.command:
     cmd: mv -f kube-bench /usr/local/bin/
-    chdir: "{{ ansible_env.HOME }}"
+    chdir: "{{ ansible_facts['env']['HOME'] }}"
   args:
     creates: /usr/local/bin/kube-bench
 
@@ -24,9 +24,9 @@
   become: true
   ansible.builtin.command:
     cmd: kube-bench --benchmark cis-{{ bench_cis_version }} --config ./cfg/config.yaml --config-dir=./cfg
-    chdir: "{{ ansible_env.HOME }}"
+    chdir: "{{ ansible_facts['env']['HOME'] }}"
   environment:
-    KUBECONFIG: "{{ ansible_env.HOME }}/.kube/config"
+    KUBECONFIG: "{{ ansible_facts['env']['HOME'] }}/.kube/config"
   register: bench_output
   changed_when: false
 
