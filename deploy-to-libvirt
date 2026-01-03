@@ -145,6 +145,7 @@ if [[ -z "$VIP_MANAGERS" ]]; then
   deployhelp
 fi
 
+# Define mirror parameters
 [[ -n "$MIRROR_REGISTRY" ]] && MIRROR_REGISTRY_PARAM="-e crio_mirror=$MIRROR_REGISTRY"
 
 [[ -n "$MIRROR_APT" ]] && MIRROR_APT_PARAM="-e internal_repos_apt=$MIRROR_APT"
@@ -164,6 +165,11 @@ terraform apply -auto-approve
 sleep 120
 
 popd > /dev/null
+
+# Install Ansible
+python3 -mvenv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
 
 pushd ansible > /dev/null
 
@@ -197,6 +203,7 @@ EOF
 # Disable cowsay ansible output
 export ANSIBLE_NOCOWS=1
 
+# Download the Ansible collections
 mkdir -p collections/ansible_collections
 ansible-galaxy collection install -r requirements.yml -p ./collections/
 

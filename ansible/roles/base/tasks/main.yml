@@ -1,5 +1,12 @@
 ---
 
+- name: Create ansible tmp folder
+  become: true
+  ansible.builtin.file:
+    path: /root/.ansible/tmp
+    state: directory
+    mode: '0750'
+
 - name: Set DNS resolved server
   ansible.builtin.import_tasks: resolved.yml
   when: base_dns_resolved_server != ""

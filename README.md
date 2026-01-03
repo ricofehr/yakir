@@ -73,7 +73,7 @@ Vagrantfile                 File created (symlink to targeted file on vagrantfil
 | Ceph | v20.2.0 | Distributed Storage |
 | Cert Manager | v1.19.2 | Generate SSL certs for ingress object with auto-signed CA or lets-encrypt (set with bash parameter) |
 | Ingress Controller | v1.14.1 | Nginx Ingress Controller |
-| Fluentbit | v4.0.1 | Cluster Log collector service |
+| Fluentbit | v4.1.0 | Cluster Log collector service |
 | Elastic | v8.5.1 | Cluster Log storage (ElasticSearch) and log visualization (Kibana) |
 | Prometheus | v3.8.1 | Cluster Monitoring metrics storage |
 | Grafana | v12.3.1 | Cluster Monitoring metrics visualization |
@@ -88,6 +88,7 @@ Vagrantfile                 File created (symlink to targeted file on vagrantfil
 
 ## Ansible install
 
+Runned during up and deploy-to-libvirt scripts
 ```bash
 python3 -mvenv venv
 source venv/bin/activate
