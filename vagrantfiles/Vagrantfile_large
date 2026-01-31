@@ -32,6 +32,10 @@ Vagrant.configure("2") do |config|
       config.vm.box = "bento/ubuntu-24.04"
     end
 
+    config.nfs.verify_installed = false
+    config.nfs.functional = false
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+
     managers.each do |name, ip|
       config.vm.define name do |machine|
         machine.vm.hostname = name
