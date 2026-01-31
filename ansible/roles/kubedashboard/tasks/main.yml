@@ -15,7 +15,7 @@
 - name: Add dashboard chart repo
   kubernetes.core.helm_repository:
     name: k8s-dashboard
-    repo_url: "https://kubernetes.github.io/dashboard"
+    repo_url: "https://kubernetes-retired.github.io/dashboard"
 
 - name: Create dashboard namespace
   kubernetes.core.k8s:

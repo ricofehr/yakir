@@ -189,7 +189,8 @@ MIRROR_PYPI_PARAM=""
 ANSIBLE_TAG_PARAM=""
 [[ -n "$ANSIBLE_TAG" ]] && ANSIBLE_TAG_PARAM="-t $ANSIBLE_TAG"
 
-# Install absible
+# Install ansible
+rm -rf venv
 python3 -mvenv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
