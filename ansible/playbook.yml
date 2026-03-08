@@ -57,8 +57,6 @@
       tags: ["cluster", "ingress"]
     - role: cert_manager
       tags: ["cluster", "certs", "certmanager"]
-    - role: kubedashboard
-      tags: ["cluster", "dashboard"]
     - role: opa
       tags: ["cluster", "opa"]
     - role: monitoring

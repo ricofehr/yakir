@@ -1,7 +1,0 @@
----
-
-kubedashboard_domain: dashboard.{{ global_domain }}
-kubedashboard_persistence_disk: "{{ global_persistence_disk }}"
-kubedashboard_cert_issuer: "{{ global_cert_issuer }}"
-
-...

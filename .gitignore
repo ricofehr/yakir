@@ -42,3 +42,7 @@ tf/libvirt/.terraform.lock.hcl
 
 # .tfvars files
 *.tfvars
+
+# vim tmp files
+*.swp
+*.swa

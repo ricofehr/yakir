@@ -1,3 +1,13 @@
+# v1.3.1
+
+## Changes by Kind
+
+### Improvement
+
+- Bump versions of Kubernetes (v1.35.2) and all components
+- Deploy traefik as Ingress Controller as Nginx replacement
+- Remove deprecated kubernetes dashboard
+
 # v1.3
 
 ## Changes by Kind
