@@ -57,8 +57,6 @@
       tags: ["cluster", "ingress"]
     - role: cert_manager
       tags: ["cluster", "certs", "certmanager"]
-    - role: opa
-      tags: ["cluster", "opa"]
     - role: monitoring
       tags: ["cluster", "certs", "monitoring"]
       when: global_cluster_sizing != "small"
