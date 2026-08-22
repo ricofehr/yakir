@@ -30,7 +30,7 @@ data "template_file" "user_data_man" {
   vars = {
     hostname = var.yakir_vm_man_names[count.index]
     fqdn = "${var.yakir_vm_man_names[count.index]}.${var.yakir_domain}"
-    public_key = file("~/.ssh/id_rsa.pub")
+    public_key = file("~/.ssh/id_ed25519.pub")
   }
 }
 
@@ -114,7 +114,7 @@ resource "libvirt_domain" "yakir_man_domains" {
 #      host     = "${self.network_interface.0.addresses.0}"
 #      type     = "ssh"
 #      user     = "ubuntu"
-#      private_key = "${file("~/.ssh/id_rsa")}"
+#      private_key = "${file("~/.ssh/id_ed25519")}"
 #    }
 #  }
 }
@@ -155,7 +155,7 @@ data "template_file" "user_data_wrk" {
   vars = {
     hostname = var.yakir_vm_wrk_names[count.index]
     fqdn = "${var.yakir_vm_wrk_names[count.index]}.${var.yakir_domain}"
-    public_key = file("~/.ssh/id_rsa.pub")
+    public_key = file("~/.ssh/id_ed25519.pub")
   }
 }
 
@@ -243,7 +243,7 @@ resource "libvirt_domain" "yakir_wrk_domains" {
 #      host     = "${self.network_interface.0.addresses.0}"
 #      type     = "ssh"
 #      user     = "ubuntu"
-#      private_key = "${file("~/.ssh/id_rsa")}"
+#      private_key = "${file("~/.ssh/id_ed25519")}"
 #    }
 #  }
 }
