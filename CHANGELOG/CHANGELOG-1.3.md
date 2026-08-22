@@ -1,3 +1,11 @@
+# v1.3.2
+
+## Changes by Kind
+
+### Bug Fix
+
+- Fix ingress configuration to match with traefik instead of nginx
+
 # v1.3.1
 
 ## Changes by Kind
