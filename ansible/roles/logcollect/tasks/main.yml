@@ -51,7 +51,6 @@
             paths:
               - path: /
         annotations:
-          kubernetes.io/ingress.class: ingress-traefik
           kubernetes.io/tls-acme: "true"
           cert-manager.io/issuer: "{{ logcollect_cert_issuer }}"
           cert-manager.io/issuer-kind: ClusterIssuer
