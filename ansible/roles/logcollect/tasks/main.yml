@@ -44,14 +44,14 @@
     release_namespace: "{{ logcollect_namespace }}"
     values:
       ingress:
-        ingressClassName: nginx
+        ingressClassName: ingress-traefik
         enabled: true
         hosts:
           - host: "{{ logcollect_kibana_domain }}"
             paths:
               - path: /
         annotations:
-          kubernetes.io/ingress.class: nginx
+          kubernetes.io/ingress.class: ingress-traefik
           kubernetes.io/tls-acme: "true"
           cert-manager.io/issuer: "{{ logcollect_cert_issuer }}"
           cert-manager.io/issuer-kind: ClusterIssuer

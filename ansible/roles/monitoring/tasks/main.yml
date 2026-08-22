@@ -24,11 +24,11 @@
           storageClass: "rook-ceph-block"
       server:
         ingress:
-          ingressClassName: nginx
+          ingressClassName: ingress-traefik
           enabled: true
           hosts: ["{{ monitoring_exporter_domain }}"]
           annotations:
-            kubernetes.io/ingress.class: nginx
+            kubernetes.io/ingress.class: ingress-traefik
             kubernetes.io/tls-acme: "true"
             cert-manager.io/issuer: "{{ monitoring_cert_issuer }}"
             cert-manager.io/issuer-kind: ClusterIssuer
@@ -58,11 +58,11 @@
     values:
       replicas: 2
       ingress:
-        ingressClassName: nginx
+        ingressClassName: ingress-traefik
         enabled: true
         hosts: ["{{ monitoring_grafana_domain }}"]
         annotations:
-          kubernetes.io/ingress.class: nginx
+          kubernetes.io/ingress.class: ingress-traefik
           kubernetes.io/tls-acme: "true"
           cert-manager.io/issuer: "{{ monitoring_cert_issuer }}"
           cert-manager.io/issuer-kind: ClusterIssuer

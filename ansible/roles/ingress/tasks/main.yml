@@ -28,9 +28,13 @@
     values:
       service:
         type: "NodePort"
-        nodePorts:
-          http: "{{ ingress_http_port }}"
-          https: "{{ ingress_https_port }}"
+      ports:
+        web:
+          port: 8000
+          nodePort: "{{ ingress_http_port }}"
+        websecure:
+          port: 8443
+          nodePort: "{{ ingress_https_port }}"
       metrics:
         prometheus:
           enabled: true
