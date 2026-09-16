@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: loki-datasource
+  namespace: "{{ logcollect_grafana_namespace }}"
+  labels:
+    {{ logcollect_grafana_datasource_label }}: "1"
+type: Opaque
+stringData:
+  loki-datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Loki
+        uid: loki
+        type: loki
+        access: proxy
+        url: http://loki-gateway.{{ logcollect_namespace }}.svc.cluster.local
+        basicAuth: true
+        basicAuthUser: {{ logcollect_loki_username | to_json }}
+        secureJsonData:
+          basicAuthPassword: {{ logcollect_loki_password | to_json }}

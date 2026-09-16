@@ -1,6 +1,8 @@
 ---
 
 logcollect_fluentbit_repo: "https://fluent.github.io/helm-charts"
-logcollect_elastic_repo: "https://helm.elastic.co"
+logcollect_loki_repo: "https://grafana.github.io/helm-charts"
+
+logcollect_basic_auth_secret: "loki-basic-auth"
 
 ...

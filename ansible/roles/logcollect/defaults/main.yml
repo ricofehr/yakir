@@ -1,13 +1,20 @@
 ---
 
 logcollect_namespace: "logcollect"
+logcollect_grafana_namespace: "monitoring"
+logcollect_grafana_datasource_label: "grafana_datasource"
 
 logcollect_persistence_disk: false
-logcollect_kibana_domain: "logcollect.k8s.local"
-logcollect_cert_issuer: "selfsigned-ca"
+logcollect_loki_storage_class: "rook-ceph-block"
+logcollect_loki_storage_size: "20Gi"
+logcollect_loki_retention: "168h"
+logcollect_loki_ingestion_rate_mb: 10
+logcollect_loki_ingestion_burst_mb: 20
+logcollect_loki_max_streams: 5000
 
-logcollect_fluentbit_version: "0.37.1"
-logcollect_elasticsearch_version: "8.5.1"
-logcollect_kibana_version: "8.5.1"
+logcollect_basic_auth_username: "loki"
+
+logcollect_fluentbit_version: "0.56.0"
+logcollect_loki_version: "7.3.0"
 
 ...

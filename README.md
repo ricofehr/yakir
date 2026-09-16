@@ -42,7 +42,7 @@ yakir/
         +---k8s             Install and configure a Kubernetes deployment with Kubeadm
         +---keepalived      Install keepalived service on manager hosts for a no cloud deployment : ensure a failover IP for control-plane endpoint
         +---linux_hardening Apply hardening rules for linux kernel, pam logins, and ssh
-        +---logcollect      Deploy fluentbit, elastic, and kibana helm chart, and configure fluentbit for kubernetes logs
+        +---logcollect      Deploy loki and fluentbit helm charts, and configure fluentbit to ship kubernetes logs to loki (browsed from the grafana deployed by the monitoring role)
         +---monitoring      Deploy prometheus and grafana helm charts, and import grafana dashboard for kubernetes metrics
         +---opa             Install Gatekeeper and define some open policy rules
         +---postinstall     Some validations and post-config topics after Kubernetes deployment
@@ -73,7 +73,7 @@ Vagrantfile                 File created (symlink to targeted file on vagrantfil
 | Cert Manager | v1.19.4 | Generate SSL certs for ingress object with auto-signed CA or lets-encrypt (set with bash parameter) |
 | Ingress Controller | v3.6.7 | Traefik Ingress Controller |
 | Fluentbit | v4.2.3 | Cluster Log collector service |
-| Elastic | v8.5.1 | Cluster Log storage (ElasticSearch) and log visualization (Kibana) |
+| Loki | v3.6.11 | Cluster Log storage, queried from Grafana (no dedicated UI) |
 | Prometheus | v3.10.0 | Cluster Monitoring metrics storage |
 | Grafana | v12.3.1 | Cluster Monitoring metrics visualization |
 | Velero | v1.18.0 | Cluster Backup service, set a complete daily backup on external S3 service |
