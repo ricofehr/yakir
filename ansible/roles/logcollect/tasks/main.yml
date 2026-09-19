@@ -7,57 +7,169 @@
     kind: Namespace
     state: present
 
-- name: Add elastic chart repo
-  kubernetes.core.helm_repository:
-    name: elastic
-    repo_url: "{{ logcollect_elastic_repo }}"
-
-- name: Deploy elasticsearch
+- name: Remove the elasticsearch and kibana releases replaced by loki
   kubernetes.core.helm:
-    name: elasticsearch
-    chart_ref: elastic/elasticsearch
-    chart_version: "{{ logcollect_elasticsearch_version }}"
+    name: "{{ item }}"
+    release_namespace: "{{ logcollect_namespace }}"
+    state: absent
+    wait: true
+  loop:
+    - elasticsearch
+    - kibana
+
+- name: Look up the existing Loki gateway credentials
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ logcollect_basic_auth_secret }}"
+    namespace: "{{ logcollect_namespace }}"
+  register: logcollect_basic_auth_lookup
+  no_log: true
+
+- name: Note the Loki gateway credentials already stored
+  ansible.builtin.set_fact:
+    logcollect_basic_auth_data: "{{ stored }}"
+    logcollect_basic_auth_ready: "{{ 'username' in stored and 'password' in stored and '.htpasswd' in stored }}"
+  vars:
+    stored: "{{ (logcollect_basic_auth_lookup.resources | first | default({})).data | default({}) }}"
+  no_log: true
+
+- name: Provision the Loki gateway credentials when none are usable
+  when: not logcollect_basic_auth_ready
+  no_log: true
+  block:
+    - name: Generate a random password for the Loki gateway
+      ansible.builtin.set_fact:
+        logcollect_loki_username: "{{ logcollect_basic_auth_username }}"
+        logcollect_loki_password: "{{ lookup('community.general.random_string', length=32, special=false) }}"
+
+    - name: Hash the Loki gateway password for nginx basic auth
+      ansible.builtin.command:
+        cmd: openssl passwd -apr1 -stdin
+        stdin: "{{ logcollect_loki_password }}"
+      register: logcollect_loki_htpasswd
+      changed_when: false
+
+    - name: Store the Loki gateway credentials in a secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ logcollect_basic_auth_secret }}"
+            namespace: "{{ logcollect_namespace }}"
+          type: Opaque
+          stringData:
+            username: "{{ logcollect_loki_username }}"
+            password: "{{ logcollect_loki_password }}"
+            .htpasswd: "{{ logcollect_loki_username }}:{{ logcollect_loki_htpasswd.stdout }}"
+
+- name: Reuse the Loki gateway credentials stored on a previous run
+  ansible.builtin.set_fact:
+    logcollect_loki_username: "{{ logcollect_basic_auth_data.username | b64decode }}"
+    logcollect_loki_password: "{{ logcollect_basic_auth_data.password | b64decode }}"
+  when: logcollect_basic_auth_ready
+  no_log: true
+
+- name: Add grafana chart repo
+  kubernetes.core.helm_repository:
+    name: grafana
+    repo_url: "{{ logcollect_loki_repo }}"
+
+- name: Deploy loki
+  kubernetes.core.helm:
+    name: loki
+    chart_ref: grafana/loki
+    chart_version: "{{ logcollect_loki_version }}"
     release_namespace: "{{ logcollect_namespace }}"
     values:
-      esConfig:
-        elasticsearch.yml: |
-          xpack.security.enabled: true
-          xpack.security.transport.ssl.enabled: true
-          xpack.security.transport.ssl.verification_mode: full
-          xpack.security.authc:
-            anonymous:
-              username: anonymous
-              roles: superuser
-              authz_exception: true
+      deploymentMode: SingleBinary
+      loki:
+        auth_enabled: false
+        commonConfig:
+          replication_factor: 1
+        storage:
+          type: filesystem
+        schemaConfig:
+          configs:
+            - from: "2024-04-01"
+              store: tsdb
+              object_store: filesystem
+              schema: v13
+              index:
+                prefix: index_
+                period: 24h
+        limits_config:
+          retention_period: "{{ logcollect_loki_retention }}"
+          ingestion_rate_mb: "{{ logcollect_loki_ingestion_rate_mb }}"
+          ingestion_burst_size_mb: "{{ logcollect_loki_ingestion_burst_mb }}"
+          max_global_streams_per_user: "{{ logcollect_loki_max_streams }}"
+        compactor:
+          retention_enabled: true
+          delete_request_store: filesystem
+      singleBinary:
+        replicas: 1
+        persistence:
+          enabled: "{{ logcollect_persistence_disk }}"
+          size: "{{ logcollect_loki_storage_size }}"
+          storageClass: "{{ logcollect_loki_storage_class }}"
+      write:
+        replicas: 0
+      read:
+        replicas: 0
+      backend:
+        replicas: 0
+      chunksCache:
+        enabled: false
+      resultsCache:
+        enabled: false
+      lokiCanary:
+        enabled: false
+      test:
+        enabled: false
+      rbac:
+        namespaced: true
+      sidecar:
+        rules:
+          enabled: false
+      gateway:
+        enabled: true
+        replicas: 1
+        basicAuth:
+          enabled: true
+          existingSecret: "{{ logcollect_basic_auth_secret }}"
 
-- name: Wait for elasticsearch pods become ready
+- name: Restrict the loki backend to the gateway
+  kubernetes.core.k8s:
+    state: present
+    template: loki-networkpolicy.yml.j2
+
+- name: Wait for loki pods become ready
   ansible.builtin.command: "kubectl wait pod --all --namespace={{ logcollect_namespace }} --for=condition=Ready --timeout=900s"
   retries: 2
   delay: 10
   changed_when: false
 
-- name: Deploy kibana
-  kubernetes.core.helm:
-    name: kibana
-    chart_ref: elastic/kibana
-    chart_version: "{{ logcollect_kibana_version }}"
-    release_namespace: "{{ logcollect_namespace }}"
-    values:
-      ingress:
-        ingressClassName: ingress-traefik
-        enabled: true
-        hosts:
-          - host: "{{ logcollect_kibana_domain }}"
-            paths:
-              - path: /
-        annotations:
-          kubernetes.io/tls-acme: "true"
-          cert-manager.io/issuer: "{{ logcollect_cert_issuer }}"
-          cert-manager.io/issuer-kind: ClusterIssuer
-        tls:
-          - secretName: logcollect-kibana-cert
-            hosts:
-              - "{{ logcollect_kibana_domain }}"
+- name: Look up the grafana namespace hosting the loki datasource
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Namespace
+    name: "{{ logcollect_grafana_namespace }}"
+  register: logcollect_grafana_namespace_lookup
+
+- name: Assert the grafana namespace exists before publishing the loki datasource
+  ansible.builtin.assert:
+    that: logcollect_grafana_namespace_lookup.resources | length > 0
+    fail_msg: >-
+      Namespace {{ logcollect_grafana_namespace }} is missing. The monitoring role
+      creates it, so run that role before logcollect.
+
+- name: Deploy secret loki datasource for grafana
+  kubernetes.core.k8s:
+    state: present
+    template: loki-datasource.yml.j2
+  no_log: true
 
 - name: Add fluentbit chart repo
   kubernetes.core.helm_repository:
@@ -71,6 +183,21 @@
     chart_version: "{{ logcollect_fluentbit_version }}"
     release_namespace: "{{ logcollect_namespace }}"
     values:
+      env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: LOKI_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: "{{ logcollect_basic_auth_secret }}"
+              key: username
+        - name: LOKI_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: "{{ logcollect_basic_auth_secret }}"
+              key: password
       config:
         service: |
           [SERVICE]
@@ -106,16 +233,26 @@
               K8S-Logging.Exclude  On
         outputs: |
           [OUTPUT]
-              Name            es
-              Match           *
-              Host            elasticsearch-master.{{ logcollect_namespace }}.svc
-              Port            9200
-              Suppress_Type_Name On
-              Logstash_Format On
-              Replace_Dots    On
+              Name            loki
+              Match           kube.*
+              Host            loki-gateway.{{ logcollect_namespace }}.svc.cluster.local
+              Port            80
+              http_user       ${LOKI_USERNAME}
+              http_passwd     ${LOKI_PASSWORD}
+              labels          job=fluentbit, node=${NODE_NAME}, $kubernetes['namespace_name'], $kubernetes['pod_name'], $kubernetes['container_name']
+              remove_keys     kubernetes
+              line_format     json
               Retry_Limit     False
-              tls On
-              tls.verify Off
+          [OUTPUT]
+              Name            loki
+              Match           host.*
+              Host            loki-gateway.{{ logcollect_namespace }}.svc.cluster.local
+              Port            80
+              http_user       ${LOKI_USERNAME}
+              http_passwd     ${LOKI_PASSWORD}
+              labels          job=systemd, node=${NODE_NAME}
+              line_format     json
+              Retry_Limit     False
       customParsers: |
         [PARSER]
           Name cri

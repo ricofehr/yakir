@@ -21,7 +21,7 @@
     values:
       alertmanager:
         persistence:
-          storageClass: "rook-ceph-block"
+          storageClass: "{{ monitoring_storage_class }}"
       server:
         ingress:
           ingressClassName: ingress-traefik
@@ -37,7 +37,7 @@
               hosts:
                 - "{{ monitoring_exporter_domain }}"
         persistentVolume:
-          storageClass: "rook-ceph-block"
+          storageClass: "{{ monitoring_storage_class }}"
 
 - name: Add grafana chart repo
   kubernetes.core.helm_repository:
@@ -48,6 +48,11 @@
   kubernetes.core.k8s:
     state: present
     template: grafana-k8s-dashboard.yml.j2
+
+- name: Deploy CM prometheus datasource for grafana
+  kubernetes.core.k8s:
+    state: present
+    template: prometheus-datasource.yml.j2
 
 - name: Deploy Grafana
   kubernetes.core.helm:
@@ -77,6 +82,9 @@
         dashboards:
           enabled: true
           label: grafana_dashboard
+        datasources:
+          enabled: true
+          label: "{{ monitoring_grafana_datasource_label }}"
 
       dashboardProviders:
         dashboardproviders.yaml:
@@ -90,13 +98,4 @@
               editable: true
               options:
                 path: /var/lib/grafana/dashboards/default
-
-      datasources:
-        datasources.yaml:
-          apiVersion: 1
-          datasources:
-            - name: Prometheus
-              type: prometheus
-              url: http://prometheus-server.{{ monitoring_namespace }}.svc.cluster.local  # Replace with your Prometheus server URL
-              access: proxy
 ...

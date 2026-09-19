@@ -1,12 +1,13 @@
 ---
 
 logcollect_namespace: "kube-logcollect"
-logcollect_kibana_domain: logcollect.{{ global_domain }}
-logcollect_cert_issuer: "{{ global_cert_issuer }}"
+logcollect_grafana_namespace: "{{ monitoring_namespace }}"
+logcollect_grafana_datasource_label: "{{ monitoring_grafana_datasource_label }}"
+
+logcollect_persistence_disk: "{{ global_persistence_disk }}"
+logcollect_loki_storage_class: "{{ global_storage_class }}"
 
 logcollect_fluentbit_version: "{{ global_fluentbit_version }}"
-logcollect_elasticsearch_version: "{{ global_elastic_version }}"
-logcollect_kibana_version: "{{ global_elastic_version }}"
+logcollect_loki_version: "{{ global_loki_version }}"
 
 ...
-

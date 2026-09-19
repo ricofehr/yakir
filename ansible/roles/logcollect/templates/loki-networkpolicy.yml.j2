@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: loki-backend
+  namespace: "{{ logcollect_namespace }}"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: loki
+      app.kubernetes.io/component: single-binary
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: loki
