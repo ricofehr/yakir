@@ -8,12 +8,9 @@ declare ANSIBLEPATH="/usr/bin/ansible-playbook"
 declare VM_ETH="ens3"
 declare K8S_DOMAIN="kubernetes.local"
 declare MIRROR_REGISTRY=""
-declare MIRROR_REGISTRY_PARAM=""
 declare MIRROR_APT=""
-declare MIRROR_APT_PARAM=""
 declare MIRROR_PYPI=""
-declare MIRROR_PYPI_PARAM=""
-declare MIRROR_PARAMS=""
+declare -a MIRROR_PARAMS=()
 declare BACKUP_SERVER_URL=""
 declare BACKUP_ACCESS_KEY=""
 declare BACKUP_ACCESS_SECRET=""
@@ -30,6 +27,15 @@ declare K8SNODE3_IP="192.168.3.222"
 declare K8SNODE4_IP="192.168.3.223"
 declare K8SNODE5_IP="192.168.3.224"
 declare CERTISSUER="my-selfsigned-ca"
+declare GITOPS_REPO=""
+declare GITOPS_BRANCH="main"
+declare GITOPS_SSH_KEY=""
+declare -a GITOPS_PARAMS=()
+declare LLAMA_API_KEY=""
+declare GITHUB_TOKEN=""
+declare GITHUB_APP_ID=""
+declare GITHUB_APP_INSTALLATION_ID=""
+declare GITHUB_APP_KEY=""
 
 
 # Help function
@@ -51,6 +57,14 @@ Usage: $0 [options]
 --backup-access-key xxxx          S3 Access Key Id
 --backup-access-secret xxxx       S3 Access Key Secret
 --backup-region xxxx              S3 Bucket Region, default is $BACKUP_REGION
+--gitops-repo xxxx                ai-factory git repository url; enables the gitops role when set
+--gitops-branch xxxx              ai-factory git branch, default is $GITOPS_BRANCH
+--gitops-ssh-key xxxx             private deploy key for the ai-factory repository
+--llama-api-key xxxx              api key of the llama-server backing the LLM gateway
+--github-token xxxx               GitHub personal access token for the MCP gateway and context graph
+--github-app-id xxxx              GitHub App id used by the self-hosted runners
+--github-app-installation-id xxxx GitHub App installation id used by the self-hosted runners
+--github-app-key xxxx             GitHub App private key (.pem) path
 EOF
 
 exit 1
@@ -124,6 +138,46 @@ while (($# > 0)); do
       BACKUP_REGION="$1"
       shift
       ;;
+    --gitops-repo)
+      shift
+      GITOPS_REPO="$1"
+      shift
+      ;;
+    --gitops-branch)
+      shift
+      GITOPS_BRANCH="$1"
+      shift
+      ;;
+    --gitops-ssh-key)
+      shift
+      GITOPS_SSH_KEY="$1"
+      shift
+      ;;
+    --llama-api-key)
+      shift
+      LLAMA_API_KEY="$1"
+      shift
+      ;;
+    --github-token)
+      shift
+      GITHUB_TOKEN="$1"
+      shift
+      ;;
+    --github-app-id)
+      shift
+      GITHUB_APP_ID="$1"
+      shift
+      ;;
+    --github-app-installation-id)
+      shift
+      GITHUB_APP_INSTALLATION_ID="$1"
+      shift
+      ;;
+    --github-app-key)
+      shift
+      GITHUB_APP_KEY="$1"
+      shift
+      ;;
     -h)
       shift
       deployhelp
@@ -145,14 +199,24 @@ if [[ -z "$VIP_MANAGERS" ]]; then
   deployhelp
 fi
 
-# Define mirror parameters
-[[ -n "$MIRROR_REGISTRY" ]] && MIRROR_REGISTRY_PARAM="-e crio_mirror=$MIRROR_REGISTRY"
+# Define mirror parameters. An array keeps each -e a single argument, so a value
+# carrying a space cannot split into two.
+[[ -n "$MIRROR_REGISTRY" ]] && MIRROR_PARAMS+=(-e "crio_mirror=$MIRROR_REGISTRY")
 
-[[ -n "$MIRROR_APT" ]] && MIRROR_APT_PARAM="-e internal_repos_apt=$MIRROR_APT"
+[[ -n "$MIRROR_APT" ]] && MIRROR_PARAMS+=(-e "internal_repos_apt=$MIRROR_APT")
 
-[[ -n "$MIRROR_PYPI" ]] && MIRROR_PYPI_PARAM="-e internal_repos_pypi=$MIRROR_PYPI"
+[[ -n "$MIRROR_PYPI" ]] && MIRROR_PARAMS+=(-e "internal_repos_pypi=$MIRROR_PYPI")
 
-MIRROR_PARAMS="$MIRROR_REGISTRY_PARAM $MIRROR_APT_PARAM $MIRROR_PYPI_PARAM"
+# Define gitops parameters. Without --gitops-repo the playbook skips the role.
+if [[ -n "$GITOPS_REPO" ]]; then
+  GITOPS_PARAMS+=(-e "gitops_repo_url=$GITOPS_REPO" -e "gitops_repo_branch=$GITOPS_BRANCH")
+fi
+[[ -n "$GITOPS_SSH_KEY" ]] && GITOPS_PARAMS+=(-e "gitops_repo_ssh_key=$GITOPS_SSH_KEY")
+[[ -n "$LLAMA_API_KEY" ]] && GITOPS_PARAMS+=(-e "gitops_llama_api_key=$LLAMA_API_KEY")
+[[ -n "$GITHUB_TOKEN" ]] && GITOPS_PARAMS+=(-e "gitops_github_token=$GITHUB_TOKEN")
+[[ -n "$GITHUB_APP_ID" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_id=$GITHUB_APP_ID")
+[[ -n "$GITHUB_APP_INSTALLATION_ID" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_installation_id=$GITHUB_APP_INSTALLATION_ID")
+[[ -n "$GITHUB_APP_KEY" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_private_key=$GITHUB_APP_KEY")
 
 # Create k8s vms
 pushd tf/libvirt > /dev/null
@@ -214,6 +278,7 @@ $ANSIBLEPATH -i tfinventory \
 -e "keepalived_eth=$VM_ETH" -e "global_domain=$K8S_DOMAIN" -e "global_cert_issuer=$CERTISSUER" \
 -e "backup_s3_url=$BACKUP_SERVER_URL" -e "backup_s3_accesskey_id=$BACKUP_ACCESS_KEY" \
 -e "backup_s3_accesskey_secret=$BACKUP_ACCESS_SECRET" -e "backup_s3_region=$BACKUP_REGION" \
--e "csi_plugin=$CSI_PLUGIN" -e "global_persistence_disk=true" $MIRROR_PARAMS
+-e "csi_plugin=$CSI_PLUGIN" -e "global_persistence_disk=true" \
+"${MIRROR_PARAMS[@]}" "${GITOPS_PARAMS[@]}"
 
 popd > /dev/null

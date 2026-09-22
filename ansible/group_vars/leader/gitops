@@ -1,0 +1,13 @@
+---
+
+gitops_namespace: "kube-gitops"
+gitops_cnpg_namespace: "kube-cnpg"
+
+gitops_domain: "{{ global_domain }}"
+gitops_argocd_domain: "gitops.{{ global_domain }}"
+gitops_cert_issuer: "{{ global_cert_issuer }}"
+
+gitops_argocd_version: "{{ global_argocd_version }}"
+gitops_cnpg_version: "{{ global_cnpg_version }}"
+
+...

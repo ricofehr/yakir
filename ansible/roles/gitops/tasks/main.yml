@@ -1,0 +1,343 @@
+---
+
+- name: Create gitops namespace
+  kubernetes.core.k8s:
+    name: "{{ gitops_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Add argo cd chart repo
+  kubernetes.core.helm_repository:
+    name: argo
+    repo_url: "{{ gitops_argocd_repo }}"
+
+- name: Deploy Argo CD
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo/argo-cd
+    chart_version: "{{ gitops_argocd_version }}"
+    release_namespace: "{{ gitops_namespace }}"
+    values:
+      global:
+        domain: "{{ gitops_argocd_domain }}"
+      configs:
+        params:
+          # Traefik terminates TLS at the ingress, so the server speaks plain http behind it.
+          server.insecure: true
+      server:
+        ingress:
+          enabled: true
+          ingressClassName: ingress-traefik
+          hostname: "{{ gitops_argocd_domain }}"
+          tls: true
+          annotations:
+            kubernetes.io/ingress.class: ingress-traefik
+            kubernetes.io/tls-acme: "true"
+            cert-manager.io/issuer: "{{ gitops_cert_issuer }}"
+            cert-manager.io/issuer-kind: ClusterIssuer
+      dex:
+        enabled: false
+      notifications:
+        enabled: false
+
+- name: Add cloudnative-pg chart repo
+  kubernetes.core.helm_repository:
+    name: cnpg
+    repo_url: "{{ gitops_cnpg_repo }}"
+
+- name: Deploy the CloudNativePG operator
+  kubernetes.core.helm:
+    name: cloudnative-pg
+    chart_ref: cnpg/cloudnative-pg
+    chart_version: "{{ gitops_cnpg_version }}"
+    release_namespace: "{{ gitops_cnpg_namespace }}"
+    create_namespace: true
+
+# retries needs until to do anything at all. Without it a first run fails on
+# "no matching resources found" while the helm release is still creating pods.
+- name: Wait for argo cd pods become ready
+  ansible.builtin.command: "kubectl wait pod --all --namespace={{ gitops_namespace }} --for=condition=Ready --timeout=900s"
+  register: gitops_argocd_wait
+  until: gitops_argocd_wait is succeeded
+  retries: 3
+  delay: 10
+  changed_when: false
+
+- name: Wait for cloudnative-pg pods become ready
+  ansible.builtin.command: "kubectl wait pod --all --namespace={{ gitops_cnpg_namespace }} --for=condition=Ready --timeout=600s"
+  register: gitops_cnpg_wait
+  until: gitops_cnpg_wait is succeeded
+  retries: 3
+  delay: 10
+  changed_when: false
+
+- name: Create the ai-factory namespaces holding bootstrap credentials
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        labels:
+          kubernetes.io/metadata.name: "{{ item }}"
+          name: "{{ item }}"
+          pod-security.kubernetes.io/enforce: baseline
+        name: "{{ item }}"
+  loop: "{{ gitops_app_namespaces }}"
+
+- name: Store the git deploy key so Argo CD can read the ai-factory repository
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ gitops_repo_secret }}"
+        namespace: "{{ gitops_namespace }}"
+        labels:
+          argocd.argoproj.io/secret-type: repository
+      type: Opaque
+      stringData:
+        type: git
+        url: "{{ gitops_repo_url }}"
+        sshPrivateKey: "{{ lookup('file', gitops_repo_ssh_key) }}"
+  when: gitops_repo_ssh_key | length > 0
+  no_log: true
+
+- name: Look up the existing LiteLLM master key
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ gitops_masterkey_secret }}"
+    namespace: "{{ gitops_llm_namespace }}"
+  register: gitops_masterkey_lookup
+  no_log: true
+
+# Generated once and then reused: LiteLLM rejects a master key without the sk-
+# prefix, and rotating it invalidates every virtual key already issued against it.
+- name: Generate a LiteLLM master key when none is stored
+  ansible.builtin.set_fact:
+    gitops_masterkey_value: "sk-{{ lookup('community.general.random_string', length=40, special=false) }}"
+  when: "'masterkey' not in stored"
+  vars:
+    stored: "{{ (gitops_masterkey_lookup.resources | first | default({})).data | default({}) }}"
+  no_log: true
+
+- name: Reuse the LiteLLM master key stored on a previous run
+  ansible.builtin.set_fact:
+    gitops_masterkey_value: "{{ stored.masterkey | b64decode }}"
+  when: "'masterkey' in stored"
+  vars:
+    stored: "{{ (gitops_masterkey_lookup.resources | first | default({})).data | default({}) }}"
+  no_log: true
+
+# The assistant runs in its own namespace and a secretKeyRef cannot cross one,
+# so the key is published to every namespace that consumes it.
+- name: Publish the LiteLLM master key to the namespaces that consume it
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ gitops_masterkey_secret }}"
+        namespace: "{{ item }}"
+      type: Opaque
+      stringData:
+        masterkey: "{{ gitops_masterkey_value }}"
+  loop:
+    - "{{ gitops_llm_namespace }}"
+    - "{{ gitops_assistant_namespace }}"
+  no_log: true
+
+- name: Look up the existing Keycloak bootstrap administrator
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ gitops_keycloak_secret }}"
+    namespace: "{{ gitops_identity_namespace }}"
+  register: gitops_keycloak_lookup
+  no_log: true
+
+- name: Note whether a Keycloak administrator is already stored
+  ansible.builtin.set_fact:
+    gitops_keycloak_ready: "{{ 'password' in stored }}"
+  vars:
+    stored: "{{ (gitops_keycloak_lookup.resources | first | default({})).data | default({}) }}"
+  no_log: true
+
+# Keycloak only reads these on the very first boot, so regenerating them on a
+# replay would leave a password that no longer opens the realm.
+- name: Provision the Keycloak bootstrap administrator when none is stored
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ gitops_keycloak_secret }}"
+        namespace: "{{ gitops_identity_namespace }}"
+      type: Opaque
+      stringData:
+        username: "{{ gitops_keycloak_admin_user }}"
+        password: "{{ lookup('community.general.random_string', length=32, special=false) }}"
+  when: not gitops_keycloak_ready
+  no_log: true
+
+- name: Look up the existing local model credentials
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ gitops_llama_secret }}"
+    namespace: "{{ gitops_llm_namespace }}"
+  register: gitops_llama_lookup
+  no_log: true
+
+- name: Reuse the local model api key stored on a previous run
+  ansible.builtin.set_fact:
+    gitops_llama_api_key: "{{ stored.LLAMA_API_KEY | b64decode }}"
+  when:
+    - gitops_llama_api_key | length == 0
+    - "'LLAMA_API_KEY' in stored"
+  vars:
+    stored: "{{ (gitops_llama_lookup.resources | first | default({})).data | default({}) }}"
+  no_log: true
+
+# Created unconditionally, because the LLM gateway mounts this secret with
+# envFrom and a missing one leaves its pod in CreateContainerConfigError. The
+# placeholder is ignored by a llama-server started without --api-key.
+#
+# A replay must not overwrite a working key: re-running with -t gitops to apply
+# an unrelated fix does not re-supply --llama-api-key, and writing the
+# placeholder over a real key turns every model call into a 401.
+- name: Store the local model credentials for the LLM gateway
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ gitops_llama_secret }}"
+        namespace: "{{ gitops_llm_namespace }}"
+      type: Opaque
+      stringData:
+        # Consumed as an environment variable by the LLM gateway, so the key is
+        # named the way the gateway configuration references it.
+        LLAMA_API_KEY: "{{ gitops_llama_api_key | default('none', true) }}"
+  no_log: true
+
+- name: Look up the existing GitHub token
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ gitops_github_token_secret }}"
+    namespace: "{{ gitops_mcp_namespace }}"
+  register: gitops_github_token_lookup
+  no_log: true
+
+- name: Reuse the GitHub token stored on a previous run
+  ansible.builtin.set_fact:
+    gitops_github_token: "{{ stored.token | b64decode }}"
+  when:
+    - gitops_github_token | length == 0
+    - "'token' in stored"
+  vars:
+    stored: "{{ (gitops_github_token_lookup.resources | first | default({})).data | default({}) }}"
+  no_log: true
+
+# Created unconditionally: the MCPServer CRD has no optional flag on a secret
+# reference, so the github server cannot start at all while this is missing.
+# An empty token still starts the server, which then sees public repositories
+# only - that is the documented behaviour without --github-token.
+- name: Store the GitHub token read by the MCP gateway and the context graph
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ gitops_github_token_secret }}"
+        namespace: "{{ item }}"
+      type: Opaque
+      stringData:
+        token: "{{ gitops_github_token }}"
+  loop:
+    - "{{ gitops_mcp_namespace }}"
+    - "{{ gitops_knowledge_namespace }}"
+  no_log: true
+
+- name: Look up the existing context graph credentials
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ gitops_neo4j_secret }}"
+    namespace: "{{ gitops_knowledge_namespace }}"
+  register: gitops_neo4j_lookup
+  no_log: true
+
+- name: Note whether context graph credentials are already stored
+  ansible.builtin.set_fact:
+    gitops_neo4j_ready: "{{ 'NEO4J_AUTH' in stored and 'NEO4J_PASSWORD' in stored }}"
+  vars:
+    stored: "{{ (gitops_neo4j_lookup.resources | first | default({})).data | default({}) }}"
+  no_log: true
+
+# Two keys hold one password: the neo4j chart mounts NEO4J_AUTH as user/password,
+# while the MCP server and the ingester take the password on its own. The value
+# is materialised with set_fact first — a lookup left in a task's vars is
+# re-evaluated on every reference, which would write two different passwords
+# into the two keys. Regenerating would also lock the graph out of its own
+# volume, so this runs once and is reused afterwards.
+- name: Provision the context graph credentials when none are stored
+  when: not gitops_neo4j_ready
+  no_log: true
+  block:
+    - name: Generate a random password for the context graph
+      ansible.builtin.set_fact:
+        gitops_neo4j_password: "{{ lookup('community.general.random_string', length=32, special=false) }}"
+
+    - name: Store the context graph credentials in a secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ gitops_neo4j_secret }}"
+            namespace: "{{ gitops_knowledge_namespace }}"
+          type: Opaque
+          stringData:
+            NEO4J_AUTH: "{{ gitops_neo4j_user }}/{{ gitops_neo4j_password }}"
+            NEO4J_PASSWORD: "{{ gitops_neo4j_password }}"
+
+- name: Store the GitHub App credentials for the self-hosted runners
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ gitops_github_app_secret }}"
+        namespace: "{{ gitops_runners_namespace }}"
+      type: Opaque
+      stringData:
+        github_app_id: "{{ gitops_github_app_id }}"
+        github_app_installation_id: "{{ gitops_github_app_installation_id }}"
+        github_app_private_key: "{{ lookup('file', gitops_github_app_private_key) }}"
+  when:
+    - gitops_github_app_id | length > 0
+    - gitops_github_app_private_key | length > 0
+  no_log: true
+
+- name: Deploy the ai-factory application project
+  kubernetes.core.k8s:
+    state: present
+    template: app-project.yml.j2
+
+- name: Deploy the ai-factory root application
+  kubernetes.core.k8s:
+    state: present
+    template: root-application.yml.j2
+
+...

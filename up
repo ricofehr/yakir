@@ -7,7 +7,7 @@ declare K8S_DOMAIN="k8s.local"
 declare MIRROR_REGISTRY=""
 declare MIRROR_APT=""
 declare MIRROR_PYPI=""
-declare MIRROR_PARAMS=""
+declare -a MIRROR_PARAMS=()
 declare BACKUP_SERVER_URL=""
 declare BACKUP_ACCESS_KEY=""
 declare BACKUP_ACCESS_SECRET=""
@@ -16,7 +16,17 @@ declare LINUX_ARCH="amd64"
 declare CNI_PLUGIN="calico"
 declare CSI_PLUGIN="none"
 declare ANSIBLE_TAG=""
+declare -a ANSIBLE_TAG_PARAM=()
 declare CERT_ISSUER="my-ca-issuer"
+declare GITOPS_REPO=""
+declare GITOPS_BRANCH="main"
+declare GITOPS_SSH_KEY=""
+declare -a GITOPS_PARAMS=()
+declare LLAMA_API_KEY=""
+declare GITHUB_TOKEN=""
+declare GITHUB_APP_ID=""
+declare GITHUB_APP_INSTALLATION_ID=""
+declare GITHUB_APP_KEY=""
 declare SSH_PARAMS="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no"
 declare KEEPALIVED_PASSWORD=""
 KEEPALIVED_PASSWORD="$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 8 ; echo '')"
@@ -44,6 +54,14 @@ Usage: $0 [options]
 --backup-access-key xxxx          S3 Access Key Id
 --backup-access-secret xxxx       S3 Access Key Secret
 --backup-region xxxx              S3 Bucket Region, default is $BACKUP_REGION
+--gitops-repo xxxx                ai-factory git repository url; enables the gitops role when set
+--gitops-branch xxxx              ai-factory git branch, default is $GITOPS_BRANCH
+--gitops-ssh-key xxxx             private deploy key for the ai-factory repository
+--llama-api-key xxxx              api key of the llama-server backing the LLM gateway
+--github-token xxxx               GitHub personal access token for the MCP gateway and context graph
+--github-app-id xxxx              GitHub App id used by the self-hosted runners
+--github-app-installation-id xxxx GitHub App installation id used by the self-hosted runners
+--github-app-key xxxx             GitHub App private key (.pem) path
 EOF
 
 exit 1
@@ -116,6 +134,46 @@ while (($# > 0)); do
       BACKUP_REGION="$1"
       shift
       ;;
+    --gitops-repo)
+      shift
+      GITOPS_REPO="$1"
+      shift
+      ;;
+    --gitops-branch)
+      shift
+      GITOPS_BRANCH="$1"
+      shift
+      ;;
+    --gitops-ssh-key)
+      shift
+      GITOPS_SSH_KEY="$1"
+      shift
+      ;;
+    --llama-api-key)
+      shift
+      LLAMA_API_KEY="$1"
+      shift
+      ;;
+    --github-token)
+      shift
+      GITHUB_TOKEN="$1"
+      shift
+      ;;
+    --github-app-id)
+      shift
+      GITHUB_APP_ID="$1"
+      shift
+      ;;
+    --github-app-installation-id)
+      shift
+      GITHUB_APP_INSTALLATION_ID="$1"
+      shift
+      ;;
+    --github-app-key)
+      shift
+      GITHUB_APP_KEY="$1"
+      shift
+      ;;
     -s)
       shift
       SIZING="$1"
@@ -177,17 +235,28 @@ export ANSIBLE_NOCOWS=1
 mkdir -p tmp
 
 # Define mirrors parameter for Ansible
-[[ -n "$MIRROR_REGISTRY" ]] && MIRROR_PARAMS="-e crio_mirror=$MIRROR_REGISTRY"
+# Arrays, not strings: these carry operator-supplied secrets, and the command
+# below used to run through eval. A value holding a space, a glob character or
+# a $ was silently split, expanded or truncated on its way to ansible.
+[[ -n "$MIRROR_REGISTRY" ]] && MIRROR_PARAMS+=(-e "crio_mirror=$MIRROR_REGISTRY")
 
-MIRROR_APT_PARAM=""
-[[ -n "$MIRROR_APT" ]] && MIRROR_PARAMS="$MIRROR_PARAMS -e internal_repos_apt=$MIRROR_APT"
+[[ -n "$MIRROR_APT" ]] && MIRROR_PARAMS+=(-e "internal_repos_apt=$MIRROR_APT")
 
-MIRROR_PYPI_PARAM=""
-[[ -n "$MIRROR_PYPI" ]] && MIRROR_PARAMS="$MIRROR_PARAMS -e internal_repos_pypi=$MIRROR_PYPI"
+[[ -n "$MIRROR_PYPI" ]] && MIRROR_PARAMS+=(-e "internal_repos_pypi=$MIRROR_PYPI")
+
+# Define gitops parameters. Without --gitops-repo the playbook skips the role.
+if [[ -n "$GITOPS_REPO" ]]; then
+  GITOPS_PARAMS+=(-e "gitops_repo_url=$GITOPS_REPO" -e "gitops_repo_branch=$GITOPS_BRANCH")
+fi
+[[ -n "$GITOPS_SSH_KEY" ]] && GITOPS_PARAMS+=(-e "gitops_repo_ssh_key=$GITOPS_SSH_KEY")
+[[ -n "$LLAMA_API_KEY" ]] && GITOPS_PARAMS+=(-e "gitops_llama_api_key=$LLAMA_API_KEY")
+[[ -n "$GITHUB_TOKEN" ]] && GITOPS_PARAMS+=(-e "gitops_github_token=$GITHUB_TOKEN")
+[[ -n "$GITHUB_APP_ID" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_id=$GITHUB_APP_ID")
+[[ -n "$GITHUB_APP_INSTALLATION_ID" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_installation_id=$GITHUB_APP_INSTALLATION_ID")
+[[ -n "$GITHUB_APP_KEY" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_private_key=$GITHUB_APP_KEY")
 
 # Define Ansible tag parameter
-ANSIBLE_TAG_PARAM=""
-[[ -n "$ANSIBLE_TAG" ]] && ANSIBLE_TAG_PARAM="-t $ANSIBLE_TAG"
+[[ -n "$ANSIBLE_TAG" ]] && ANSIBLE_TAG_PARAM+=(-t "$ANSIBLE_TAG")
 
 # Install ansible
 rm -rf venv
@@ -207,10 +276,12 @@ mkdir -p collections/ansible_collections
 ansible-galaxy collection install -r requirements.yml -p ./collections/
 
 # Launch Ansible
-eval "ansible-playbook --ssh-extra-args=\"$SSH_PARAMS\" -e global_cert_issuer=$CERT_ISSUER \
-  $MIRROR_PARAMS -e cni_plugin=$CNI_PLUGIN -e keepalived_pass=$KEEPALIVED_PASSWORD \
-  -e backup_s3_url=$BACKUP_SERVER_URL -e backup_s3_accesskey_id=$BACKUP_ACCESS_KEY \
-  -e backup_s3_accesskey_secret=$BACKUP_ACCESS_SECRET -e backup_s3_region=$BACKUP_REGION \
-  -e global_linux_arch=$LINUX_ARCH -e global_domain=$K8S_DOMAIN -e csi_plugin=$CSI_PLUGIN \
-  -e csi_rook_disk=sdb $ANSIBLE_TAG_PARAM -i inventory playbook.yml 2>&1"
+ansible-playbook --ssh-extra-args="$SSH_PARAMS" -e "global_cert_issuer=$CERT_ISSUER" \
+  -e "cni_plugin=$CNI_PLUGIN" -e "keepalived_pass=$KEEPALIVED_PASSWORD" \
+  -e "backup_s3_url=$BACKUP_SERVER_URL" -e "backup_s3_accesskey_id=$BACKUP_ACCESS_KEY" \
+  -e "backup_s3_accesskey_secret=$BACKUP_ACCESS_SECRET" -e "backup_s3_region=$BACKUP_REGION" \
+  -e "global_linux_arch=$LINUX_ARCH" -e "global_domain=$K8S_DOMAIN" -e "csi_plugin=$CSI_PLUGIN" \
+  -e "csi_rook_disk=sdb" \
+  "${MIRROR_PARAMS[@]}" "${GITOPS_PARAMS[@]}" "${ANSIBLE_TAG_PARAM[@]}" \
+  -i inventory playbook.yml 2>&1
 popd >/dev/null
