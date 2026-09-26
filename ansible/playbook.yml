@@ -68,5 +68,8 @@
       when: backup_s3_accesskey_secret != ""
     - role: bench
       tags: ["cluster", "bench"]
+    - role: gitops
+      tags: ["cluster", "gitops"]
+      when: gitops_repo_url != ""
 
 ...

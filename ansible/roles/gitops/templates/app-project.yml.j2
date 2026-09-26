@@ -1,0 +1,29 @@
+# The default AppProject permits any destination, any cluster and any resource
+# kind, so anything that lands under apps/ in the tracked branch is applied with
+# the application-controller's cluster-admin rights. Scoping the project to the
+# repository and the namespaces the factory actually uses means a manifest
+# committed outside that envelope is refused instead of applied.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ gitops_project }}
+  namespace: {{ gitops_namespace }}
+spec:
+  description: The ai-factory application layer
+  sourceRepos:
+    - {{ gitops_repo_url }}
+  destinations:
+{% for namespace in gitops_project_namespaces %}
+    - server: https://kubernetes.default.svc
+      namespace: {{ namespace }}
+{% endfor %}
+  clusterResourceWhitelist:
+{% for resource in gitops_project_cluster_resources %}
+    - group: "{{ resource.group }}"
+      kind: {{ resource.kind }}
+{% endfor %}
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: ResourceQuota
+    - group: ""
+      kind: LimitRange

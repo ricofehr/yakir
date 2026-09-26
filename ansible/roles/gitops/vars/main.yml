@@ -1,0 +1,27 @@
+---
+
+gitops_argocd_repo: "https://argoproj.github.io/argo-helm"
+gitops_cnpg_repo: "https://cloudnative-pg.github.io/charts"
+
+gitops_repo_secret: "ai-factory-repo"
+gitops_masterkey_secret: "litellm-masterkey"
+gitops_llama_secret: "llama-credentials"
+gitops_github_app_secret: "arc-github-app"
+gitops_keycloak_secret: "keycloak-admin"
+gitops_github_token_secret: "github-token"
+gitops_neo4j_secret: "neo4j-auth"
+
+gitops_root_application: "ai-factory"
+gitops_project: "ai-factory"
+
+# Cluster-scoped kinds the factory legitimately creates. Anything outside this
+# list is refused by Argo CD rather than applied with cluster-admin.
+gitops_project_cluster_resources:
+  - {group: "", kind: Namespace}
+  - {group: "apiextensions.k8s.io", kind: CustomResourceDefinition}
+  - {group: "rbac.authorization.k8s.io", kind: ClusterRole}
+  - {group: "rbac.authorization.k8s.io", kind: ClusterRoleBinding}
+  - {group: "admissionregistration.k8s.io", kind: ValidatingWebhookConfiguration}
+  - {group: "admissionregistration.k8s.io", kind: MutatingWebhookConfiguration}
+
+...

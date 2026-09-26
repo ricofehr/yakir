@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ gitops_root_application }}
+  namespace: {{ gitops_namespace }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ gitops_project }}
+  source:
+    repoURL: {{ gitops_repo_url }}
+    targetRevision: {{ gitops_repo_branch }}
+    path: {{ gitops_apps_path }}
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ gitops_namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

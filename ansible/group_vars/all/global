@@ -23,6 +23,8 @@ global_rook_version: "1.19.2"
 global_ceph_version: "v20.2.0"
 global_prometheus_version: "28.13.0"
 global_grafana_version: "10.5.15"
+global_argocd_version: "10.9.2"
+global_cnpg_version: "0.29.0"
 
 global_linux_arch: "amd64"
 global_managers_group_name: "managers"

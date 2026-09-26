@@ -15,10 +15,12 @@ yakir_vm_os_disk_size = 16106127360
 # 150Go : Ceph disk size (on each worker vms)
 yakir_vm_ceph_disk_size = 161061273600
 
-# RAM / CPU for manager and worker nodes
+# RAM / CPU for manager and worker nodes.
+# Workers carry the ai-factory workloads on top of rook-ceph, prometheus, grafana
+# and loki, so 8192 no longer leaves usable headroom. 5 x 12288 + 3 x 6144 = 78Go.
 yakir_vm_man_ram = 6144
 yakir_vm_man_cpu = 2
-yakir_vm_wrk_ram = 8192
+yakir_vm_wrk_ram = 12288
 yakir_vm_wrk_cpu = 4
 
 # Disk names, vm names, and mac addresses

@@ -1,0 +1,62 @@
+---
+
+gitops_namespace: "gitops"
+gitops_cnpg_namespace: "cnpg-system"
+
+gitops_argocd_version: "10.9.2"
+gitops_cnpg_version: "0.29.0"
+
+gitops_domain: "k8s.local"
+gitops_argocd_domain: "gitops.{{ gitops_domain }}"
+gitops_cert_issuer: "my-ca-issuer"
+
+# Git repository holding the ai-factory Argo CD applications. The playbook skips
+# this role entirely while the url is empty, so a plain cluster install is unchanged.
+gitops_repo_url: ""
+gitops_repo_branch: "main"
+gitops_apps_path: "apps"
+# Path, on the ansible controller, to the private deploy key for the repository
+# above. Leave empty for a public repository fetched over https.
+gitops_repo_ssh_key: ""
+
+# The bootstrap owns every ai-factory namespace. Some receive credentials the
+# Argo CD applications cannot generate for themselves; the rest exist because
+# the wave 0 database application writes into namespaces whose own application
+# does not sync until wave 3, and CreateNamespace only ever creates an
+# application's own destination namespace.
+gitops_app_namespaces:
+  - "ai-data"
+  - "ai-llm"
+  - "ai-mcp"
+  - "ai-runners"
+  - "ai-identity"
+  - "ai-knowledge"
+  - "ai-devpods"
+  - "ai-assistant"
+# Namespaces the root project may deploy into: the factory's own, plus the two
+# that host operators rather than workloads.
+gitops_project_namespaces: "{{ gitops_app_namespaces + [gitops_namespace, 'toolhive-system', 'arc-system'] }}"
+gitops_llm_namespace: "ai-llm"
+gitops_mcp_namespace: "ai-mcp"
+gitops_knowledge_namespace: "ai-knowledge"
+gitops_runners_namespace: "ai-runners"
+gitops_identity_namespace: "ai-identity"
+gitops_assistant_namespace: "ai-assistant"
+gitops_keycloak_admin_user: "admin"
+gitops_neo4j_user: "neo4j"
+
+# Api key of the llama-server exposed by ricostation. Empty means the model
+# server is still unauthenticated and the gateway sends a placeholder it ignores.
+gitops_llama_api_key: ""
+
+# Personal access token read by the GitHub MCP server and the context graph
+# ingester. Empty means both reach public repositories only.
+gitops_github_token: ""
+
+# GitHub App used by the self-hosted Actions runners.
+gitops_github_app_id: ""
+gitops_github_app_installation_id: ""
+# Path, on the ansible controller, to the GitHub App private key (.pem).
+gitops_github_app_private_key: ""
+
+...

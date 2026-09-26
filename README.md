@@ -34,6 +34,7 @@ yakir/
         +---cni             Manage network plugins for Kubernetes : Flannel, Cilium, Calico
         +---crio            Manage container engine installation
         +---csi             Manage storage plugins for Kubernetes : Rook or Cinder
+        +---gitops          Deploy Argo CD and the CloudNativePG operator, and register the ai-factory root application (skipped unless --gitops-repo is set)
         +---haproxy         Install and configure haproxy on each manager nodes : expose https (port 443) of the cluster and route traffic to ingress controller
         +---helm            Install helm command and add global helm repositories
         +---ingress         Deploy nginx ingress component on Kubernetes
@@ -77,6 +78,8 @@ Vagrantfile                 File created (symlink to targeted file on vagrantfil
 | Grafana | v12.3.1 | Cluster Monitoring metrics visualization |
 | Velero | v1.18.0 | Cluster Backup service, set a complete daily backup on external S3 service |
 | Kube-bench | v0.15.0 | Install kube-bench on first manager node, and launch analysis (with result output) on each playbook execution |
+| Argo CD | v3.5.3 | GitOps controller reconciling the ai-factory applications (deployed only with --gitops-repo) |
+| CloudNativePG | v1.30.0 | PostgreSQL operator backing the ai-factory applications (deployed only with --gitops-repo) |
 
 ## Vagrant deployment
 
@@ -128,6 +131,14 @@ Usage: ./up [options]
 --backup-access-key xxxx          S3 Access Key Id
 --backup-access-secret xxxx       S3 Access Key Secret
 --backup-region xxxx              S3 Bucket Region, default is minio
+--gitops-repo xxxx                ai-factory git repository url; enables the gitops role when set
+--gitops-branch xxxx              ai-factory git branch, default is main
+--gitops-ssh-key xxxx             private deploy key for the ai-factory repository
+--llama-api-key xxxx              api key of the llama-server backing the LLM gateway
+--github-token xxxx               GitHub personal access token for the MCP gateway and context graph
+--github-app-id xxxx              GitHub App id used by the self-hosted runners
+--github-app-installation-id xxxx GitHub App installation id used by the self-hosted runners
+--github-app-key xxxx             GitHub App private key (.pem) path
 ```
 
 For example, an install on apple silicon with local repository, custom domain, flannel CNI, and medium sizing
@@ -222,6 +233,14 @@ Usage: ./deploy-to-libvirt [options]
 --backup-access-key xxxx          S3 Access Key Id
 --backup-access-secret xxxx       S3 Access Key Secret
 --backup-region xxxx              S3 Bucket Region, default is minio
+--gitops-repo xxxx                ai-factory git repository url; enables the gitops role when set
+--gitops-branch xxxx              ai-factory git branch, default is main
+--gitops-ssh-key xxxx             private deploy key for the ai-factory repository
+--llama-api-key xxxx              api key of the llama-server backing the LLM gateway
+--github-token xxxx               GitHub personal access token for the MCP gateway and context graph
+--github-app-id xxxx              GitHub App id used by the self-hosted runners
+--github-app-installation-id xxxx GitHub App installation id used by the self-hosted runners
+--github-app-key xxxx             GitHub App private key (.pem) path
 ```
 
 Example
@@ -254,9 +273,44 @@ Add parameters to enable a daily backup with Velero, for example (same backup pa
   --backup-region minio
 ```
 
+## GitOps and the AI factory
+
+The cluster stops at "base kubernetes". Everything above it — the AI software factory —
+lives in a separate `ai-factory` repository that Argo CD reconciles, so factory changes
+ship with a `git push` instead of another playbook run against a live cluster.
+
+The `gitops` role is the seam. It is **skipped entirely** unless `--gitops-repo` is set, so
+a plain `./up` or `./deploy-to-libvirt` behaves exactly as before. When it is set the role:
+
+- deploys Argo CD (ingress on `gitops.K8S_DOMAIN`) and the CloudNativePG operator,
+- stores the credentials the Argo CD applications cannot generate for themselves,
+- registers a root application pointing at the `apps/` folder of the ai-factory repository.
+
+```bash
+./deploy-to-libvirt -c cilium \
+  --kube-domain k8s.mydomain.io \
+  --gitops-repo git@github.com:ricofehr/ai-factory.git \
+  --gitops-ssh-key ~/.ssh/ai_factory_deploy \
+  --llama-api-key xxxxxxxxxxxx \
+  --github-app-id 123456 \
+  --github-app-installation-id 7654321 \
+  --github-app-key ~/.ssh/arc-github-app.pem
+```
+
+Bootstrap secrets are created from these parameters rather than committed to the GitOps
+repository, which keeps `ai-factory` free of credentials. The LiteLLM master key is the one
+exception: it is generated in-cluster on first run and reused afterwards, so virtual keys
+issued against it survive a replay.
+
+Once Argo CD is up, get the initial admin password with
+
+```bash
+kubectl -n kube-gitops get secret argocd-initial-admin-secret \
+  -o jsonpath='{.data.password}' | base64 -d
+```
+
 ## TODO
 
 - Secure k8s settings with CIS benchmark recommandations
 - Work on opentelemetry integration
-- Add Gitops tools
 
