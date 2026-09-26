@@ -16,6 +16,8 @@ networking:
 controlPlaneEndpoint: "{{ k8s_controlplane_endpoint }}:{{ k8s_controlplane_port }}"
 apiServer:
   certSANs:
+    - "{{ k8s_controlplane_endpoint }}"
+    - "{{ k8s_controlplane_endpoint_ip }}"
 {% for manager in k8s_managers %}
     - "{{ manager.ip }}"
     - "{{ manager.name }}"

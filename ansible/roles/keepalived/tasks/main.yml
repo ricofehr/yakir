@@ -5,6 +5,17 @@
   ansible.builtin.apt:
     name: keepalived
     update_cache: true
+    lock_timeout: 300
+
+- name: Assert the VIP interface exists on this host
+  ansible.builtin.assert:
+    that:
+      - keepalived_eth in ansible_facts.interfaces
+    fail_msg: >-
+      keepalived_eth is set to '{{ keepalived_eth }}' but {{ inventory_hostname }}
+      only has {{ ansible_facts.interfaces | join(', ') }}. keepalived would
+      refuse the generated config and the control-plane VIP would never come up.
+    success_msg: "VIP will be bound to {{ keepalived_eth }}"
 
 - name: Write keepalived configuration
   become: true

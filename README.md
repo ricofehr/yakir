@@ -215,6 +215,12 @@ network:
   - allow port 443 and 80 on Firewall
   - set the issuer for certificate-manager on "letsencrypt-prod"
 
+- The deployment reboots each VM once, early on, to apply the `net.ifnames=0`
+  kernel command line set by the `linux_hardening` role. Interfaces come back as
+  `eth*`, which is what `keepalived_eth` and the control-plane VIP are bound to.
+  The reboot is skipped on hosts already running that command line, so re-running
+  the deployment against a live cluster does not restart it.
+
 Use 'deploy-to-libvirt' script for launch deployment
 ```
 Usage: ./deploy-to-libvirt [options]

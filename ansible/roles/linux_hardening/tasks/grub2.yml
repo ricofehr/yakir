@@ -1,12 +1,37 @@
 ---
 
-- name: Enable yama module at boot
+- name: Write grub defaults - eth* interface naming and serial console
   become: true
   ansible.builtin.template:
     src: grub_default
     dest: /etc/default/grub
     mode: '0644'
-  notify:
-    - Update grub
+  notify: Update grub
+
+- name: Regenerate grub now so the reboot below loads the new command line
+  ansible.builtin.meta: flush_handlers
+
+# Gate the reboot on the running kernel, not on whether the template changed.
+# A comment-only edit to grub_default must not reboot a live cluster, and with
+# no serial on this play that would take every manager and worker down at once.
+- name: Record whether the running kernel already uses eth* interface naming
+  ansible.builtin.set_fact:
+    linux_hardening_eth_naming_active: >-
+      {{ ansible_facts.cmdline.get('net.ifnames', '') == '0' }}
+
+- name: Reboot to load eth* interface naming before anything binds to a NIC name
+  become: true
+  ansible.builtin.reboot:
+    reboot_timeout: 420
+    msg: "Applying net.ifnames=0 - interfaces become eth*"
+  throttle: 1
+  when: not linux_hardening_eth_naming_active | bool
+
+- name: Wait for cloud-init to finish so the boot-time apt run releases dpkg
+  become: true
+  ansible.builtin.command: cloud-init status --wait
+  changed_when: false
+  failed_when: false
+  when: not linux_hardening_eth_naming_active | bool
 
 ...
