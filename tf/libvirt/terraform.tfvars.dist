@@ -9,8 +9,14 @@ yakir_domain = "domain.io"
 # bridge name of the KVM Host
 yakir_vm_br_device = "bridge"
 
-# 15Go : Linux disk size (on all vms)
-yakir_vm_os_disk_size = 16106127360
+# 40Go : Linux disk size (on all vms).
+# 15Go is not enough. The base cluster alone caches ~7.8Go of images per worker
+# (rook-ceph's cephcsi and ceph are 3.8Go of that), which against ~13Go of
+# allocatable ephemeral storage leaves no room: four of five workers went
+# DiskPressure=True as soon as the ai-factory images landed, and pods were
+# evicted with "no space left on device". The disks are thin-provisioned qcow2,
+# so the larger declaration costs nothing until it is used.
+yakir_vm_os_disk_size = 42949672960
 
 # 150Go : Ceph disk size (on each worker vms)
 yakir_vm_ceph_disk_size = 161061273600

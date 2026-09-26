@@ -10,6 +10,8 @@
 - Skip the gitops role entirely while gitops_repo_url is empty, leaving a plain cluster install unchanged
 - Expose the gitops settings through up and deploy-to-libvirt (--gitops-repo, --gitops-branch, --gitops-ssh-key, --llama-api-key, --github-app-id, --github-app-installation-id, --github-app-key)
 - Raise the libvirt worker sizing to 12Go, the headroom the ai-factory workloads need on top of rook-ceph and the monitoring stack
+- Raise the libvirt vm root disk from 15Go to 40Go: the base cluster caches ~8Go of images per worker, so 15Go left the nodes one deployment away from DiskPressure and eviction
+- Report an Ingress as healthy on its rules rather than on a loadBalancer address, which a NodePort traefik behind keepalived never publishes
 
 ### Bug Fix
 

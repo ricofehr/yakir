@@ -25,6 +25,23 @@
         params:
           # Traefik terminates TLS at the ingress, so the server speaks plain http behind it.
           server.insecure: true
+        cm:
+          # Argo CD calls an Ingress Healthy only once status.loadBalancer.ingress
+          # is populated. This cluster fronts a NodePort traefik with keepalived
+          # and haproxy, so that field is never written and every application
+          # owning an Ingress would sit Progressing for ever — which hides the
+          # ones that are Progressing for a real reason. Judge the Ingress on
+          # whether it actually carries rules instead.
+          resource.customizations.health.networking.k8s.io_Ingress: |
+            hs = {}
+            if obj.spec ~= nil and obj.spec.rules ~= nil and #obj.spec.rules > 0 then
+              hs.status = "Healthy"
+              hs.message = "Ingress has rules; this cluster publishes no loadBalancer address"
+            else
+              hs.status = "Progressing"
+              hs.message = "Ingress has no rules"
+            end
+            return hs
       server:
         ingress:
           enabled: true
