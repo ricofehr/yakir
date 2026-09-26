@@ -2,6 +2,18 @@ GRUB_DEFAULT=0
 GRUB_TIMEOUT=5
 GRUB_DISTRIBUTOR="Ubuntu"
 GRUB_CMDLINE_LINUX_DEFAULT="console=tty1 console=ttyS0,115200"
-GRUB_CMDLINE_LINUX="initrd=/install/initrd.gz net.ifnames=0 biosdevname=0 security=yama"
+# net.ifnames=0 biosdevname=0 pin interfaces to eth*. keepalived_eth and the
+# Vagrant group_vars are written against those names; drop them and every NIC
+# is renamed on the next boot, so the control-plane VIP never comes up.
+#
+# Do NOT add security=yama here. Ubuntu's CONFIG_LSM is
+# "landlock,lockdown,yama,integrity,apparmor", so yama is already on, and
+# passing security= force-disables every other LSM_FLAG_LEGACY_MAJOR module --
+# which means AppArmor. Verified on a node that booted with it:
+# /sys/module/apparmor/parameters/enabled=N and /sys/kernel/security/lsm lost
+# apparmor, while CRI-O still reported ApparmorProfile=crio-default, i.e.
+# containers looked confined but were not.
+# Yama's ptrace_scope is enforced by sysctl in linux_hardening/vars/main.yml.
+GRUB_CMDLINE_LINUX="initrd=/install/initrd.gz net.ifnames=0 biosdevname=0"
 GRUB_TERMINAL="console serial"
 GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
