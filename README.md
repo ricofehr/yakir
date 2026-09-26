@@ -160,6 +160,12 @@ At first, copy the terraform default vars file, so we can change it to match our
 cp tf/libvirt/terraform.tfvars.dist tf/libvirt/terraform.tfvars
 ```
 
+Worker root disks hold every container image the cluster pulls. The base install alone
+caches ~8Go per worker, so the default was raised from 15Go to 40Go — at 15Go the nodes hit
+`DiskPressure` and start evicting pods with "no space left on device" as soon as anything
+substantial is deployed on top. The disks are thin-provisioned, so the larger size costs
+nothing until it is used.
+
 Form factor is fixed at 8 nodes (3 managers, and 5 workers), but could be changed easily with edit this files
 - deploy-to-libvirt : changes vms ips and count
 - tf/libvirt/terraform.tfvars : changes vms list

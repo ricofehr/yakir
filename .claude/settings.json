@@ -1,0 +1,68 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ansible-lint:*)",
+      "Bash(ansible-galaxy collection install:*)",
+      "Bash(tflint:*)",
+      "Bash(terraform fmt:*)",
+      "Bash(terraform validate:*)",
+      "Bash(terraform init:*)"
+    ],
+    "ask": [
+      "Bash(terraform plan:*)",
+      "Bash(ansible-playbook:*)"
+    ],
+    "deny": [
+      "Bash(./up:*)",
+      "Bash(./deploy-to-libvirt:*)",
+      "Bash(vagrant:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/lint.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/verify.sh",
+            "timeout": 600
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/verify.sh",
+            "timeout": 600
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/verify.sh",
+            "timeout": 600
+          }
+        ]
+      }
+    ]
+  }
+}
