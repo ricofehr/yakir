@@ -1,0 +1,6 @@
+---
+
+reloader_namespace: "kube-reloader"
+reloader_chart_version: "{{ global_reloader_version }}"
+
+...

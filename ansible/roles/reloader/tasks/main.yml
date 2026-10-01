@@ -1,0 +1,73 @@
+---
+
+- name: Create reloader namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        labels:
+          kubernetes.io/metadata.name: "{{ reloader_namespace }}"
+          name: "{{ reloader_namespace }}"
+          pod-security.kubernetes.io/enforce: baseline
+        name: "{{ reloader_namespace }}"
+
+- name: Add stakater chart repo
+  kubernetes.core.helm_repository:
+    name: stakater
+    repo_url: "{{ reloader_repo }}"
+
+- name: Deploy reloader
+  kubernetes.core.helm:
+    name: reloader
+    chart_ref: stakater/reloader
+    chart_version: "{{ reloader_chart_version }}"
+    release_namespace: "{{ reloader_namespace }}"
+    values:
+      reloader:
+        # Filtered through bool: an -e reloader_auto_reload_all=true override
+        # arrives as a string, and the chart compares this value against a real
+        # boolean, so an unfiltered override aborts the helm release.
+        autoReloadAll: "{{ reloader_auto_reload_all | bool }}"
+        # The controller watches every namespace of the cluster, which is the
+        # point of the component: a configmap changes anywhere, the workloads
+        # referencing it are rolled.
+        watchGlobally: true
+        # Sets readOnlyRootFilesystem on the container and mounts the /tmp
+        # emptyDir the binary needs to keep working without a writable root.
+        readOnlyRootFileSystem: true
+        # Only the three annotated workload kinds are reloaded, so the chart is
+        # told to drop its batch rules: left on, they grant the service account
+        # create and delete on jobs in every namespace of the cluster, which is
+        # a "run a pod anywhere, as any service account" privilege this feature
+        # never exercises.
+        ignoreJobs: true
+        ignoreCronJobs: true
+        deployment:
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          # The chart ships neither requests nor limits, which leaves the
+          # controller BestEffort and so evicted first under node pressure.
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
+
+# retries needs until to do anything at all. Without it a first run fails on
+# "no matching resources found" while the helm release is still creating pods.
+- name: Wait for reloader pods become ready
+  ansible.builtin.command: "kubectl wait pod --all --namespace={{ reloader_namespace }} --for=condition=Ready --timeout=600s"
+  register: reloader_wait
+  until: reloader_wait is succeeded
+  retries: 3
+  delay: 10
+  changed_when: false
+
+...

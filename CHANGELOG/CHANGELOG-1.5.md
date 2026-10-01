@@ -12,6 +12,8 @@
 - Raise the libvirt worker sizing to 12Go, the headroom the ai-factory workloads need on top of rook-ceph and the monitoring stack
 - Raise the libvirt vm root disk from 15Go to 40Go: the base cluster caches ~8Go of images per worker, so 15Go left the nodes one deployment away from DiskPressure and eviction
 - Report an Ingress as healthy on its rules rather than on a loadBalancer address, which a NodePort traefik behind keepalived never publishes
+- Add a reloader role deploying stakater reloader, which rolls a workload when a configmap or a secret it references changes, instead of needing a manual kubectl rollout restart
+- Keep reloader opt-in per workload (reloader.stakater.com/auto), so installing it restarts nothing in the existing platform stack
 
 ### Bug Fix
 

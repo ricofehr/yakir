@@ -46,6 +46,7 @@ yakir/
         +---monitoring      Deploy prometheus and grafana helm charts, and import grafana dashboard for kubernetes metrics
         +---opa             Install Gatekeeper and define some open policy rules
         +---postinstall     Some validations and post-config topics after Kubernetes deployment
+        +---reloader        Deploy stakater reloader, which rolls the annotated workloads when a configmap or a secret they reference changes
     +---inventory           File created (symlink to targeted file on inventories folder) by the deployment script : used by ansible-playbook to scope the infra
     +---sizing_vars.yml     File created (symlink to targeted file on sizing_vars folder) by the deployment script : used by ansible-playbook to scope the infra metadata
     +---requirements.yml    Collections dependencies, to install in collections folder (ansible-galaxy command is executed by deployment scripts on the root folder)
@@ -78,6 +79,7 @@ Vagrantfile                 File created (symlink to targeted file on vagrantfil
 | Grafana | v12.3.1 | Cluster Monitoring metrics visualization |
 | Velero | v1.18.0 | Cluster Backup service, set a complete daily backup on external S3 service |
 | Kube-bench | v0.15.0 | Install kube-bench on first manager node, and launch analysis (with result output) on each playbook execution |
+| Reloader | v1.4.22 | Restart the annotated workloads when a ConfigMap or a Secret they reference changes |
 | Argo CD | v3.5.3 | GitOps controller reconciling the ai-factory applications (deployed only with --gitops-repo) |
 | CloudNativePG | v1.30.0 | PostgreSQL operator backing the ai-factory applications (deployed only with --gitops-repo) |
 
@@ -284,6 +286,45 @@ Add parameters to enable a daily backup with Velero, for example (same backup pa
   --backup-access-secret xxxxxxxxxxxxxxxxxxxxx \
   --backup-region minio
 ```
+
+## Reloader
+
+A ConfigMap or Secret change does not restart the workloads reading it: a mounted
+volume is refreshed eventually, but a value consumed through `env` or `envFrom`
+keeps whatever the container read at startup. The reloader role deploys
+[stakater/reloader](https://github.com/stakater/reloader) in the `kube-reloader`
+namespace, which watches every namespace and rolls the workloads that opt in.
+
+Opt a Deployment, StatefulSet or DaemonSet in with an annotation on the workload
+itself (not on its pod template)
+
+```yaml
+metadata:
+  annotations:
+    # roll on a change of any configmap or secret the workload references
+    reloader.stakater.com/auto: "true"
+    # or scope it to named resources instead
+    configmap.reloader.stakater.com/reload: "my-configmap,my-other-configmap"
+    secret.reloader.stakater.com/reload: "my-secret"
+```
+
+Nothing is reloaded without one of those annotations. To reload every workload of
+the cluster instead, including the platform stack, run with
+`-e reloader_auto_reload_all=true`; a workload then opts out with
+`reloader.stakater.com/auto: "false"`.
+
+The annotation gates what is *restarted*, not what is *read*: watching the whole
+cluster means the chart binds a ClusterRole granting the reloader service account
+`get`/`list`/`watch` on every ConfigMap and Secret of the cluster, the velero,
+rook-ceph and Argo CD credentials included. That is the cost of a cluster-wide
+watcher - to narrow it, set `reloader.watchGlobally: false` and list the
+namespaces to watch in `reloader.namespaces`, which makes the chart create a
+namespace scoped Role in each one instead of the ClusterRole.
+
+Argo CD managed workloads are worth a thought: the default reload strategy stamps
+an annotation on the pod template, which Argo CD then sees as drift and self-heals
+away, so an opted-in workload rolls twice. Set `reloader.reloadStrategy: env-vars`
+for those if the double rollout matters.
 
 ## GitOps and the AI factory
 
