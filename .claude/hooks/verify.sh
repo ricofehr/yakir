@@ -16,6 +16,13 @@ ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null \
   || (cd "$(dirname "$0")/../.." && pwd))"
 cd "$ROOT" || exit 0
 
+# This repo pins its ansible tooling in ./venv (README: python3 -mvenv venv),
+# and an agent shell does not run with that venv activated, so without this the
+# gate fails on a missing ansible-lint rather than on anything in the code.
+if [ -d "$ROOT/venv/bin" ]; then
+  export PATH="$ROOT/venv/bin:$PATH"
+fi
+
 INPUT="$(cat)"
 if [ "$(printf '%s' "$INPUT" | jq -r '.stop_hook_active // false')" = "true" ]; then
   echo "ℹ️  [verify] Already blocked once this turn — letting the agent stop." >&2
@@ -57,6 +64,12 @@ fi
 # SC1091 is excluded: these scripts source venv/bin/activate, which does not
 # exist until the venv is built. That is environmental, not a defect.
 SH_CHANGED="$(changed_matching '(\.sh$|^up$|^deploy-to-libvirt$)')"
+# Same treatment terraform gets below: gating on a linter that is not installed
+# reports an environment gap as a code defect, and nothing can clear it.
+if [ -n "$SH_CHANGED" ] && ! command -v shellcheck >/dev/null 2>&1; then
+  echo "⚠️  [verify] shellcheck not installed — changed shell scripts skipped." >&2
+  SH_CHANGED=""
+fi
 if [ -n "$SH_CHANGED" ]; then
   echo "🔍 [verify] shellcheck (changed scripts)"
   while IFS= read -r script; do

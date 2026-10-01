@@ -10,6 +10,13 @@ ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null \
   || (cd "$(dirname "$0")/../.." && pwd))"
 cd "$ROOT" || exit 0
 
+# This repo pins its ansible tooling in ./venv (README: python3 -mvenv venv),
+# and an agent shell does not run with that venv activated, so without this the
+# gate fails on a missing ansible-lint rather than on anything in the code.
+if [ -d "$ROOT/venv/bin" ]; then
+  export PATH="$ROOT/venv/bin:$PATH"
+fi
+
 INPUT="$(cat)"
 FILE="$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty')"
 [ -z "$FILE" ] && exit 0
