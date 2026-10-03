@@ -14,6 +14,8 @@
 - Report an Ingress as healthy on its rules rather than on a loadBalancer address, which a NodePort traefik behind keepalived never publishes
 - Add a reloader role deploying stakater reloader, which rolls a workload when a configmap or a secret it references changes, instead of needing a manual kubectl rollout restart
 - Keep reloader opt-in per workload (reloader.stakater.com/auto), so installing it restarts nothing in the existing platform stack
+- Add a reflector role deploying emberstack reflector, which mirrors an annotated configmap or secret into the other namespaces that need it, instead of writing the same value once per namespace
+- Exclude kube-system from reflector's watch, so nothing stored there can be used as a reflection source and fanned out across the cluster
 
 ### Bug Fix
 

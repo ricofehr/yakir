@@ -59,6 +59,8 @@
       tags: ["cluster", "certs", "certmanager"]
     - role: reloader
       tags: ["cluster", "reloader"]
+    - role: reflector
+      tags: ["cluster", "reflector"]
     - role: monitoring
       tags: ["cluster", "certs", "monitoring"]
       when: global_cluster_sizing != "small"

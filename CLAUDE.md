@@ -40,7 +40,7 @@ ansible/
   group_vars/{leader,managers,nodes}/
   sizing_vars/             per-sizing VM topology (small/medium/large)
   inventories/             inventory_small | inventory_medium | inventory_large
-  roles/                   19 roles, see README for the one-line description of each
+  roles/                   20 roles, see README for the one-line description of each
 tf/libvirt/                KVM provisioning
 vagrantfiles/              one Vagrantfile flavour per sizing
 ```
@@ -60,7 +60,8 @@ not a preference:
 2. **managers**, `serial: 1` — `helm`, `keepalived`, `k8s`, `haproxy`
 3. **nodes** — `k8s` (worker tag)
 4. **leader** — `cni`, `csi`, `postinstall`, `ingress`, `cert_manager`,
-   `reloader`, `monitoring`, `logcollect`, `backup`, `bench`, `gitops`
+   `reloader`, `reflector`, `monitoring`, `logcollect`, `backup`, `bench`,
+   `gitops`
 
 `serial: 1` on the manager play is deliberate — control-plane init is not
 parallelisable. Some cluster roles are conditional on `global_cluster_sizing`
