@@ -1,0 +1,11 @@
+---
+
+reloader_namespace: "reloader"
+reloader_chart_version: "2.2.18"
+
+# Opt-in by default: a workload is restarted only when it carries the
+# reloader.stakater.com/auto annotation. Set to true to reload every workload
+# referencing a changed configmap or secret, the platform stack included.
+reloader_auto_reload_all: false
+
+...

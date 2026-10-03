@@ -57,6 +57,8 @@
       tags: ["cluster", "ingress"]
     - role: cert_manager
       tags: ["cluster", "certs", "certmanager"]
+    - role: reloader
+      tags: ["cluster", "reloader"]
     - role: monitoring
       tags: ["cluster", "certs", "monitoring"]
       when: global_cluster_sizing != "small"
