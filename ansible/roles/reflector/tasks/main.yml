@@ -1,0 +1,66 @@
+---
+
+- name: Create reflector namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        labels:
+          kubernetes.io/metadata.name: "{{ reflector_namespace }}"
+          name: "{{ reflector_namespace }}"
+          pod-security.kubernetes.io/enforce: baseline
+        name: "{{ reflector_namespace }}"
+
+- name: Add emberstack chart repo
+  kubernetes.core.helm_repository:
+    name: emberstack
+    repo_url: "{{ reflector_repo }}"
+
+- name: Deploy reflector
+  kubernetes.core.helm:
+    name: reflector
+    chart_ref: emberstack/reflector
+    chart_version: "{{ reflector_chart_version }}"
+    release_namespace: "{{ reflector_namespace }}"
+    values:
+      configuration:
+        watcher:
+          excludedNamespaces: "{{ reflector_excluded_namespaces }}"
+      # The chart already drops every capability and runs non-root on a
+      # read-only root filesystem; helm merges this over those, so only the one
+      # key it omits is set here.
+      securityContext:
+        allowPrivilegeEscalation: false
+      # The chart ships neither requests nor limits, which leaves the controller
+      # BestEffort and so evicted first under node pressure. Sized above the go
+      # controllers next to it for two reasons: a dotnet runtime floor, and a
+      # cache holding every configmap and secret of the cluster - which includes
+      # the gzipped sh.helm.release blobs of every chart deployed here.
+      resources:
+        requests:
+          cpu: 10m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 512Mi
+
+# Terminal pods are excluded rather than passing --all: an Evicted corpse from
+# node pressure sits in phase Failed, never goes Ready, and would block the wait
+# for its whole timeout. Pending pods must stay in the set - kubectl resolves
+# this selection once and then watches each match by name, so a Running-only
+# selector would pass as soon as the fastest pod is ready while the rest are
+# still pulling. The until condition is load-bearing, leave it in place.
+- name: Wait for reflector pods become ready
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace={{ reflector_namespace }}
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=600s
+  register: reflector_wait
+  until: reflector_wait is succeeded
+  retries: 3
+  delay: 10
+  changed_when: false
+
+...

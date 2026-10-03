@@ -24,6 +24,7 @@ global_ceph_version: "v20.2.0"
 global_prometheus_version: "28.13.0"
 global_grafana_version: "10.5.15"
 global_reloader_version: "2.2.18"
+global_reflector_version: "10.0.65"
 global_argocd_version: "10.9.2"
 global_cnpg_version: "0.29.0"
 
