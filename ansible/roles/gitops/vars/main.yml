@@ -16,6 +16,11 @@ gitops_project: "ai-factory"
 
 # Cluster-scoped kinds the factory legitimately creates. Anything outside this
 # list is refused by Argo CD rather than applied with cluster-admin.
+#
+# The last two are the factory's DNS-01 issuer. Its wildcard host
+# (*.devpods.k8s.nextdeploy.io) cannot be solved over HTTP-01, and a DNS-01
+# solver for a registrar cert-manager has no native support for is an extension
+# api server: it needs an APIService alongside the ClusterIssuer itself.
 gitops_project_cluster_resources:
   - {group: "", kind: Namespace}
   - {group: "apiextensions.k8s.io", kind: CustomResourceDefinition}
@@ -23,5 +28,21 @@ gitops_project_cluster_resources:
   - {group: "rbac.authorization.k8s.io", kind: ClusterRoleBinding}
   - {group: "admissionregistration.k8s.io", kind: ValidatingWebhookConfiguration}
   - {group: "admissionregistration.k8s.io", kind: MutatingWebhookConfiguration}
+  - {group: "cert-manager.io", kind: ClusterIssuer}
+  - {group: "apiregistration.k8s.io", kind: APIService}
+
+# Namespaced kinds the factory must never create, on top of the ResourceQuota
+# and LimitRange the template always denies. The project's destinations now
+# include kube-system and the cert-manager namespace, and a destination grants
+# every kind that is not denied here — so this is what stops a commit under
+# apps/ from replacing a control-plane add-on or planting a credential.
+#
+# The ai-factory repository renders neither kind anywhere: its application
+# passwords come from CloudNativePG's generated secrets and the externally
+# supplied ones are created by this role. Denying them costs nothing today and
+# mechanically enforces that repository's "never commit a credential" rule.
+gitops_project_namespaced_denied:
+  - {group: "", kind: Secret}
+  - {group: "apps", kind: DaemonSet}
 
 ...
