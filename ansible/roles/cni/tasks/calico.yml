@@ -22,7 +22,11 @@
   changed_when: false
 
 - name: Wait for cni pods become ready
-  ansible.builtin.command: "kubectl wait --namespace=calico-system --for=condition=Ready pods --selector k8s-app=calico-node --timeout=600s"
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace=calico-system
+    --selector k8s-app=calico-node
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=600s
   changed_when: false
 
 ...

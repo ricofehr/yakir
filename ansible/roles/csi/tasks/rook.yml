@@ -37,9 +37,15 @@
     template: templates/rook-cluster.yml.j2
   register: csi_cluster
 
+# Terminal pods are excluded, not matched by --all: an Evicted corpse never goes
+# Ready and holds the wait for its full timeout. Pending must stay in the set -
+# kubectl resolves the match once, so a Running-only filter would pass early.
 - name: Wait for cephfs pods become ready
-  ansible.builtin.command: |
-    kubectl wait --namespace={{ csi_rook_namespace }} --for=condition=Ready pods --selector app={{ item }} --timeout=900s
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace={{ csi_rook_namespace }}
+    --selector app={{ item }}
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=900s
   retries: 8
   delay: 120
   register: csi_wait

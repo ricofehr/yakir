@@ -73,6 +73,13 @@ being set (`backup`, `gitops`). Preserve those guards when editing.
 - **Idempotence is the contract.** Every task must be safe to run twice. Prefer
   modules over `command`/`shell`; when you must shell out, set `changed_when`
   and `creates`/`removes` deliberately.
+- **Readiness gates exclude terminal pods.** Every `kubectl wait
+  --for=condition=Ready` carries
+  `--field-selector=status.phase!=Failed,status.phase!=Succeeded`, alongside any
+  `--selector`. An Evicted pod never goes Ready and would hold the wait for its
+  full timeout. Never narrow it to `status.phase=Running`: `kubectl wait`
+  resolves its selection once and then watches those pods by name, so that form
+  passes as soon as the fastest pod is ready.
 - **Don't relax the linter.** `.ansible-lint` pins `profile: production`. A
   targeted `# noqa` with a comment explaining why beats widening
   `exclude_paths`.

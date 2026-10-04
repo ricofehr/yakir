@@ -25,5 +25,6 @@
 - Keep a stored local model api key and GitHub token on a replay that does not re-supply them, instead of overwriting a working credential with a placeholder
 - Create the GitHub token unconditionally: the MCPServer CRD has no optional flag on a secret reference, so the github MCP server could not start without it
 - Give the waits an until condition, without which ansible ignores retries entirely
+- Exclude terminal pods from every readiness gate: an Evicted or completed pod never reaches Ready, so one corpse left behind by node pressure held the wait for its full timeout and failed the play
 - Scope the Argo CD root application to its own AppProject rather than default, which permits any destination and any resource kind
 - Drop the unused MIRROR_APT_PARAM and MIRROR_PYPI_PARAM assignments from up
