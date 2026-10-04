@@ -46,6 +46,7 @@ yakir/
         +---monitoring      Deploy prometheus and grafana helm charts, and import grafana dashboard for kubernetes metrics
         +---opa             Install Gatekeeper and define some open policy rules
         +---postinstall     Some validations and post-config topics after Kubernetes deployment
+        +---reflector       Deploy emberstack reflector, which mirrors an annotated configmap or secret into the other namespaces that need it
         +---reloader        Deploy stakater reloader, which rolls the annotated workloads when a configmap or a secret they reference changes
     +---inventory           File created (symlink to targeted file on inventories folder) by the deployment script : used by ansible-playbook to scope the infra
     +---sizing_vars.yml     File created (symlink to targeted file on sizing_vars folder) by the deployment script : used by ansible-playbook to scope the infra metadata
@@ -80,6 +81,7 @@ Vagrantfile                 File created (symlink to targeted file on vagrantfil
 | Velero | v1.18.0 | Cluster Backup service, set a complete daily backup on external S3 service |
 | Kube-bench | v0.15.0 | Install kube-bench on first manager node, and launch analysis (with result output) on each playbook execution |
 | Reloader | v1.4.22 | Restart the annotated workloads when a ConfigMap or a Secret they reference changes |
+| Reflector | v10.0.65 | Mirror an annotated ConfigMap or Secret into other namespaces, and keep the copies in step |
 | Argo CD | v3.5.3 | GitOps controller reconciling the ai-factory applications (deployed only with --gitops-repo) |
 | CloudNativePG | v1.30.0 | PostgreSQL operator backing the ai-factory applications (deployed only with --gitops-repo) |
 
@@ -325,6 +327,84 @@ Argo CD managed workloads are worth a thought: the default reload strategy stamp
 an annotation on the pod template, which Argo CD then sees as drift and self-heals
 away, so an opted-in workload rolls twice. Set `reloader.reloadStrategy: env-vars`
 for those if the double rollout matters.
+
+## Reflector
+
+A `secretKeyRef` only resolves inside its own namespace, so a value several
+namespaces need has to exist several times - the gitops role still writes the
+LiteLLM master key into two namespaces by hand for exactly that reason, and
+migrating it is a later change. The reflector role deploys
+[emberstack/kubernetes-reflector](https://github.com/emberstack/kubernetes-reflector)
+in the `kube-reflector` namespace, which mirrors an annotated resource into the
+namespaces that need it and keeps the copies in step with the source.
+
+Nothing is copied anywhere until the **source** opts in. Annotate the source
+secret or configmap, and let reflector create the mirrors
+
+```yaml
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    # which namespaces may hold a mirror. Comma separated regexes, each matched
+    # against the whole namespace name, so these two entries are exact - while
+    # "ai-.*" would also cover ai-devpods and ai-runners.
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "ai-llm,ai-mcp"
+    # create the mirrors automatically rather than declaring each one, in these
+    # namespaces - which are checked against the allowed list above as well
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "ai-llm,ai-mcp"
+```
+
+Treat both namespace lists as mandatory and keep them narrow. An empty or absent
+list means *every* namespace, so an auto-enabled source without them is mirrored
+cluster-wide, `kube-system` included. `reflection-allowed-namespaces` is the one
+that matters most: it alone gates the manual `reflects` path below, so a secret
+whose allowed list is open can be pulled into any namespace by anyone able to
+create an empty secret there.
+
+Or declare the mirror yourself, naming its source as `<namespace>/<name>`
+
+```yaml
+metadata:
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflects: "kube-cert/wildcard-tls"
+```
+
+A mirror written by something other than reflector - an ansible task, a helm
+chart - needs `reflector.v1.k8s.emberstack.com/reflected-version: ""` alongside
+it. Reflector stamps the source's version on a mirror it has synced and skips a
+mirror that already carries the current one, so re-applying a manifest over a
+synced mirror otherwise leaves the re-applied content in place for good.
+
+Two behaviours worth knowing before relying on it: deleting the source deletes
+every automatic mirror, as does narrowing the allowed namespaces afterwards.
+
+The third is a trap, and upstream documents the opposite. A pre-existing
+resource of the same name is only skipped when reflector reacts to a change of
+the *source*. On a namespace event - including the replay of every namespace
+each time the watch session restarts, hourly by default - it instead creates,
+takes the 409, re-reads the existing object and patches its data, with no check
+that the object is a mirror of anything (`ResourceMirror.ResourceReflect`, and
+`SecretMirror` replaces `data` wholesale). So an annotated source silently
+overwrites any same-named secret or configmap in every namespace its annotations
+permit. Name your target namespaces, and never give a source a name that
+collides with something you do not own.
+
+Mirroring means writing, so this controller's ClusterRole covers every configmap
+and secret of the cluster with every verb - broader than the reloader's read-only
+watch, and not something the chart lets you trim.
+
+`reflector_excluded_namespaces` narrows that, but not in the direction the name
+suggests: it filters the watch by the namespace a resource *lives in*, so an
+excluded namespace can never be a reflection **source**. Nothing stops it being
+a **target** - namespaces are cluster scoped, their events are never filtered,
+and upstream pins that behaviour in a test. The default of `kube-system`
+therefore means no secret sitting in `kube-system` can be fanned out across the
+cluster, and equally that `kube-root-ca.crt` and its neighbours cannot be used
+as a mirror source. Keeping mirrors *out* of a namespace is the source
+annotations' job, above. Unlike those annotations, this value is a glob and not
+a regex - `kube-*` works, `kube-.*` silently matches nothing. Set it to `""` for
+the chart's own default of excluding nothing.
 
 ## GitOps and the AI factory
 

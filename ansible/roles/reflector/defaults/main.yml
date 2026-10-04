@@ -1,0 +1,14 @@
+---
+
+reflector_namespace: "reflector"
+reflector_chart_version: "10.0.65"
+
+# Filters the watch by the namespace a resource lives in, so nothing stored in
+# kube-system can be used as a reflection source and fanned out across the
+# cluster. It does not stop mirrors being created *into* these namespaces - only
+# the source annotations control that. Comma separated globs, not regexes:
+# "kube-*" matches, "kube-.*" matches nothing. Empty excludes nothing, the
+# chart default.
+reflector_excluded_namespaces: "kube-system"
+
+...

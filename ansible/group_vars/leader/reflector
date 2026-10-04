@@ -1,0 +1,6 @@
+---
+
+reflector_namespace: "kube-reflector"
+reflector_chart_version: "{{ global_reflector_version }}"
+
+...
