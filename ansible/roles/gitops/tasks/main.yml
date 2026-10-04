@@ -71,10 +71,14 @@
     release_namespace: "{{ gitops_cnpg_namespace }}"
     create_namespace: true
 
-# retries needs until to do anything at all. Without it a first run fails on
-# "no matching resources found" while the helm release is still creating pods.
+# Terminal pods are excluded, not matched by --all: an Evicted corpse never goes
+# Ready and holds the wait for its full timeout. Pending must stay in the set -
+# kubectl resolves the match once, so a Running-only filter would pass early.
 - name: Wait for argo cd pods become ready
-  ansible.builtin.command: "kubectl wait pod --all --namespace={{ gitops_namespace }} --for=condition=Ready --timeout=900s"
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace={{ gitops_namespace }}
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=900s
   register: gitops_argocd_wait
   until: gitops_argocd_wait is succeeded
   retries: 3
@@ -82,7 +86,10 @@
   changed_when: false
 
 - name: Wait for cloudnative-pg pods become ready
-  ansible.builtin.command: "kubectl wait pod --all --namespace={{ gitops_cnpg_namespace }} --for=condition=Ready --timeout=600s"
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace={{ gitops_cnpg_namespace }}
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=600s
   register: gitops_cnpg_wait
   until: gitops_cnpg_wait is succeeded
   retries: 3

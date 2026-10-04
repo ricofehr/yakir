@@ -26,8 +26,15 @@
     - kube-scheduler
   changed_when: false
 
+# Terminal pods are excluded, not matched by --all: an Evicted corpse never goes
+# Ready and holds the wait for its full timeout. Pending must stay in the set -
+# kubectl resolves the match once, so a Running-only filter would pass early.
 - name: Wait for control-plane pods become ready
-  ansible.builtin.command: "kubectl wait --namespace=kube-system --for=condition=Ready pods --selector tier=control-plane --timeout=600s"
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace=kube-system
+    --selector tier=control-plane
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=600s
   changed_when: false
 
 - name: Wait for kube-proxy become created
@@ -40,12 +47,25 @@
     - kube-proxy
   changed_when: false
 
+# Terminal pods are excluded, not matched by --all: an Evicted corpse never goes
+# Ready and holds the wait for its full timeout. Pending must stay in the set -
+# kubectl resolves the match once, so a Running-only filter would pass early.
 - name: Wait for kube-proxy pods become ready
-  ansible.builtin.command: "kubectl wait --namespace=kube-system --for=condition=Ready pods --selector k8s-app=kube-proxy --timeout=600s"
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace=kube-system
+    --selector k8s-app=kube-proxy
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=600s
   changed_when: false
 
+# Terminal pods are excluded, not matched by --all: an Evicted corpse never goes
+# Ready and holds the wait for its full timeout. Pending must stay in the set -
+# kubectl resolves the match once, so a Running-only filter would pass early.
 - name: Wait for kube-system pods become ready
-  ansible.builtin.command: "kubectl wait pod --all --namespace=kube-system --for=condition=Ready --timeout=600s"
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace=kube-system
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=600s
   changed_when: false
 
 ...

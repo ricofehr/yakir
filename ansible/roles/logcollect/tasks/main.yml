@@ -145,8 +145,14 @@
     state: present
     template: loki-networkpolicy.yml.j2
 
+# Terminal pods are excluded, not matched by --all: an Evicted corpse never goes
+# Ready and holds the wait for its full timeout. Pending must stay in the set -
+# kubectl resolves the match once, so a Running-only filter would pass early.
 - name: Wait for loki pods become ready
-  ansible.builtin.command: "kubectl wait pod --all --namespace={{ logcollect_namespace }} --for=condition=Ready --timeout=900s"
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace={{ logcollect_namespace }}
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=900s
   retries: 2
   delay: 10
   changed_when: false

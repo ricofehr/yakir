@@ -46,10 +46,14 @@
           cpu: 200m
           memory: 512Mi
 
-# retries needs until to do anything at all. Without it a first run fails on
-# "no matching resources found" while the helm release is still creating pods.
+# Terminal pods are excluded, not matched by --all: an Evicted corpse never goes
+# Ready and holds the wait for its full timeout. Pending must stay in the set -
+# kubectl resolves the match once, so a Running-only filter would pass early.
 - name: Wait for reflector pods become ready
-  ansible.builtin.command: "kubectl wait pod --all --namespace={{ reflector_namespace }} --for=condition=Ready --timeout=600s"
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace={{ reflector_namespace }}
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=600s
   register: reflector_wait
   until: reflector_wait is succeeded
   retries: 3

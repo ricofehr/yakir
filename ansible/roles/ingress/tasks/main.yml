@@ -53,9 +53,15 @@
   with_items:
     - traefik
 
+# Terminal pods are excluded, not matched by --all: an Evicted corpse never goes
+# Ready and holds the wait for its full timeout. Pending must stay in the set -
+# kubectl resolves the match once, so a Running-only filter would pass early.
 - name: Wait for ingress pods become ready
-  ansible.builtin.command: |
-    kubectl wait --namespace={{ ingress_namespace }} --for=condition=Ready pods --selector app.kubernetes.io/name=traefik --timeout=600s
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace={{ ingress_namespace }}
+    --selector app.kubernetes.io/name=traefik
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=600s
   changed_when: false
 
 ...

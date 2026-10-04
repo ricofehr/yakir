@@ -38,8 +38,14 @@
       - value: k8s.requireIPv4PodCIDR=true
         value_type: raw
 
+# Terminal pods are excluded, not matched by --all: an Evicted corpse never goes
+# Ready and holds the wait for its full timeout. Pending must stay in the set -
+# kubectl resolves the match once, so a Running-only filter would pass early.
 - name: Wait for cilium pods become ready
-  ansible.builtin.command: "kubectl wait pod --all --namespace={{ cni_cilium_namespace }} --for=condition=Ready --timeout=1200s"
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace={{ cni_cilium_namespace }}
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=1200s
   changed_when: false
 
 ...
