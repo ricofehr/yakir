@@ -33,9 +33,29 @@ gitops_app_namespaces:
   - "ai-knowledge"
   - "ai-devpods"
   - "ai-assistant"
-# Namespaces the root project may deploy into: the factory's own, plus the two
-# that host operators rather than workloads.
-gitops_project_namespaces: "{{ gitops_app_namespaces + [gitops_namespace, 'toolhive-system', 'arc-system'] }}"
+# Where cert-manager runs, and therefore where the factory's DNS-01 webhook
+# solver has to run too. Tracks the cert_manager role rather than restating
+# "kube-cert": both roles run in the leader play, so moving cert-manager without
+# moving the solver would otherwise break DNS-01 silently.
+gitops_cert_namespace: "{{ cert_manager_namespace | default('kube-cert') }}"
+# Namespaces the root project may deploy into: the factory's own, plus the ones
+# hosting operators rather than workloads.
+#
+# The last two are not workload destinations, and the factory's DNS-01 webhook
+# solver needs both. It is an aggregated extension api server, so it needs a
+# RoleBinding on extension-apiserver-authentication-reader in kube-system to
+# validate the client certificates the apiserver presents; and it has to be
+# deployed into cert-manager's own namespace, because a ClusterIssuer resolves
+# its solver's credential refs in --cluster-resource-namespace. Without either
+# one Argo CD refuses the whole application and the issuer never appears.
+#
+# Widening the project is the cost of this feature. Weigh it when adding to the
+# list: anything committed under apps/ is applied with the application
+# controller's rights, so a destination here is a namespace the ai-factory
+# repository can write every non-blacklisted kind into.
+gitops_project_namespaces: >-
+  {{ gitops_app_namespaces + [gitops_namespace, 'toolhive-system', 'arc-system',
+                              'kube-system', gitops_cert_namespace] }}
 gitops_llm_namespace: "ai-llm"
 gitops_mcp_namespace: "ai-mcp"
 gitops_knowledge_namespace: "ai-knowledge"

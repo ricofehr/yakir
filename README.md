@@ -435,6 +435,36 @@ repository, which keeps `ai-factory` free of credentials. The LiteLLM master key
 exception: it is generated in-cluster on first run and reused afterwards, so virtual keys
 issued against it survive a replay.
 
+### What the root project is allowed to do
+
+Anything committed under `apps/` is applied with the application controller's rights, so the
+role scopes the `AppProject` rather than leaving it at Argo CD's permit-everything default:
+a list of destination namespaces, a whitelist of cluster-scoped kinds, and a blacklist of
+namespaced ones (`ResourceQuota`, `LimitRange`, `Secret`, `DaemonSet`). `Secret` is denied
+because the factory never renders one — its passwords come from CloudNativePG's generated
+secrets and the rest are created here — which makes "no credentials in that repository" a
+rule the cluster enforces rather than one reviewers have to remember.
+
+Two of the destinations are not workload namespaces. The factory's DNS-01 certificate issuer
+is an aggregated extension API server, and it needs `kube-system` for a RoleBinding on
+`extension-apiserver-authentication-reader`, plus cert-manager's own namespace because a
+`ClusterIssuer` resolves its solver's credentials in `--cluster-resource-namespace`. Both
+widen the envelope; weigh that before adding a third.
+
+That issuer also needs a DNS registrar credential, and it is the **one bootstrap secret this
+role does not create**. Until it exists the factory's wildcard host keeps serving its
+previous certificate with nothing reporting an error:
+
+```bash
+kubectl create secret generic ovh-credentials -n kube-cert \
+  --from-literal=applicationKey=... \
+  --from-literal=applicationSecret=... \
+  --from-literal=applicationConsumerKey=...
+```
+
+See `docs/certificates.md` in the ai-factory repository for the token scopes and for
+switching to another provider.
+
 Once Argo CD is up, get the initial admin password with
 
 ```bash

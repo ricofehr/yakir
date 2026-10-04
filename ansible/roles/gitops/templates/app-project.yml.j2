@@ -27,3 +27,7 @@ spec:
       kind: ResourceQuota
     - group: ""
       kind: LimitRange
+{% for resource in gitops_project_namespaced_denied %}
+    - group: "{{ resource.group }}"
+      kind: {{ resource.kind }}
+{% endfor %}
