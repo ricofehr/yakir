@@ -354,6 +354,52 @@
     - gitops_github_app_private_key | length > 0
   no_log: true
 
+# Read on the controller so the credentials never pass through a command line
+# or an extra var, the same way the GitHub App private key is handled above.
+- name: Read the OVH api credentials for the DNS-01 certificate solver
+  ansible.builtin.set_fact:
+    gitops_ovh_credentials: "{{ lookup('file', gitops_ovh_credentials_file) | from_yaml }}"
+  when: gitops_ovh_credentials_file | length > 0
+  no_log: true
+
+# A file that is present but missing a key is a paste error, not an opt-out, and
+# skipping it quietly would reproduce exactly the failure this secret exists to
+# prevent: a cluster where every application reports healthy and only the
+# devpods certificates never arrive.
+- name: Check the OVH credentials file holds every key the solver needs
+  ansible.builtin.assert:
+    that:
+      - gitops_ovh_credentials.applicationKey | default("") | length > 0
+      - gitops_ovh_credentials.applicationSecret | default("") | length > 0
+      - gitops_ovh_credentials.applicationConsumerKey | default("") | length > 0
+    fail_msg: >-
+      {{ gitops_ovh_credentials_file }} must be a yaml mapping holding
+      applicationKey, applicationSecret and applicationConsumerKey.
+    success_msg: OVH api credentials read; the factory can solve DNS-01 challenges
+  when: gitops_ovh_credentials_file | length > 0
+
+# Lands in cert-manager's namespace, and it has to: the factory's issuer is a
+# ClusterIssuer, which has no namespace of its own, so cert-manager resolves its
+# solver's credential refs in --cluster-resource-namespace. Written here rather
+# than committed to the ai-factory repository, like every other credential the
+# applications cannot generate for themselves.
+- name: Store the OVH api credentials for the DNS-01 certificate solver
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ gitops_ovh_secret }}"
+        namespace: "{{ gitops_cert_namespace }}"
+      type: Opaque
+      stringData:
+        applicationKey: "{{ gitops_ovh_credentials.applicationKey }}"
+        applicationSecret: "{{ gitops_ovh_credentials.applicationSecret }}"
+        applicationConsumerKey: "{{ gitops_ovh_credentials.applicationConsumerKey }}"
+  when: gitops_ovh_credentials_file | length > 0
+  no_log: true
+
 - name: Deploy the ai-factory application project
   kubernetes.core.k8s:
     state: present

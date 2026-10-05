@@ -10,6 +10,9 @@ gitops_github_app_secret: "arc-github-app"
 gitops_keycloak_secret: "keycloak-admin"
 gitops_github_token_secret: "github-token"
 gitops_neo4j_secret: "neo4j-auth"
+# Name and keys are fixed by charts/cert-dns01 in the ai-factory repository,
+# which references them; they are the contract between the two repositories.
+gitops_ovh_secret: "ovh-credentials"
 
 gitops_root_application: "ai-factory"
 gitops_project: "ai-factory"

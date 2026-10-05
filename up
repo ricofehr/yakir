@@ -27,6 +27,7 @@ declare GITHUB_TOKEN=""
 declare GITHUB_APP_ID=""
 declare GITHUB_APP_INSTALLATION_ID=""
 declare GITHUB_APP_KEY=""
+declare OVH_CREDENTIALS_FILE=""
 declare SSH_PARAMS="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no"
 declare KEEPALIVED_PASSWORD=""
 KEEPALIVED_PASSWORD="$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 8 ; echo '')"
@@ -62,6 +63,7 @@ Usage: $0 [options]
 --github-app-id xxxx              GitHub App id used by the self-hosted runners
 --github-app-installation-id xxxx GitHub App installation id used by the self-hosted runners
 --github-app-key xxxx             GitHub App private key (.pem) path
+--ovh-credentials-file xxxx       yaml file holding the OVH api credentials, for the DNS-01 certificate challenges
 EOF
 
 exit 1
@@ -174,6 +176,11 @@ while (($# > 0)); do
       GITHUB_APP_KEY="$1"
       shift
       ;;
+    --ovh-credentials-file)
+      shift
+      OVH_CREDENTIALS_FILE="$1"
+      shift
+      ;;
     -s)
       shift
       SIZING="$1"
@@ -202,6 +209,20 @@ done
 
 # Ensure valid sizing
 [[ -f "vagrantfiles/Vagrantfile_${SIZING}" ]] || SIZING="small"
+
+# Check the OVH credentials file here, before terraform builds anything. The
+# gitops role is the very last thing the playbook runs, so a typo in this path
+# would otherwise cost a full cluster build to discover.
+if [[ -n "$OVH_CREDENTIALS_FILE" ]]; then
+  if [[ ! -r "$OVH_CREDENTIALS_FILE" ]]; then
+    echo "--ovh-credentials-file: cannot read $OVH_CREDENTIALS_FILE"
+    deployhelp
+  fi
+  if [[ -z "$GITOPS_REPO" ]]; then
+    echo "--ovh-credentials-file needs --gitops-repo: without it the gitops role is skipped and the credential is never written"
+    deployhelp
+  fi
+fi
 
 # Check if we are in arm system
 arch_system="$(uname -m)"
@@ -254,6 +275,10 @@ fi
 [[ -n "$GITHUB_APP_ID" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_id=$GITHUB_APP_ID")
 [[ -n "$GITHUB_APP_INSTALLATION_ID" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_installation_id=$GITHUB_APP_INSTALLATION_ID")
 [[ -n "$GITHUB_APP_KEY" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_private_key=$GITHUB_APP_KEY")
+# Only the path travels as an extra var; the credentials themselves never enter
+# argv or shell history. Same reason --github-app-key and --gitops-ssh-key take
+# a path rather than a value.
+[[ -n "$OVH_CREDENTIALS_FILE" ]] && GITOPS_PARAMS+=(-e "gitops_ovh_credentials_file=$OVH_CREDENTIALS_FILE")
 
 # Define Ansible tag parameter
 [[ -n "$ANSIBLE_TAG" ]] && ANSIBLE_TAG_PARAM+=(-t "$ANSIBLE_TAG")
