@@ -79,4 +79,19 @@ gitops_github_app_installation_id: ""
 # Path, on the ansible controller, to the GitHub App private key (.pem).
 gitops_github_app_private_key: ""
 
+# Path, on the ansible controller, to a yaml file holding the OVH api
+# credentials the factory's DNS-01 solver uses to write the _acme-challenge
+# records Let's Encrypt checks. A path and not three values, for the same reason
+# gitops_github_app_private_key is a path: the file is read here, so nothing
+# secret passes through a command line or an extra var. It must hold
+# applicationKey, applicationSecret and applicationConsumerKey.
+#
+# Only a wildcard hostname has no alternative to DNS-01 — HTTP-01 cannot answer
+# a challenge for one — but the factory puts its whole devpods block on that
+# issuer, so leaving this empty costs both *.devpods.<domain> and the dashboard
+# at devpods.<domain>. Both keep whatever certificate they already had while
+# every application still reports healthy, which is why a file that is present
+# but incomplete fails the run rather than being skipped.
+gitops_ovh_credentials_file: ""
+
 ...

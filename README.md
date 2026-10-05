@@ -143,6 +143,7 @@ Usage: ./up [options]
 --github-app-id xxxx              GitHub App id used by the self-hosted runners
 --github-app-installation-id xxxx GitHub App installation id used by the self-hosted runners
 --github-app-key xxxx             GitHub App private key (.pem) path
+--ovh-credentials-file xxxx       yaml file holding the OVH api credentials, for the DNS-01 certificate challenges
 ```
 
 For example, an install on apple silicon with local repository, custom domain, flannel CNI, and medium sizing
@@ -257,6 +258,7 @@ Usage: ./deploy-to-libvirt [options]
 --github-app-id xxxx              GitHub App id used by the self-hosted runners
 --github-app-installation-id xxxx GitHub App installation id used by the self-hosted runners
 --github-app-key xxxx             GitHub App private key (.pem) path
+--ovh-credentials-file xxxx       yaml file holding the OVH api credentials, for the DNS-01 certificate challenges
 ```
 
 Example
@@ -427,7 +429,8 @@ a plain `./up` or `./deploy-to-libvirt` behaves exactly as before. When it is se
   --llama-api-key xxxxxxxxxxxx \
   --github-app-id 123456 \
   --github-app-installation-id 7654321 \
-  --github-app-key ~/.ssh/arc-github-app.pem
+  --github-app-key ~/.ssh/arc-github-app.pem \
+  --ovh-credentials-file ~/secrets/ovh-dns01.yml
 ```
 
 Bootstrap secrets are created from these parameters rather than committed to the GitOps
@@ -451,19 +454,46 @@ is an aggregated extension API server, and it needs `kube-system` for a RoleBind
 `ClusterIssuer` resolves its solver's credentials in `--cluster-resource-namespace`. Both
 widen the envelope; weigh that before adding a third.
 
-That issuer also needs a DNS registrar credential, and it is the **one bootstrap secret this
-role does not create**. Until it exists the factory's wildcard host keeps serving its
-previous certificate with nothing reporting an error:
+That issuer also needs a DNS registrar credential, supplied by `--ovh-credentials-file`
+pointing at a yaml file holding the three values:
 
-```bash
-kubectl create secret generic ovh-credentials -n kube-cert \
-  --from-literal=applicationKey=... \
-  --from-literal=applicationSecret=... \
-  --from-literal=applicationConsumerKey=...
+```yaml
+# ~/secrets/ovh-dns01.yml, chmod 600
+applicationKey: xxxxxxxxxxxx
+applicationSecret: xxxxxxxxxxxx
+applicationConsumerKey: xxxxxxxxxxxx
 ```
 
-See `docs/certificates.md` in the ai-factory repository for the token scopes and for
-switching to another provider.
+A path and not three flags, for the same reason `--github-app-key` and `--gitops-ssh-key`
+take paths: the file is read on the controller, so nothing secret reaches a command line,
+the process table or shell history. A file that is present but missing a key fails the run
+rather than deploying a cluster whose certificates silently never arrive. The secret lands
+in cert-manager's namespace, which is where a `ClusterIssuer` resolves its solver's
+credential refs — not in a namespace of the factory's own.
+
+Create the token at OVH scoped to the single zone, never `/domain/zone/*`, which would be
+write access to every zone in the account:
+
+```
+https://api.ovh.com/createToken/?GET=/domain/zone/mydomain.io/*&POST=/domain/zone/mydomain.io/*&DELETE=/domain/zone/mydomain.io/*
+```
+
+`DELETE` is not optional — without it the solver cannot remove its own `_acme-challenge`
+records and the zone accumulates them. **Set the validity to unlimited**: if the token
+expires, renewal starts failing weeks before anything looks wrong, and the only signal is an
+auth error on a `Challenge` nobody is watching.
+
+Deploying without the credentials works, but know what it costs. The factory puts its whole
+`devpods` block on the DNS-01 issuer — the wildcard, which has no other option, *and* the
+dashboard at `devpods.<domain>`, which shares its chart's issuer. That dashboard is the one
+URL a human types, so "no DNS-01 credentials" means two certificates never arrive, not one.
+Everything else is issued over HTTP-01 and is unaffected.
+
+Rotation is manual in one direction: revoking the token at OVH does not remove the secret
+from the cluster. Re-run with the new file, or `kubectl delete secret ovh-credentials -n
+kube-cert` — dropping the flag only skips the task, it does not clean up.
+
+See `docs/certificates.md` in the ai-factory repository for switching to another provider.
 
 Once Argo CD is up, get the initial admin password with
 
