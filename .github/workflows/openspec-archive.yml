@@ -1,0 +1,204 @@
+---
+# Archives the merged OpenSpec changes of the default branch into one rolling PR.
+# Source: ricofehr/claude-user-settings/.github/workflows/openspec-archive.yml,
+# copied verbatim into every repository that runs the OpenSpec chain.
+#
+# On the default branch every folder under openspec/changes/ (but archive/) is a
+# merged change awaiting its archive. Each run rebuilds chore/openspec-archive
+# from the default branch with every complete one archived, so a skipped or
+# cancelled run is made good by the next one.
+#
+# Two jobs on two runners. `archive` has a read-only token and no secret; npm
+# and the OpenSpec CLI run only in locked-down containers (the CLI without
+# network, on a copy of openspec/), so they reach no runner token, cache or
+# .git. It hands over a patch. `publish` holds the secret, runs no third-party
+# code, checks every commit of the patch, and pushes.
+name: openspec-archive
+
+on:
+  push:
+    paths: ["openspec/changes/**"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  # Per ref: pushes to other branches must not cancel a waiting default-branch run.
+  group: openspec-archive-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  BRANCH: chore/openspec-archive
+
+jobs:
+  archive:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      ids: ${{ steps.archive.outputs.ids }}
+      failed: ${{ steps.archive.outputs.failed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Archive every complete change
+        id: archive
+        env:
+          OPENSPEC_VERSION: 1.14.3
+          NODE_IMAGE: node:22-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          # npm and the OpenSpec CLI only ever run in containers: never on this
+          # runner, never next to .git. The CLI works on a copy of openspec/ with
+          # no network; the copy comes back only if it holds plain files and dirs.
+          box() {
+            docker run --rm --cap-drop=ALL --security-opt=no-new-privileges --read-only \
+              --tmpfs /tmp --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI=1 -e DO_NOT_TRACK=1 "$@"
+          }
+          mkdir -p "${RUNNER_TEMP}/openspec-cli"
+          box -v "${RUNNER_TEMP}/openspec-cli:/opt/openspec" "${NODE_IMAGE}" \
+            npm install --prefix /opt/openspec --ignore-scripts --no-fund --no-audit \
+            "@fission-ai/openspec@${OPENSPEC_VERSION}"
+          work="${RUNNER_TEMP}/work"
+          openspec() {
+            box --network none -v "${RUNNER_TEMP}/openspec-cli:/opt/openspec:ro" \
+              -v "${work}/openspec:/work/openspec" -w /work \
+              "${NODE_IMAGE}" node /opt/openspec/node_modules/@fission-ai/openspec/bin/openspec.js "$@"
+          }
+          plain_tree() {
+            [[ -z "$(find "${work}/openspec" \( -name .git -o ! -type f ! -type d \) -print -quit)" ]]
+          }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          ids=()
+          failed=()
+          for dir in openspec/changes/*/; do
+            id="$(basename "${dir}")"
+            [[ "${id}" == archive ]] && continue
+            if [[ ! "${id}" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; then
+              echo "::warning::skipping unexpected change name: ${id}"
+              continue
+            fi
+            if grep -qE '^[[:space:]]*- \[ \]' "${dir}tasks.md" 2>/dev/null; then
+              echo "::warning::${id} has unchecked tasks; it is archived once they are all done"
+              continue
+            fi
+            chmod -R u+rwX "${work}" 2>/dev/null || true
+            rm -rf "${work}"
+            mkdir -p "${work}"
+            cp -R openspec "${work}/"
+            # One failing change must not hold back the others.
+            if openspec archive "${id}" --yes && openspec validate --specs --strict; then
+              if ! plain_tree; then
+                echo "::error::the OpenSpec CLI left a .git entry or a non-regular file; stopping"
+                exit 1
+              fi
+              rsync -a --delete "${work}/openspec/" openspec/
+              git add --all openspec
+              git commit --quiet -m "chore(openspec): archive ${id}"
+              ids+=("${id}")
+            else
+              echo "::error::${id} could not be archived or broke the specs; left for a fix"
+              failed+=("${id}")
+            fi
+          done
+          echo "Archived: ${ids[*]:-none}"
+          echo "ids=${ids[*]:-}" >>"${GITHUB_OUTPUT}"
+          echo "failed=${failed[*]:-}" >>"${GITHUB_OUTPUT}"
+          git format-patch --stdout "${GITHUB_SHA}..HEAD" >"${RUNNER_TEMP}/archive.patch"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: openspec-archive-patch
+          path: ${{ runner.temp }}/archive.patch
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    needs: archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      IDS: ${{ needs.archive.outputs.ids }}
+      FAILED: ${{ needs.archive.outputs.failed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: openspec-archive-patch
+          path: ${{ runner.temp }}/patch
+
+      - name: Check the patch, push, open or update the archive PR
+        env:
+          GH_TOKEN: ${{ secrets.OPENSPEC_ARCHIVE_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          # Same-repository PR only: the head filter is owner:branch.
+          open_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls?state=open&head=${GITHUB_REPOSITORY_OWNER}:${BRANCH}" \
+            -q '.[0].number // empty')"
+
+          if [[ -z "${IDS}" ]]; then
+            if [[ -n "${open_pr}" ]]; then
+              gh pr close "${open_pr}" --delete-branch \
+                --comment "Nothing complete is left to archive on \`${GITHUB_REF_NAME}\`; closing."
+            fi
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --quiet -B "${BRANCH}"
+          git -c core.hooksPath=/dev/null am --quiet "${RUNNER_TEMP}/patch/archive.patch"
+
+          # The patch came from a job that ran third-party code. In every commit,
+          # only regular files under openspec/ may change (renames split into
+          # delete + add; no symlink, no gitlink).
+          raw="$(git -c core.quotePath=false log --no-renames --raw --format= "${GITHUB_SHA}..HEAD")"
+          bad="$(awk -F'\t' '{split($1, m, " "); sub(/^:/, "", m[1])
+            if ($2 !~ /^openspec\// || m[1] !~ /^(100644|100755|000000)$/ || m[2] !~ /^(100644|100755|000000)$/) print $2}' <<<"${raw}")"
+          if [[ -n "${bad}" ]]; then
+            echo "::error::refusing the archive patch, it touches: ${bad}"
+            exit 1
+          fi
+
+          gh auth setup-git
+          push() { git -c core.hooksPath=/dev/null push --quiet "$@"; }
+          # Moving the branch over workflow-file changes merged on the default
+          # branch needs a Workflows permission the token does not have; a new
+          # branch does not, at the cost of closing the open archive PR.
+          if ! push --force origin "${BRANCH}"; then
+            echo "::warning::force-push refused; recreating ${BRANCH}"
+            push origin --delete "${BRANCH}" || true
+            push origin "${BRANCH}"
+            open_pr=""
+          fi
+
+          body="$(printf '%s\n\n%s %s' \
+            "Archives \`${IDS// /\`, \`}\`: delta specs synced into \`openspec/specs/\`, changes moved to \`openspec/changes/archive/\`." \
+            "Rebuilt from \`${GITHUB_REF_NAME}\` at ${GITHUB_SHA::7} by the \`openspec-archive\` workflow." \
+            "Each run rebuilds this branch, so commits added here by hand are overwritten.")"
+          if [[ -n "${open_pr}" ]] && gh pr edit "${open_pr}" --body "${body}"; then
+            exit 0
+          fi
+          gh pr create --base "${GITHUB_REF_NAME}" --head "${BRANCH}" \
+            --title "chore(openspec): archive merged changes" --body "${body}"
+
+      # The complete changes are published above; the run still goes red for the others.
+      - name: Fail on changes that could not be archived
+        if: env.FAILED != ''
+        run: |
+          echo "::error::not archived, fix them on the default branch: ${FAILED}"
+          exit 1
