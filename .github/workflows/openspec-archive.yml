@@ -6,7 +6,7 @@
 # On the default branch every folder under openspec/changes/ (but archive/) is a
 # merged change awaiting its archive. Each run rebuilds chore/openspec-archive
 # from the default branch with every complete one archived, so a skipped or
-# cancelled run is made good by the next one.
+# cancelled run is made good by the next one. Its PR is merged without review.
 #
 # Two jobs on two runners. `archive` has a read-only token and no secret; npm
 # and the OpenSpec CLI run only in locked-down containers (the CLI without
@@ -147,7 +147,7 @@ jobs:
         run: |
           set -euo pipefail
           # Same-repository PR only: the head filter is owner:branch.
-          open_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls?state=open&head=${GITHUB_REPOSITORY_OWNER}:${BRANCH}" \
+          open_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls?state=open&head=${GITHUB_REPOSITORY_OWNER}:${BRANCH}&base=${GITHUB_REF_NAME}" \
             -q '.[0].number // empty')"
 
           if [[ -z "${IDS}" ]]; then
@@ -163,16 +163,54 @@ jobs:
           git checkout --quiet -B "${BRANCH}"
           git -c core.hooksPath=/dev/null am --quiet "${RUNNER_TEMP}/patch/archive.patch"
 
-          # The patch came from a job that ran third-party code. In every commit,
-          # only regular files under openspec/ may change (renames split into
-          # delete + add; no symlink, no gitlink).
-          raw="$(git -c core.quotePath=false log --no-renames --raw --format= "${GITHUB_SHA}..HEAD")"
-          bad="$(awk -F'\t' '{split($1, m, " "); sub(/^:/, "", m[1])
-            if ($2 !~ /^openspec\// || m[1] !~ /^(100644|100755|000000)$/ || m[2] !~ /^(100644|100755|000000)$/) print $2}' <<<"${raw}")"
-          if [[ -n "${bad}" ]]; then
-            echo "::error::refusing the archive patch, it touches: ${bad}"
+          # The patch came from a job that ran third-party code, and is merged
+          # unread. One commit per archived change, in order, titled after it.
+          # Each may only add, modify or delete openspec/specs/<cap>/spec.md for
+          # the capabilities the change carries a delta for,
+          # delete files of openspec/changes/<id>/ and add the very same blobs
+          # under openspec/changes/archive/[<date>-]<id>/. Plain files only.
+          mapfile -t commits < <(git rev-list --reverse "${GITHUB_SHA}..HEAD")
+          read -r -a want <<<"${IDS}"
+          if ((${#commits[@]} != ${#want[@]})); then
+            echo "::error::refusing the archive patch: ${#commits[@]} commits for ${#want[@]} changes"
             exit 1
           fi
+          for i in "${!commits[@]}"; do
+            commit="${commits[${i}]}"
+            id="${want[${i}]}"
+            if [[ "$(git log -1 --format=%s "${commit}")" != "chore(openspec): archive ${id}" ]]; then
+              echo "::error::refusing the archive patch: commit ${commit::7} is not the archive of ${id}"
+              exit 1
+            fi
+            bad="$(git -c core.quotePath=false diff-tree --no-commit-id --no-renames -r --raw "${commit}" |
+              awk -F'\t' -v id="${id}" '
+                { split($1, m, " "); old = m[1]; sub(/^:/, "", old)
+                  n++; path[n] = $2; st[n] = m[5]; blob[n] = m[4]
+                  plain[n] = old ~ /^(100644|000000)$/ && m[2] ~ /^(100644|000000)$/
+                  src = "openspec/changes/" id "/"
+                  if (m[5] == "D" && index($2, src) == 1) moved[substr($2, length(src) + 1)] = m[3] }
+                END {
+                  date = "^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-"
+                  arch = "openspec/changes/archive/"
+                  # Only the capabilities this change carries a delta for.
+                  for (rel in moved) if (rel ~ /^specs\/[^\/]+\/spec\.md$/) caps["openspec/" rel] = 1
+                  for (k = 1; k <= n; k++) {
+                    p = path[k]; ok = 0
+                    if (p in caps) ok = 1
+                    else if (st[k] == "D" && index(p, "openspec/changes/" id "/") == 1) ok = 1
+                    else if (st[k] == "A" && index(p, arch) == 1) {
+                      rest = substr(p, length(arch) + 1); cut = index(rest, "/")
+                      dir = substr(rest, 1, cut - 1); rel = substr(rest, cut + 1)
+                      named = (id ~ date) ? dir == id : (dir ~ date && substr(dir, 12) == id)
+                      ok = cut > 0 && named && (rel in moved) && moved[rel] == blob[k]
+                    }
+                    if (!(ok && plain[k])) print p
+                  } }')"
+            if [[ -n "${bad}" ]]; then
+              echo "::error::refusing the archive of ${id}, it touches: ${bad}"
+              exit 1
+            fi
+          done
 
           gh auth setup-git
           push() { git -c core.hooksPath=/dev/null push --quiet "$@"; }
@@ -189,16 +227,25 @@ jobs:
           body="$(printf '%s\n\n%s %s' \
             "Archives \`${IDS// /\`, \`}\`: delta specs synced into \`openspec/specs/\`, changes moved to \`openspec/changes/archive/\`." \
             "Rebuilt from \`${GITHUB_REF_NAME}\` at ${GITHUB_SHA::7} by the \`openspec-archive\` workflow." \
-            "Each run rebuilds this branch, so commits added here by hand are overwritten.")"
+            "It is merged without review: the workflow's patch check is the gate.")"
           if [[ -n "${open_pr}" ]] && gh pr edit "${open_pr}" --body "${body}"; then
-            exit 0
+            pr="${open_pr}"
+          else
+            pr="$(gh pr create --base "${GITHUB_REF_NAME}" --head "${BRANCH}" \
+              --title "chore(openspec): archive merged changes" --body "${body}")"
           fi
-          gh pr create --base "${GITHUB_REF_NAME}" --head "${BRANCH}" \
-            --title "chore(openspec): archive merged changes" --body "${body}"
+          # Merge exactly what was checked, and only if the default branch was
+          # not rewritten under this run (the squash base would then differ).
+          base="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${GITHUB_SHA}...${GITHUB_REF_NAME}" -q .status)"
+          if [[ "${base}" != identical && "${base}" != ahead ]]; then
+            echo "::error::${GITHUB_REF_NAME} no longer contains ${GITHUB_SHA::7}; archive PR left open"
+            exit 1
+          fi
+          gh pr merge "${pr}" --squash --match-head-commit "$(git rev-parse HEAD)"
 
       # The complete changes are published above; the run still goes red for the others.
       - name: Fail on changes that could not be archived
-        if: env.FAILED != ''
+        if: ${{ !cancelled() && env.FAILED != '' }}
         run: |
           echo "::error::not archived, fix them on the default branch: ${FAILED}"
           exit 1
