@@ -12,6 +12,14 @@
     name: prometheus
     repo_url: "{{ monitoring_prometheus_repo }}"
 
+# Before the release that opens the write receivers, so a failed play never
+# leaves them reachable from outside the cluster.
+- name: Refuse the prometheus write endpoints on the public exporter host
+  kubernetes.core.k8s:
+    state: present
+    template: prometheus-write-deny.yml.j2
+  when: monitoring_tracing_enabled | bool
+
 - name: Deploy Prometheus
   kubernetes.core.helm:
     name: prometheus
@@ -23,6 +31,10 @@
         persistence:
           storageClass: "{{ monitoring_storage_class }}"
       server:
+        extraFlags: "{{ monitoring_prometheus_flags + (monitoring_prometheus_tracing_flags if monitoring_tracing_enabled | bool else []) }}"
+        otlp: "{{ monitoring_prometheus_otlp if monitoring_tracing_enabled | bool else {} }}"
+        tsdb: "{{ monitoring_prometheus_tsdb if monitoring_tracing_enabled | bool else {} }}"
+        exemplars: "{{ monitoring_prometheus_exemplars if monitoring_tracing_enabled | bool else {} }}"
         ingress:
           ingressClassName: ingress-traefik
           enabled: true
@@ -62,6 +74,7 @@
     release_namespace: "{{ monitoring_namespace }}"
     values:
       replicas: 2
+      grafana.ini: "{{ monitoring_grafana_tracing_ini if monitoring_tracing_enabled | bool else {} }}"
       ingress:
         ingressClassName: ingress-traefik
         enabled: true

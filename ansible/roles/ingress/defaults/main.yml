@@ -7,4 +7,9 @@ ingress_cert_key: /etc/ssl/certs/k8s-ingress.pem
 ingress_chart_version: 39.0.4
 ingress_namespace: kube-ingress
 
+# Off by default: traefik opens a span for every request it routes and sends it
+# to the OpenTelemetry collector, only where the tracing role runs.
+ingress_tracing_enabled: false
+ingress_otlp_grpc_endpoint: ""
+
 ...

@@ -1,0 +1,15 @@
+---
+
+tracing_grafana_community_repo: "https://grafana-community.github.io/helm-charts"
+tracing_opentelemetry_repo: "https://open-telemetry.github.io/opentelemetry-helm-charts"
+tracing_collector_image: "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s"
+
+# Names other roles own: the loki gateway secret and service, the prometheus
+# server service. Changing them there means changing them here.
+tracing_loki_basic_auth_secret: "loki-basic-auth"
+tracing_loki_gateway: "loki-gateway"
+tracing_prometheus_server: "prometheus-server"
+
+tracing_collector_loki_secret: "otel-collector-loki-auth"
+
+...

@@ -13,4 +13,9 @@ monitoring_grafana_datasource_label: "grafana_datasource"
 monitoring_prometheus_version: "23.4.0"
 monitoring_grafana_version: "6.58.8"
 
+# Off by default: prometheus accepts pushed metrics and stores exemplars, grafana
+# links them to tempo and traces itself, only where the tracing role runs.
+monitoring_tracing_enabled: false
+monitoring_otlp_grpc_endpoint: ""
+
 ...

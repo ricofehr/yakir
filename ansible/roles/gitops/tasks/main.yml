@@ -22,9 +22,7 @@
       global:
         domain: "{{ gitops_argocd_domain }}"
       configs:
-        params:
-          # Traefik terminates TLS at the ingress, so the server speaks plain http behind it.
-          server.insecure: true
+        params: "{{ gitops_argocd_params | combine(gitops_argocd_tracing_params if gitops_tracing_enabled | bool else {}) }}"
         cm:
           # Argo CD calls an Ingress Healthy only once status.loadBalancer.ingress
           # is populated. This cluster fronts a NodePort traefik with keepalived

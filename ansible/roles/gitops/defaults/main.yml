@@ -10,6 +10,11 @@ gitops_domain: "k8s.local"
 gitops_argocd_domain: "gitops.{{ gitops_domain }}"
 gitops_cert_issuer: "my-ca-issuer"
 
+# Off by default: Argo CD sends the spans of its reconciles to the
+# OpenTelemetry collector, only where the tracing role runs.
+gitops_tracing_enabled: false
+gitops_otlp_grpc_endpoint: ""
+
 # Git repository holding the ai-factory Argo CD applications. The playbook skips
 # this role entirely while the url is empty, so a plain cluster install is unchanged.
 gitops_repo_url: ""

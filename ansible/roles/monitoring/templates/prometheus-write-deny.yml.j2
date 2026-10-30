@@ -1,0 +1,36 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: "{{ monitoring_prometheus_write_middleware }}"
+  namespace: "{{ monitoring_namespace }}"
+spec:
+  ipAllowList:
+    sourceRange:
+      - 127.0.0.1/32
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus-write-deny
+  namespace: "{{ monitoring_namespace }}"
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: "{{ monitoring_namespace }}-{{ monitoring_prometheus_write_middleware }}@kubernetescrd"
+spec:
+  ingressClassName: ingress-traefik
+  tls:
+    - secretName: prometheus-cert
+      hosts:
+        - "{{ monitoring_exporter_domain }}"
+  rules:
+    - host: "{{ monitoring_exporter_domain }}"
+      http:
+        paths:
+{% for path in monitoring_prometheus_write_paths %}
+          - path: "{{ path }}"
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus-server
+                port:
+                  number: 80
+{% endfor %}

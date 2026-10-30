@@ -41,6 +41,7 @@
       ingressClass:
         enabled: true
         isDefaultClass: true
+      tracing: "{{ ingress_tracing_values if ingress_tracing_enabled | bool else {} }}"
 
 - name: Wait for ingress become created
   ansible.builtin.command: |

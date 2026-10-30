@@ -17,4 +17,9 @@ logcollect_basic_auth_username: "loki"
 logcollect_fluentbit_version: "0.56.0"
 logcollect_loki_version: "7.3.0"
 
+# Off by default: loki traces itself and grafana links trace ids in log lines
+# to tempo, only where the tracing role runs.
+logcollect_tracing_enabled: false
+logcollect_otlp_grpc_endpoint: ""
+
 ...

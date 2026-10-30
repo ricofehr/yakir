@@ -48,6 +48,7 @@ yakir/
         +---postinstall     Some validations and post-config topics after Kubernetes deployment
         +---reflector       Deploy emberstack reflector, which mirrors an annotated configmap or secret into the other namespaces that need it
         +---reloader        Deploy stakater reloader, which rolls the annotated workloads when a configmap or a secret they reference changes
+        +---tracing         Deploy tempo, the OpenTelemetry collector and operator, and link traces to the loki logs and prometheus metrics in grafana (large sizing only)
     +---inventory           File created (symlink to targeted file on inventories folder) by the deployment script : used by ansible-playbook to scope the infra
     +---sizing_vars.yml     File created (symlink to targeted file on sizing_vars folder) by the deployment script : used by ansible-playbook to scope the infra metadata
     +---requirements.yml    Collections dependencies, to install in collections folder (ansible-galaxy command is executed by deployment scripts on the root folder)
@@ -78,6 +79,9 @@ Vagrantfile                 File created (symlink to targeted file on vagrantfil
 | Loki | v3.6.11 | Cluster Log storage, queried from Grafana (no dedicated UI) |
 | Prometheus | v3.10.0 | Cluster Monitoring metrics storage |
 | Grafana | v12.3.1 | Cluster Monitoring metrics visualization |
+| Tempo | v3.1.1 | Cluster trace storage, queried from Grafana (large sizing only) |
+| OpenTelemetry Collector | v0.163.2 | Cluster OTLP endpoint routing traces, metrics and logs to Tempo, Prometheus and Loki (large sizing only) |
+| OpenTelemetry Operator | v0.162.0 | Auto-instrumentation of the pods that opt in through an Instrumentation resource (large sizing only) |
 | Velero | v1.18.0 | Cluster Backup service, set a complete daily backup on external S3 service |
 | Kube-bench | v0.15.0 | Install kube-bench on first manager node, and launch analysis (with result output) on each playbook execution |
 | Reloader | v1.4.22 | Restart the annotated workloads when a ConfigMap or a Secret they reference changes |
@@ -408,6 +412,77 @@ annotations' job, above. Unlike those annotations, this value is a glob and not
 a regex - `kube-*` works, `kube-.*` silently matches nothing. Set it to `""` for
 the chart's own default of excluding nothing.
 
+## Tracing
+
+On the `large` sizing - the one that also runs Loki - the tracing role completes
+the observability stack with traces, in the `kube-tracing` namespace:
+
+- **OpenTelemetry Collector**, the one OTLP endpoint of the cluster, for every
+  signal: `otel-collector.kube-tracing.svc.cluster.local:4317` (gRPC) and `:4318`
+  (HTTP). It tags what it receives with the sending pod's namespace, name, node and
+  workload, then routes traces to Tempo, metrics to Prometheus and logs to Loki.
+  It is not published on the ingress.
+- **Tempo** stores the traces for 7 days, like Loki keeps logs, and turns them into
+  `traces_spanmetrics_*` and `traces_service_graph_*` series in Prometheus.
+- **OpenTelemetry Operator**, for auto-instrumentation. Yakir installs the operator
+  only: a namespace that wants it declares an `Instrumentation`, and its pods opt in
+  with an annotation
+
+```yaml
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: default
+  namespace: ai-llm
+spec:
+  exporter:
+    endpoint: http://otel-collector.kube-tracing.svc.cluster.local:4318
+  propagators: [tracecontext, baggage]
+---
+# on the pod template of a Deployment in ai-llm
+metadata:
+  annotations:
+    instrumentation.opentelemetry.io/inject-python: "true"
+```
+
+The platform traces itself too: Traefik opens a span for every request it routes
+and passes the W3C `traceparent` header to the backend, and Argo CD, Grafana, Loki
+and Tempo send their own spans. A request through the ingress is therefore one
+trace from the edge to the application.
+
+In Grafana the three datasources link to one another:
+
+- a span links to its pod's logs in Loki, filtered on the trace id, and to request
+  rate, error rate and p95 latency in Prometheus; the Tempo datasource also draws a
+  service graph;
+- a log line carrying a trace id (`trace_id`, `traceId`, `traceID` in the line, or
+  the `trace_id` field the OTLP pipeline stores) links to the trace in Tempo;
+- an exemplar on a Prometheus panel links to the trace that produced it.
+
+The span-to-logs link filters on the `namespace_name` and `pod_name` labels Fluent
+Bit sets, so it finds what a pod writes to stdout. Logs sent over OTLP carry
+`k8s_namespace_name` and `k8s_pod_name` instead; reach them from the trace id link
+on the log side, or query them in Explore.
+
+Prometheus accepts pushed metrics on this sizing (OTLP from the collector,
+remote-write from Tempo) and stores exemplars. Neither receiver authenticates, so
+both are open to the pods of the cluster only: `/api/v1/write` and `/api/v1/otlp`
+answer 403 on the public `exporter.<domain>` host.
+
+The collector does not authenticate its senders: every pod of the cluster can send it
+traces, metrics and logs, the latter reaching Loki under the collector's own gateway
+credentials. What it does guarantee is provenance - the `k8s.*` attributes on a signal are
+always looked up by the collector from the sending pod's address, never taken from the
+sender - so a namespace filter added later can be trusted. Restrict who reaches
+`otel-collector` with a NetworkPolicy before running untrusted workloads.
+
+Medium and small clusters are left as they were. To turn tracing off on a large
+cluster, run with `-e global_tracing_enabled=false`: the other roles drop their
+tracing settings, but the `kube-tracing` namespace stays until removed by hand
+(`helm uninstall -n kube-tracing otel-collector tempo opentelemetry-operator`, then
+delete the namespace, the operator CRDs and the `tempo-datasource` ConfigMap in
+`kube-monitoring`).
+
 ## GitOps and the AI factory
 
 The cluster stops at "base kubernetes". Everything above it — the AI software factory —
@@ -505,5 +580,4 @@ kubectl -n kube-gitops get secret argocd-initial-admin-secret \
 ## TODO
 
 - Secure k8s settings with CIS benchmark recommandations
-- Work on opentelemetry integration
 

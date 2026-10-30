@@ -1,0 +1,14 @@
+---
+
+tracing_namespace: "{{ global_tracing_namespace }}"
+tracing_monitoring_namespace: "{{ monitoring_namespace }}"
+tracing_logcollect_namespace: "{{ logcollect_namespace }}"
+tracing_grafana_datasource_label: "{{ monitoring_grafana_datasource_label }}"
+
+tracing_storage_class: "{{ global_storage_class }}"
+
+tracing_tempo_version: "{{ global_tempo_version }}"
+tracing_otel_collector_version: "{{ global_otel_collector_version }}"
+tracing_otel_operator_version: "{{ global_otel_operator_version }}"
+
+...

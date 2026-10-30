@@ -15,3 +15,12 @@ data:
         access: proxy
         url: http://prometheus-server.{{ monitoring_namespace }}.svc.cluster.local
         isDefault: true
+{%- if monitoring_tracing_enabled | bool +%}
+        jsonData:
+          # tempo's span metrics label exemplars traceID, OTLP metrics trace_id
+          exemplarTraceIdDestinations:
+            - name: traceID
+              datasourceUid: tempo
+            - name: trace_id
+              datasourceUid: tempo
+{%- endif %}

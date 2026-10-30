@@ -27,6 +27,9 @@ global_reloader_version: "2.2.18"
 global_reflector_version: "10.0.65"
 global_argocd_version: "10.9.2"
 global_cnpg_version: "0.29.0"
+global_tempo_version: "3.2.1"
+global_otel_collector_version: "0.178.1"
+global_otel_operator_version: "0.128.0"
 
 global_linux_arch: "amd64"
 global_managers_group_name: "managers"
@@ -52,5 +55,12 @@ global_cluster_sizing: "{{ sizing_cluster_sizing }}"
 
 global_man01_hostname: "{{ global_k8s_managers[0]['name'] }}"
 global_man01_ip: "{{ global_k8s_managers[0]['ip'] }}"
+
+# tracing: one switch for the tracing role and every component that sends it
+# telemetry. Only the large sizing runs logcollect, which the trace pipeline
+# ships logs to, so tracing follows the same gate.
+global_tracing_enabled: "{{ global_cluster_sizing == 'large' }}"
+global_tracing_namespace: "kube-tracing"
+global_otlp_grpc_endpoint: "otel-collector.{{ global_tracing_namespace }}.svc.cluster.local:4317"
 
 ...

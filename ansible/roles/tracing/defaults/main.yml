@@ -1,0 +1,28 @@
+---
+
+tracing_namespace: "tracing"
+tracing_monitoring_namespace: "monitoring"
+tracing_logcollect_namespace: "logcollect"
+tracing_grafana_datasource_label: "grafana_datasource"
+
+tracing_tempo_version: "3.2.1"
+tracing_otel_collector_version: "0.178.1"
+tracing_otel_operator_version: "0.128.0"
+
+tracing_storage_class: "rook-ceph-block"
+tracing_tempo_storage_size: "20Gi"
+# Matches the loki retention, so a trace never outlives the logs it links to.
+tracing_tempo_retention: "168h"
+
+tracing_collector_replicas: 2
+tracing_collector_resources:
+  requests: { cpu: "100m", memory: "256Mi" }
+  limits: { memory: "512Mi" }
+tracing_tempo_resources:
+  requests: { cpu: "200m", memory: "512Mi" }
+  limits: { memory: "2Gi" }
+
+# Where tempo sends its own spans: the collector this role deploys.
+tracing_otlp_grpc_endpoint: "otel-collector.{{ tracing_namespace }}.svc.cluster.local:4317"
+
+...
