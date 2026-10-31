@@ -1,0 +1,232 @@
+---
+
+- name: Create tracing namespace
+  kubernetes.core.k8s:
+    name: "{{ tracing_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Look up the grafana namespace hosting the tempo datasource
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Namespace
+    name: "{{ tracing_monitoring_namespace }}"
+  register: tracing_monitoring_namespace_lookup
+
+- name: Assert the grafana namespace exists before publishing the tempo datasource
+  ansible.builtin.assert:
+    that: tracing_monitoring_namespace_lookup.resources | length > 0
+    fail_msg: >-
+      Namespace {{ tracing_monitoring_namespace }} is missing. The monitoring role
+      creates it, so run that role before tracing.
+
+- name: Look up the Loki gateway credentials the collector ships logs with
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ tracing_loki_basic_auth_secret }}"
+    namespace: "{{ tracing_logcollect_namespace }}"
+  register: tracing_loki_auth_lookup
+  no_log: true
+
+- name: Assert the Loki gateway credentials exist before deploying the collector
+  ansible.builtin.assert:
+    that: tracing_loki_auth_lookup.resources | length > 0
+    fail_msg: >-
+      Secret {{ tracing_loki_basic_auth_secret }} is missing from
+      {{ tracing_logcollect_namespace }}. The logcollect role creates it, so run
+      that role before tracing.
+
+# A secretKeyRef cannot cross a namespace. The copy is rewritten on every run,
+# so a regenerated Loki password reaches the collector on the next replay.
+- name: Copy the Loki gateway credentials into the tracing namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ tracing_collector_loki_secret }}"
+        namespace: "{{ tracing_namespace }}"
+      type: Opaque
+      data:
+        username: "{{ (tracing_loki_auth_lookup.resources | first).data.username }}"
+        password: "{{ (tracing_loki_auth_lookup.resources | first).data.password }}"
+  no_log: true
+
+- name: Add opentelemetry chart repo
+  kubernetes.core.helm_repository:
+    name: opentelemetry
+    repo_url: "{{ tracing_opentelemetry_repo }}"
+
+- name: Add grafana-community chart repo
+  kubernetes.core.helm_repository:
+    name: grafana-community
+    repo_url: "{{ tracing_grafana_community_repo }}"
+
+# Installs the Instrumentation CRD and its injection webhook only, the webhook
+# certificate issued by cert-manager (chart default). The workloads that want
+# auto-instrumentation ship their own Instrumentation resources.
+- name: Deploy the OpenTelemetry operator
+  kubernetes.core.helm:
+    name: opentelemetry-operator
+    chart_ref: opentelemetry/opentelemetry-operator
+    chart_version: "{{ tracing_otel_operator_version }}"
+    release_namespace: "{{ tracing_namespace }}"
+
+- name: Deploy tempo
+  kubernetes.core.helm:
+    name: tempo
+    chart_ref: grafana-community/tempo
+    chart_version: "{{ tracing_tempo_version }}"
+    release_namespace: "{{ tracing_namespace }}"
+    values:
+      persistence:
+        enabled: true
+        size: "{{ tracing_tempo_storage_size }}"
+        storageClassName: "{{ tracing_storage_class }}"
+      tempo:
+        reportingEnabled: false
+        retention: "{{ tracing_tempo_retention }}"
+        resources: "{{ tracing_tempo_resources }}"
+        metricsGenerator:
+          enabled: true
+          processor:
+            service_graphs: {}
+            span_metrics: {}
+          storage:
+            path: /var/tempo/generator/wal
+            remote_write:
+              - url: "http://{{ tracing_prometheus_server }}.{{ tracing_monitoring_namespace }}.svc.cluster.local/api/v1/write"
+                send_exemplars: true
+        overrides:
+          defaults:
+            metrics_generator:
+              processors: ["service-graphs", "span-metrics"]
+        extraEnv:
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "http://{{ tracing_otlp_grpc_endpoint }}"
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: grpc
+          - name: OTEL_SERVICE_NAME
+            value: tempo
+          # Every write into tempo opens a span that comes back into tempo, so
+          # an idle cluster would trace itself forever at full rate.
+          - name: OTEL_TRACES_SAMPLER
+            value: parentbased_traceidratio
+          - name: OTEL_TRACES_SAMPLER_ARG
+            value: "0.1"
+
+- name: Deploy the OpenTelemetry collector gateway
+  kubernetes.core.helm:
+    name: otel-collector
+    chart_ref: opentelemetry/opentelemetry-collector
+    chart_version: "{{ tracing_otel_collector_version }}"
+    release_namespace: "{{ tracing_namespace }}"
+    values:
+      mode: deployment
+      fullnameOverride: otel-collector
+      replicaCount: "{{ tracing_collector_replicas }}"
+      image:
+        repository: "{{ tracing_collector_image }}"
+      resources: "{{ tracing_collector_resources }}"
+      annotations:
+        secret.reloader.stakater.com/reload: "{{ tracing_collector_loki_secret }}"
+      presets:
+        kubernetesAttributes:
+          enabled: true
+      ports:
+        jaeger-compact:
+          enabled: false
+        jaeger-thrift:
+          enabled: false
+        jaeger-grpc:
+          enabled: false
+        zipkin:
+          enabled: false
+      extraEnvs:
+        - name: LOKI_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: "{{ tracing_collector_loki_secret }}"
+              key: username
+        - name: LOKI_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: "{{ tracing_collector_loki_secret }}"
+              key: password
+      config:
+        receivers:
+          jaeger: null
+          zipkin: null
+        # The kubernetes attributes are the collector's to set, never the
+        # sender's: any pod can reach the collector, so it drops what the
+        # sender claims and looks the pod up by the connection's source address.
+        processors:
+          resource/drop_k8s:
+            attributes:
+              - pattern: ^k8s\.
+                action: delete
+          k8s_attributes:
+            pod_association:
+              - sources:
+                  - from: connection
+        extensions:
+          basicauth/loki:
+            client_auth:
+              username: "${env:LOKI_USERNAME}"
+              password: "${env:LOKI_PASSWORD}"
+        exporters:
+          debug: null
+          otlp_grpc/tempo:
+            endpoint: "tempo.{{ tracing_namespace }}.svc.cluster.local:4317"
+            tls:
+              insecure: true
+          otlp_http/prometheus:
+            metrics_endpoint: "http://{{ tracing_prometheus_server }}.{{ tracing_monitoring_namespace }}.svc.cluster.local/api/v1/otlp/v1/metrics"
+          otlp_http/loki:
+            logs_endpoint: "http://{{ tracing_loki_gateway }}.{{ tracing_logcollect_namespace }}.svc.cluster.local/otlp/v1/logs"
+            auth:
+              authenticator: basicauth/loki
+        service:
+          extensions: ["health_check", "basicauth/loki"]
+          pipelines:
+            traces:
+              receivers: ["otlp"]
+              processors: ["memory_limiter", "resource/drop_k8s", "k8s_attributes", "batch"]
+              exporters: ["otlp_grpc/tempo"]
+            metrics:
+              receivers: ["otlp", "prometheus"]
+              processors: ["memory_limiter", "resource/drop_k8s", "k8s_attributes", "batch"]
+              exporters: ["otlp_http/prometheus"]
+            logs:
+              receivers: ["otlp"]
+              processors: ["memory_limiter", "resource/drop_k8s", "k8s_attributes", "batch"]
+              exporters: ["otlp_http/loki"]
+
+- name: Restrict tempo to the collector and the monitoring namespace
+  kubernetes.core.k8s:
+    state: present
+    template: tempo-networkpolicy.yml.j2
+
+- name: Deploy CM tempo datasource for grafana
+  kubernetes.core.k8s:
+    state: present
+    template: tempo-datasource.yml.j2
+
+# Terminal pods are excluded, not matched by --all: an Evicted corpse never goes
+# Ready and holds the wait for its full timeout. Pending must stay in the set -
+# kubectl resolves the match once, so a Running-only filter would pass early.
+- name: Wait for tracing pods become ready
+  ansible.builtin.command: >-
+    kubectl wait pod --namespace={{ tracing_namespace }}
+    --field-selector=status.phase!=Failed,status.phase!=Succeeded
+    --for=condition=Ready --timeout=900s
+  register: tracing_wait
+  until: tracing_wait is succeeded
+  retries: 2
+  delay: 10
+  changed_when: false
+
+...

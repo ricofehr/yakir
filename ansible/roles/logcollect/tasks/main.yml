@@ -87,6 +87,8 @@
       deploymentMode: SingleBinary
       loki:
         auth_enabled: false
+        tracing:
+          enabled: "{{ logcollect_tracing_enabled | bool }}"
         commonConfig:
           replication_factor: 1
         storage:
@@ -110,6 +112,7 @@
           delete_request_store: filesystem
       singleBinary:
         replicas: 1
+        extraEnv: "{{ logcollect_loki_tracing_env if logcollect_tracing_enabled | bool else [] }}"
         persistence:
           enabled: "{{ logcollect_persistence_disk }}"
           size: "{{ logcollect_loki_storage_size }}"

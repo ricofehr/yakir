@@ -3,4 +3,42 @@
 monitoring_prometheus_repo: "https://prometheus-community.github.io/helm-charts"
 monitoring_grafana_repo: "https://grafana.github.io/helm-charts"
 
+monitoring_prometheus_flags:
+  - web.enable-lifecycle
+# The OTLP receiver takes the collector's metrics, the remote-write receiver
+# tempo's span and service-graph metrics, and the exemplars carry trace ids.
+monitoring_prometheus_tracing_flags:
+  - web.enable-otlp-receiver
+  - web.enable-remote-write-receiver
+  - enable-feature=exemplar-storage
+monitoring_prometheus_otlp:
+  promote_resource_attributes:
+    - service.name
+    - service.namespace
+    - service.instance.id
+    - k8s.namespace.name
+    - k8s.pod.name
+    - k8s.deployment.name
+# OTLP batches can land after a scrape already wrote a later sample.
+monitoring_prometheus_tsdb:
+  out_of_order_time_window: 30m
+monitoring_prometheus_exemplars:
+  max_exemplars: 100000
+
+# Refuses the write endpoints on the public exporter host: the receivers have
+# no authentication, and every client reaches traefik through haproxy, never
+# from 127.0.0.1, so the allow list matches nobody.
+monitoring_prometheus_write_paths:
+  - /api/v1/write
+  - /api/v1/otlp
+monitoring_prometheus_write_middleware: prometheus-write-deny
+
+monitoring_grafana_tracing_ini:
+  tracing.opentelemetry:
+    sampler_type: const
+    sampler_param: 1
+  tracing.opentelemetry.otlp:
+    address: "{{ monitoring_otlp_grpc_endpoint }}"
+    propagation: w3c
+
 ...

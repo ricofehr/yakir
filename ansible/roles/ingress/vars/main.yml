@@ -1,0 +1,11 @@
+---
+
+ingress_tracing_values:
+  otlp:
+    enabled: true
+    grpc:
+      enabled: true
+      endpoint: "{{ ingress_otlp_grpc_endpoint }}"
+      insecure: true
+
+...

@@ -17,5 +17,20 @@ stringData:
         url: http://loki-gateway.{{ logcollect_namespace }}.svc.cluster.local
         basicAuth: true
         basicAuthUser: {{ logcollect_loki_username | to_json }}
+{%- if logcollect_tracing_enabled | bool +%}
+        jsonData:
+          derivedFields:
+            - name: TraceID
+              matcherRegex: '(?:trace_?[iI][dD])"?[:=]"?(\w{32})'
+              url: '$${__value.raw}'
+              datasourceUid: tempo
+              urlDisplayLabel: View trace
+            - name: trace_id
+              matcherType: label
+              matcherRegex: trace_id
+              url: '$${__value.raw}'
+              datasourceUid: tempo
+              urlDisplayLabel: View trace
+{%- endif +%}
         secureJsonData:
           basicAuthPassword: {{ logcollect_loki_password | to_json }}

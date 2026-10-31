@@ -67,6 +67,9 @@
     - role: logcollect
       tags: ["cluster", "logcollect"]
       when: global_cluster_sizing == "large"
+    - role: tracing
+      tags: ["cluster", "tracing"]
+      when: global_tracing_enabled | bool
     - role: backup
       tags: ["cluster", "backup"]
       when: backup_s3_accesskey_secret != ""

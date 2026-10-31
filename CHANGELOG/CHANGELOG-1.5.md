@@ -16,6 +16,10 @@
 - Keep reloader opt-in per workload (reloader.stakater.com/auto), so installing it restarts nothing in the existing platform stack
 - Add a reflector role deploying emberstack reflector, which mirrors an annotated configmap or secret into the other namespaces that need it, instead of writing the same value once per namespace
 - Exclude kube-system from reflector's watch, so nothing stored there can be used as a reflection source and fanned out across the cluster
+- Add a tracing role on the large sizing: tempo for trace storage, an OpenTelemetry collector as the one in-cluster OTLP endpoint for traces, metrics and logs, and the OpenTelemetry operator for auto-instrumentation
+- Link traces, logs and metrics in grafana: span to loki logs and to span metrics, trace id in a log line to tempo, prometheus exemplar to tempo
+- Let prometheus receive OTLP and remote-write metrics and store exemplars on the large sizing, and refuse both write endpoints on the public exporter host
+- Send the spans of traefik, Argo CD, grafana, loki and tempo to the collector, so a request through the ingress is one trace from the edge to the application
 
 ### Bug Fix
 

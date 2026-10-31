@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-datasource
+  namespace: "{{ tracing_monitoring_namespace }}"
+  labels:
+    {{ tracing_grafana_datasource_label }}: "1"
+data:
+  tempo-datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Tempo
+        uid: tempo
+        type: tempo
+        access: proxy
+        url: http://tempo.{{ tracing_namespace }}.svc.cluster.local:3200
+        jsonData:
+          tracesToLogsV2:
+            datasourceUid: loki
+            spanStartTimeShift: "-5m"
+            spanEndTimeShift: "5m"
+            filterByTraceID: true
+            filterBySpanID: false
+            tags:
+              - key: k8s.namespace.name
+                value: namespace_name
+              - key: k8s.pod.name
+                value: pod_name
+          tracesToMetrics:
+            datasourceUid: PBFA97CFB590B2093
+            spanStartTimeShift: "-5m"
+            spanEndTimeShift: "5m"
+            tags:
+              - key: service.name
+                value: service
+            queries:
+              - name: Request rate
+                query: 'sum(rate(traces_spanmetrics_calls_total{$$__tags}[5m]))'
+              - name: Error rate
+                query: 'sum(rate(traces_spanmetrics_calls_total{$$__tags, status_code="STATUS_CODE_ERROR"}[5m]))'
+              - name: Latency p95
+                query: 'histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{$$__tags}[5m])))'
+          serviceMap:
+            datasourceUid: PBFA97CFB590B2093
+          nodeGraph:
+            enabled: true
+          lokiSearch:
+            datasourceUid: loki

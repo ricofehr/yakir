@@ -9,5 +9,7 @@ gitops_cert_issuer: "{{ global_cert_issuer }}"
 
 gitops_argocd_version: "{{ global_argocd_version }}"
 gitops_cnpg_version: "{{ global_cnpg_version }}"
+gitops_tracing_enabled: "{{ global_tracing_enabled }}"
+gitops_otlp_grpc_endpoint: "{{ global_otlp_grpc_endpoint }}"
 
 ...

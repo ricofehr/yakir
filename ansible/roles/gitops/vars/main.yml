@@ -3,6 +3,13 @@
 gitops_argocd_repo: "https://argoproj.github.io/argo-helm"
 gitops_cnpg_repo: "https://cloudnative-pg.github.io/charts"
 
+gitops_argocd_params:
+  # Traefik terminates TLS at the ingress, so the server speaks plain http behind it.
+  server.insecure: true
+gitops_argocd_tracing_params:
+  otlp.address: "{{ gitops_otlp_grpc_endpoint }}"
+  otlp.insecure: true
+
 gitops_repo_secret: "ai-factory-repo"
 gitops_masterkey_secret: "litellm-masterkey"
 gitops_llama_secret: "llama-credentials"

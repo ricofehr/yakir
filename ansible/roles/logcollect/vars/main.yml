@@ -5,4 +5,14 @@ logcollect_loki_repo: "https://grafana.github.io/helm-charts"
 
 logcollect_basic_auth_secret: "loki-basic-auth"
 
+# dskit switches loki from jaeger to the OpenTelemetry exporter once an OTLP
+# endpoint is set in the environment.
+logcollect_loki_tracing_env:
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "http://{{ logcollect_otlp_grpc_endpoint }}"
+  - name: OTEL_EXPORTER_OTLP_PROTOCOL
+    value: grpc
+  - name: OTEL_SERVICE_NAME
+    value: loki
+
 ...

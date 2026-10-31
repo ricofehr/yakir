@@ -9,5 +9,7 @@ logcollect_loki_storage_class: "{{ global_storage_class }}"
 
 logcollect_fluentbit_version: "{{ global_fluentbit_version }}"
 logcollect_loki_version: "{{ global_loki_version }}"
+logcollect_tracing_enabled: "{{ global_tracing_enabled }}"
+logcollect_otlp_grpc_endpoint: "{{ global_otlp_grpc_endpoint }}"
 
 ...
