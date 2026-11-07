@@ -144,10 +144,10 @@ Usage: ./up [options]
 --gitops-ssh-key xxxx             private deploy key for the ai-factory repository
 --llama-api-key xxxx              api key of the llama-server backing the LLM gateway
 --github-token xxxx               GitHub personal access token for the MCP gateway and context graph
---github-app-id xxxx              GitHub App id used by the self-hosted runners
---github-app-installation-id xxxx GitHub App installation id used by the self-hosted runners
---github-app-key xxxx             GitHub App private key (.pem) path
---ovh-credentials-file xxxx       yaml file holding the OVH api credentials, for the DNS-01 certificate challenges
+--gitlab-backup-passphrase-file xxxx
+                                  file holding the passphrase GitLab's off-site rails-secret copies are encrypted with
+--minio-admin-credentials-file xxxx
+                                  yaml file (accessKey, secretKey) of a MinIO admin, to set up GitLab's off-site store
 ```
 
 For example, an install on apple silicon with local repository, custom domain, flannel CNI, and medium sizing
@@ -259,10 +259,11 @@ Usage: ./deploy-to-libvirt [options]
 --gitops-ssh-key xxxx             private deploy key for the ai-factory repository
 --llama-api-key xxxx              api key of the llama-server backing the LLM gateway
 --github-token xxxx               GitHub personal access token for the MCP gateway and context graph
---github-app-id xxxx              GitHub App id used by the self-hosted runners
---github-app-installation-id xxxx GitHub App installation id used by the self-hosted runners
---github-app-key xxxx             GitHub App private key (.pem) path
---ovh-credentials-file xxxx       yaml file holding the OVH api credentials, for the DNS-01 certificate challenges
+--gitlab-backup-passphrase-file xxxx
+                                  file holding the passphrase GitLab's off-site rails-secret copies are encrypted with
+--minio-admin-credentials-file xxxx
+                                  yaml file (accessKey, secretKey) of a MinIO admin, to set up GitLab's off-site store
+--ansible-tags xxxx               only run the ansible roles with these tags (comma separated), e.g. on a live cluster
 ```
 
 Example
@@ -353,7 +354,7 @@ metadata:
     reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
     # which namespaces may hold a mirror. Comma separated regexes, each matched
     # against the whole namespace name, so these two entries are exact - while
-    # "ai-.*" would also cover ai-devpods and ai-runners.
+    # "ai-.*" would also cover ai-gitlab and ai-runners.
     reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "ai-llm,ai-mcp"
     # create the mirrors automatically rather than declaring each one, in these
     # namespaces - which are checked against the allowed list above as well
@@ -502,16 +503,60 @@ a plain `./up` or `./deploy-to-libvirt` behaves exactly as before. When it is se
   --gitops-repo git@github.com:ricofehr/ai-factory.git \
   --gitops-ssh-key ~/.ssh/ai_factory_deploy \
   --llama-api-key xxxxxxxxxxxx \
-  --github-app-id 123456 \
-  --github-app-installation-id 7654321 \
-  --github-app-key ~/.ssh/arc-github-app.pem \
-  --ovh-credentials-file ~/secrets/ovh-dns01.yml
+  --backup-server https://minio.mydomain.io --backup-access-key xxxx --backup-access-secret xxxx \
+  --gitlab-backup-passphrase-file ~/secrets/gitlab-backup.passphrase \
+  --minio-admin-credentials-file ~/secrets/minio-admin.yml
 ```
 
 Bootstrap secrets are created from these parameters rather than committed to the GitOps
-repository, which keeps `ai-factory` free of credentials. The LiteLLM master key is the one
-exception: it is generated in-cluster on first run and reused afterwards, so virtual keys
-issued against it survive a replay.
+repository, which keeps `ai-factory` free of credentials. A few are generated in-cluster on
+the first run and reused afterwards, because a new value on a replay would break what
+already uses them: the LiteLLM master key, Keycloak's bootstrap administrator, the context
+graph password, and GitLab's Valkey password (`valkey-auth` in `ai-gitlab`).
+
+### GitLab's off-site backup store
+
+The factory's GitLab copies its nightly backups off the cluster, to the MinIO behind
+`--backup-server` (the one Velero uses), so a rebuilt cluster can be restored. The gitops role
+sets that store up with **separate MinIO admin credentials** from
+`--minio-admin-credentials-file`, a yaml file on the controller (`accessKey`, `secretKey`).
+They are never written into the cluster. The `--backup-*` keys are, in Velero's Secret, and a
+key that can delete must not live where the backups are meant to survive a compromise. Give
+Velero bucket-scoped keys rather than admin ones.
+
+- a `gitlab-backups` bucket created with **object lock**: every archive is retained in
+  GOVERNANCE mode for `gitops_gitlab_backup_retention_days` (90). A lifecycle rule expires
+  archives after those 90 days, and replaced versions 30 days after they are replaced, but
+  never while they are still locked;
+- a `gitlab-backup` user whose policy can list, read and write that bucket and nothing else:
+  no delete, no bucket configuration, no retention change, no governance bypass. A stolen
+  GitLab key can overwrite an archive, but the original version stays locked for its full
+  retention, so overwriting cannot be used to purge backups;
+- `gitlab-backup-offsite` in `ai-gitlab`: the endpoint, that user's keys and the passphrase.
+  The user's secret is generated once per cluster and re-set on MinIO on every run, so a
+  rebuilt cluster takes over the user and the old cluster's key stops working.
+
+The passphrase encrypts the off-site copies of GitLab's rails secret. It comes from
+`--gitlab-backup-passphrase-file`, a path read on the controller like `--gitops-ssh-key`, so
+it never reaches a command line or shell history. **Keep that file outside the cluster**, for
+example in a password manager: a rebuild loses the Secret, and without the passphrase the
+off-site copies cannot be decrypted. Without the file, or without `--backup-*`, the store is
+not set up and the run says so. GitLab's backup mirror then waits for the secret. Object
+lock can only be chosen when a bucket is created, so a pre-existing `gitlab-backups` bucket
+without it stops the run, rather than leaving the backups unprotected.
+
+MinIO is driven with its `mc` client, downloaded to the controller (linux-amd64) and pinned
+by checksum. Credentials reach it through a 0600 config file in a private temporary
+directory, never through the environment or arguments.
+**MinIO's community server and client are archived**: no security updates, and `dl.min.io`
+no longer serves them. The pinned `mc` is the last release on GitHub. The MinIO server
+itself deserves a replacement plan.
+
+### Git over SSH
+
+HAProxy on the managers forwards `:2222` (the managers' own sshd keeps 22) to Traefik's
+`gitlab-shell` entrypoint on NodePort `global_ingress_ssh_nodeport` (30022), where the
+factory's GitLab routes it. Clone URLs use `ssh://git@gitlab.<domain>:2222/…`.
 
 ### What the root project is allowed to do
 
@@ -519,56 +564,27 @@ Anything committed under `apps/` is applied with the application controller's ri
 role scopes the `AppProject` rather than leaving it at Argo CD's permit-everything default:
 a list of destination namespaces, a whitelist of cluster-scoped kinds, and a blacklist of
 namespaced ones (`ResourceQuota`, `LimitRange`, `Secret`, `DaemonSet`). `Secret` is denied
-because the factory never renders one — its passwords come from CloudNativePG's generated
-secrets and the rest are created here — which makes "no credentials in that repository" a
+because the factory never renders one: its passwords come from CloudNativePG's generated
+secrets and the rest are created here. That makes "no credentials in that repository" a
 rule the cluster enforces rather than one reviewers have to remember.
 
-Two of the destinations are not workload namespaces. The factory's DNS-01 certificate issuer
-is an aggregated extension API server, and it needs `kube-system` for a RoleBinding on
-`extension-apiserver-authentication-reader`, plus cert-manager's own namespace because a
-`ClusterIssuer` resolves its solver's credentials in `--cluster-resource-namespace`. Both
-widen the envelope; weigh that before adding a third.
+The destinations are the factory's own namespaces, plus `kube-gitops` and the ToolHive
+operator's. The cluster-scoped whitelist adds `ValidatingAdmissionPolicy` and its binding to
+the operator kinds: GitLab's chart narrows, by admission policy, the Secret creation RBAC
+cannot narrow by name. Weigh any addition, since each one widens what a commit can do.
 
-That issuer also needs a DNS registrar credential, supplied by `--ovh-credentials-file`
-pointing at a yaml file holding the three values:
+### Applying to a live cluster
 
-```yaml
-# ~/secrets/ovh-dns01.yml, chmod 600
-applicationKey: xxxxxxxxxxxx
-applicationSecret: xxxxxxxxxxxx
-applicationConsumerKey: xxxxxxxxxxxx
+`--ansible-tags` runs only the roles carrying those tags. Terraform still runs, and finds
+nothing to change on an unchanged cluster. For instance, after a change to the factory's
+prerequisites:
+
+```bash
+./deploy-to-libvirt … --ansible-tags gitops,csi,ingress,haproxy,monitoring
 ```
 
-A path and not three flags, for the same reason `--github-app-key` and `--gitops-ssh-key`
-take paths: the file is read on the controller, so nothing secret reaches a command line,
-the process table or shell history. A file that is present but missing a key fails the run
-rather than deploying a cluster whose certificates silently never arrive. The secret lands
-in cert-manager's namespace, which is where a `ClusterIssuer` resolves its solver's
-credential refs — not in a namespace of the factory's own.
-
-Create the token at OVH scoped to the single zone, never `/domain/zone/*`, which would be
-write access to every zone in the account:
-
-```
-https://api.ovh.com/createToken/?GET=/domain/zone/mydomain.io/*&POST=/domain/zone/mydomain.io/*&DELETE=/domain/zone/mydomain.io/*
-```
-
-`DELETE` is not optional — without it the solver cannot remove its own `_acme-challenge`
-records and the zone accumulates them. **Set the validity to unlimited**: if the token
-expires, renewal starts failing weeks before anything looks wrong, and the only signal is an
-auth error on a `Challenge` nobody is watching.
-
-Deploying without the credentials works, but know what it costs. The factory puts its whole
-`devpods` block on the DNS-01 issuer — the wildcard, which has no other option, *and* the
-dashboard at `devpods.<domain>`, which shares its chart's issuer. That dashboard is the one
-URL a human types, so "no DNS-01 credentials" means two certificates never arrive, not one.
-Everything else is issued over HTTP-01 and is unaffected.
-
-Rotation is manual in one direction: revoking the token at OVH does not remove the secret
-from the cluster. Re-run with the new file, or `kubectl delete secret ovh-credentials -n
-kube-cert` — dropping the flag only skips the task, it does not clean up.
-
-See `docs/certificates.md` in the ai-factory repository for switching to another provider.
+Argo CD polls the ai-factory repository every 60 seconds, so a merge there lands within
+about a minute without a manual refresh.
 
 Once Argo CD is up, get the initial admin password with
 

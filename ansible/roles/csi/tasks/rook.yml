@@ -26,6 +26,12 @@
     release_namespace: "{{ csi_rook_namespace }}"
     values:
       operatorNamespace: "{{ csi_rook_namespace }}"
+      # bucketOwner lets a claim hand its bucket to an existing object store
+      # user, so one key reaches several buckets (GitLab's consolidated object
+      # storage). Off by default: Rook documents that a claim naming an existing
+      # bucket re-links it, which is accepted because only the ai-factory
+      # AppProject creates claims.
+      obcAllowAdditionalConfigFields: "maxObjects,maxSize,bucketOwner"
 
 - name: Ensure CSI CRD is available
   ansible.builtin.pause:
@@ -65,6 +71,26 @@
   kubernetes.core.k8s:
     state: present
     template: templates/rook-block.yml.j2
+
+# A StorageClass's parameters cannot be changed in place, and older clusters
+# carry one naming a store that never existed. No claim can be bound to it, so
+# deleting it lets the template below create the corrected one.
+- name: Look up the bucket StorageClass
+  kubernetes.core.k8s_info:
+    api_version: storage.k8s.io/v1
+    kind: StorageClass
+    name: rook-ceph-bucket
+  register: csi_bucket_sc
+
+- name: Remove a bucket StorageClass that names the wrong object store
+  kubernetes.core.k8s:
+    state: absent
+    api_version: storage.k8s.io/v1
+    kind: StorageClass
+    name: rook-ceph-bucket
+  when: >-
+    csi_bucket_sc.resources | length > 0
+    and (csi_bucket_sc.resources | first).parameters.objectStoreName != 'my-store'
 
 - name: Rook S3 Storage
   kubernetes.core.k8s:

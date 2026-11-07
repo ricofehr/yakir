@@ -36,35 +36,20 @@ gitops_app_namespaces:
   - "ai-runners"
   - "ai-identity"
   - "ai-knowledge"
-  - "ai-devpods"
   - "ai-assistant"
-# Where cert-manager runs, and therefore where the factory's DNS-01 webhook
-# solver has to run too. Tracks the cert_manager role rather than restating
-# "kube-cert": both roles run in the leader play, so moving cert-manager without
-# moving the solver would otherwise break DNS-01 silently.
-gitops_cert_namespace: "{{ cert_manager_namespace | default('kube-cert') }}"
+  - "ai-gitlab"
 # Namespaces the root project may deploy into: the factory's own, plus the ones
 # hosting operators rather than workloads.
 #
-# The last two are not workload destinations, and the factory's DNS-01 webhook
-# solver needs both. It is an aggregated extension api server, so it needs a
-# RoleBinding on extension-apiserver-authentication-reader in kube-system to
-# validate the client certificates the apiserver presents; and it has to be
-# deployed into cert-manager's own namespace, because a ClusterIssuer resolves
-# its solver's credential refs in --cluster-resource-namespace. Without either
-# one Argo CD refuses the whole application and the issuer never appears.
-#
-# Widening the project is the cost of this feature. Weigh it when adding to the
-# list: anything committed under apps/ is applied with the application
-# controller's rights, so a destination here is a namespace the ai-factory
-# repository can write every non-blacklisted kind into.
+# Weigh any addition: anything committed under apps/ is applied with the
+# application controller's rights, so a destination here is a namespace the
+# ai-factory repository can write every non-blacklisted kind into.
 gitops_project_namespaces: >-
-  {{ gitops_app_namespaces + [gitops_namespace, 'toolhive-system', 'arc-system',
-                              'kube-system', gitops_cert_namespace] }}
+  {{ gitops_app_namespaces + [gitops_namespace, 'toolhive-system'] }}
 gitops_llm_namespace: "ai-llm"
 gitops_mcp_namespace: "ai-mcp"
 gitops_knowledge_namespace: "ai-knowledge"
-gitops_runners_namespace: "ai-runners"
+gitops_gitlab_namespace: "ai-gitlab"
 gitops_identity_namespace: "ai-identity"
 gitops_assistant_namespace: "ai-assistant"
 gitops_keycloak_admin_user: "admin"
@@ -78,25 +63,26 @@ gitops_llama_api_key: ""
 # ingester. Empty means both reach public repositories only.
 gitops_github_token: ""
 
-# GitHub App used by the self-hosted Actions runners.
-gitops_github_app_id: ""
-gitops_github_app_installation_id: ""
-# Path, on the ansible controller, to the GitHub App private key (.pem).
-gitops_github_app_private_key: ""
+# Path, on the ansible controller, to a file holding the passphrase GitLab's
+# off-site copies of its rails secret are encrypted with. A path, so nothing
+# secret passes through a command line or an extra var. Keep the file outside
+# the cluster too: a rebuild loses the Secret, and without the passphrase the
+# off-site copies cannot be decrypted. Empty means the off-site credentials are
+# not written and GitLab's backup mirror waits for them.
+gitops_gitlab_backup_passphrase_file: ""
 
-# Path, on the ansible controller, to a yaml file holding the OVH api
-# credentials the factory's DNS-01 solver uses to write the _acme-challenge
-# records Let's Encrypt checks. A path and not three values, for the same reason
-# gitops_github_app_private_key is a path: the file is read here, so nothing
-# secret passes through a command line or an extra var. It must hold
-# applicationKey, applicationSecret and applicationConsumerKey.
-#
-# Only a wildcard hostname has no alternative to DNS-01 — HTTP-01 cannot answer
-# a challenge for one — but the factory puts its whole devpods block on that
-# issuer, so leaving this empty costs both *.devpods.<domain> and the dashboard
-# at devpods.<domain>. Both keep whatever certificate they already had while
-# every application still reports healthy, which is why a file that is present
-# but incomplete fails the run rather than being skipped.
-gitops_ovh_credentials_file: ""
+# Path, on the ansible controller, to a yaml file holding MinIO admin
+# credentials (accessKey, secretKey), used only to set up GitLab's off-site
+# store below. Separate from --backup-*, whose keys Velero also writes into the
+# cluster: a key that can delete must not live where the backups are meant to
+# survive a compromise. Give Velero bucket-scoped keys.
+gitops_minio_admin_credentials_file: ""
+
+# The off-site store GitLab's backup mirror copies to, on the MinIO behind
+# backup_s3_url (the one Velero uses).
+gitops_gitlab_backup_bucket: "gitlab-backups"
+gitops_gitlab_backup_user: "gitlab-backup"
+gitops_gitlab_backup_retention_days: 90
+gitops_gitlab_backup_noncurrent_days: 30
 
 ...

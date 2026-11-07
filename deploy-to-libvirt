@@ -33,10 +33,10 @@ declare GITOPS_SSH_KEY=""
 declare -a GITOPS_PARAMS=()
 declare LLAMA_API_KEY=""
 declare GITHUB_TOKEN=""
-declare GITHUB_APP_ID=""
-declare GITHUB_APP_INSTALLATION_ID=""
-declare GITHUB_APP_KEY=""
-declare OVH_CREDENTIALS_FILE=""
+declare GITLAB_BACKUP_PASSPHRASE_FILE=""
+declare MINIO_ADMIN_CREDENTIALS_FILE=""
+declare ANSIBLE_TAGS=""
+declare -a ANSIBLE_TAGS_PARAM=()
 
 
 # Help function
@@ -63,10 +63,11 @@ Usage: $0 [options]
 --gitops-ssh-key xxxx             private deploy key for the ai-factory repository
 --llama-api-key xxxx              api key of the llama-server backing the LLM gateway
 --github-token xxxx               GitHub personal access token for the MCP gateway and context graph
---github-app-id xxxx              GitHub App id used by the self-hosted runners
---github-app-installation-id xxxx GitHub App installation id used by the self-hosted runners
---github-app-key xxxx             GitHub App private key (.pem) path
---ovh-credentials-file xxxx       yaml file holding the OVH api credentials, for the DNS-01 certificate challenges
+--gitlab-backup-passphrase-file xxxx
+                                  file holding the passphrase GitLab's off-site rails-secret copies are encrypted with
+--minio-admin-credentials-file xxxx
+                                  yaml file (accessKey, secretKey) of a MinIO admin, to set up GitLab's off-site store
+--ansible-tags xxxx               only run the ansible roles with these tags (comma separated), e.g. on a live cluster
 EOF
 
 exit 1
@@ -165,24 +166,19 @@ while (($# > 0)); do
       GITHUB_TOKEN="$1"
       shift
       ;;
-    --github-app-id)
+    --gitlab-backup-passphrase-file)
       shift
-      GITHUB_APP_ID="$1"
-      shift
-      ;;
-    --github-app-installation-id)
-      shift
-      GITHUB_APP_INSTALLATION_ID="$1"
+      GITLAB_BACKUP_PASSPHRASE_FILE="$1"
       shift
       ;;
-    --github-app-key)
+    --minio-admin-credentials-file)
       shift
-      GITHUB_APP_KEY="$1"
+      MINIO_ADMIN_CREDENTIALS_FILE="$1"
       shift
       ;;
-    --ovh-credentials-file)
+    --ansible-tags)
       shift
-      OVH_CREDENTIALS_FILE="$1"
+      ANSIBLE_TAGS="$1"
       shift
       ;;
     -h)
@@ -206,16 +202,19 @@ if [[ -z "$VIP_MANAGERS" ]]; then
   deployhelp
 fi
 
-# Check the OVH credentials file here, before terraform builds anything. The
-# gitops role is the very last thing the playbook runs, so a typo in this path
-# would otherwise cost a full cluster build to discover.
-if [[ -n "$OVH_CREDENTIALS_FILE" ]]; then
-  if [[ ! -r "$OVH_CREDENTIALS_FILE" ]]; then
-    echo "--ovh-credentials-file: cannot read $OVH_CREDENTIALS_FILE"
+# Check the off-site store's files here, before anything is built. The gitops
+# role is the very last thing the playbook runs, so a typo in a path or a
+# missing companion flag would otherwise cost a full cluster build to discover.
+for offsite_file in "$GITLAB_BACKUP_PASSPHRASE_FILE" "$MINIO_ADMIN_CREDENTIALS_FILE"; do
+  if [[ -n "$offsite_file" && ! -r "$offsite_file" ]]; then
+    echo "cannot read $offsite_file"
     deployhelp
   fi
-  if [[ -z "$GITOPS_REPO" ]]; then
-    echo "--ovh-credentials-file needs --gitops-repo: without it the gitops role is skipped and the credential is never written"
+done
+if [[ -n "$GITLAB_BACKUP_PASSPHRASE_FILE$MINIO_ADMIN_CREDENTIALS_FILE" ]]; then
+  if [[ -z "$GITOPS_REPO" || -z "$BACKUP_SERVER_URL" \
+        || -z "$GITLAB_BACKUP_PASSPHRASE_FILE" || -z "$MINIO_ADMIN_CREDENTIALS_FILE" ]]; then
+    echo "GitLab's off-site store needs --gitops-repo, --backup-server, --gitlab-backup-passphrase-file and --minio-admin-credentials-file together"
     deployhelp
   fi
 fi
@@ -235,13 +234,13 @@ fi
 [[ -n "$GITOPS_SSH_KEY" ]] && GITOPS_PARAMS+=(-e "gitops_repo_ssh_key=$GITOPS_SSH_KEY")
 [[ -n "$LLAMA_API_KEY" ]] && GITOPS_PARAMS+=(-e "gitops_llama_api_key=$LLAMA_API_KEY")
 [[ -n "$GITHUB_TOKEN" ]] && GITOPS_PARAMS+=(-e "gitops_github_token=$GITHUB_TOKEN")
-[[ -n "$GITHUB_APP_ID" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_id=$GITHUB_APP_ID")
-[[ -n "$GITHUB_APP_INSTALLATION_ID" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_installation_id=$GITHUB_APP_INSTALLATION_ID")
-[[ -n "$GITHUB_APP_KEY" ]] && GITOPS_PARAMS+=(-e "gitops_github_app_private_key=$GITHUB_APP_KEY")
-# Only the path travels as an extra var; the credentials themselves never enter
-# argv or shell history. Same reason --github-app-key and --gitops-ssh-key take
-# a path rather than a value.
-[[ -n "$OVH_CREDENTIALS_FILE" ]] && GITOPS_PARAMS+=(-e "gitops_ovh_credentials_file=$OVH_CREDENTIALS_FILE")
+# Only the path travels as an extra var; the passphrase itself never enters argv
+# or shell history. Same reason --gitops-ssh-key takes a path rather than a value.
+[[ -n "$GITLAB_BACKUP_PASSPHRASE_FILE" ]] && GITOPS_PARAMS+=(-e "gitops_gitlab_backup_passphrase_file=$GITLAB_BACKUP_PASSPHRASE_FILE")
+[[ -n "$MINIO_ADMIN_CREDENTIALS_FILE" ]] && GITOPS_PARAMS+=(-e "gitops_minio_admin_credentials_file=$MINIO_ADMIN_CREDENTIALS_FILE")
+# A subset of roles, for a live cluster: terraform below finds nothing to change
+# on an unchanged cluster, and only the tagged roles run.
+[[ -n "$ANSIBLE_TAGS" ]] && ANSIBLE_TAGS_PARAM=(--tags "$ANSIBLE_TAGS")
 
 # Create k8s vms
 pushd tf/libvirt > /dev/null
@@ -304,6 +303,6 @@ $ANSIBLEPATH -i tfinventory \
 -e "backup_s3_url=$BACKUP_SERVER_URL" -e "backup_s3_accesskey_id=$BACKUP_ACCESS_KEY" \
 -e "backup_s3_accesskey_secret=$BACKUP_ACCESS_SECRET" -e "backup_s3_region=$BACKUP_REGION" \
 -e "csi_plugin=$CSI_PLUGIN" -e "global_persistence_disk=true" \
-"${MIRROR_PARAMS[@]}" "${GITOPS_PARAMS[@]}"
+"${MIRROR_PARAMS[@]}" "${GITOPS_PARAMS[@]}" "${ANSIBLE_TAGS_PARAM[@]}"
 
 popd > /dev/null

@@ -73,7 +73,11 @@
     chart_version: "{{ monitoring_grafana_version }}"
     release_namespace: "{{ monitoring_namespace }}"
     values:
-      replicas: 2
+      # One pod: the dashboards volume is ReadWriteOnce, so a second replica
+      # waits on the attach for ever, and a rolling update would too.
+      replicas: 1
+      deploymentStrategy:
+        type: Recreate
       grafana.ini: "{{ monitoring_grafana_tracing_ini if monitoring_tracing_enabled | bool else {} }}"
       ingress:
         ingressClassName: ingress-traefik

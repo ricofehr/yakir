@@ -1,0 +1,11 @@
+{
+  "Rules": [
+    {
+      "ID": "gitlab-backups-retention",
+      "Status": "Enabled",
+      "Filter": {"Prefix": ""},
+      "Expiration": {"Days": {{ gitops_gitlab_backup_retention_days }}},
+      "NoncurrentVersionExpiration": {"NoncurrentDays": {{ gitops_gitlab_backup_noncurrent_days }}}
+    }
+  ]
+}

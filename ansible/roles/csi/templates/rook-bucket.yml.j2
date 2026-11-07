@@ -14,6 +14,9 @@ spec:
       dataChunks: 2
       codingChunks: 1
   preservePoolsOnDelete: true
+  # Namespaces besides this one where CephObjectStoreUsers may be created, so a
+  # workload gets its S3 keys as a Secret in its own namespace.
+  allowUsersInNamespaces: {{ csi_rook_object_user_namespaces | to_json }}
   gateway:
     sslCertificateRef:
     port: 80
@@ -28,6 +31,8 @@ metadata:
 provisioner: {{ csi_rook_namespace }}.ceph.rook.io/bucket
 reclaimPolicy: Delete
 parameters:
-  objectStoreName: rook-ceph-bucket
+  # The store above. It used to name a store that does not exist, so every
+  # bucket claim waited for ever.
+  objectStoreName: my-store
   objectStoreNamespace: {{ csi_rook_namespace }}
 
