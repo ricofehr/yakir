@@ -1,0 +1,247 @@
+---
+
+# GitLab's Redis password. Generated once and reused: Valkey and GitLab both
+# read it from this secret, and a new value on a replay would cut GitLab off
+# from its queues until both restarted.
+- name: Look up the existing Valkey password
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ gitops_valkey_secret }}"
+    namespace: "{{ gitops_gitlab_namespace }}"
+  register: gitops_valkey_lookup
+  no_log: true
+
+- name: Store a Valkey password when none is stored
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ gitops_valkey_secret }}"
+        namespace: "{{ gitops_gitlab_namespace }}"
+      type: Opaque
+      stringData:
+        # The key is the Valkey user's name, which is how the chart finds it.
+        default: "{{ lookup('community.general.random_string', length=40, special=false) }}"
+  when: "'default' not in stored"
+  vars:
+    stored: "{{ (gitops_valkey_lookup.resources | first | default({})).data | default({}) }}"
+  no_log: true
+
+# The off-site store needs MinIO admin credentials, to create the GitLab user,
+# and a passphrase the operator keeps. The admin credentials come from a file
+# that stays on the controller: Velero's --backup-* keys are also written into
+# the cluster, and a key that can delete must not live where the backups are
+# meant to survive a compromise. Without either file GitLab's backup mirror has
+# nothing to write to; say so instead of storing half a secret.
+- name: Note whether GitLab's off-site store can be set up
+  ansible.builtin.set_fact:
+    gitops_gitlab_offsite_ready: >-
+      {{ (backup_s3_url | default('') | length > 0)
+         and (gitops_minio_admin_credentials_file | length > 0)
+         and (gitops_gitlab_backup_passphrase_file | length > 0) }}
+
+- name: Explain why GitLab's off-site store is skipped
+  ansible.builtin.debug:
+    msg: >-
+      GitLab's off-site backup store is not set up: it needs --backup-server,
+      --minio-admin-credentials-file and --gitlab-backup-passphrase-file. Until then
+      the ai-factory backup mirror waits for the {{ gitops_gitlab_backup_secret }} secret.
+  when: not gitops_gitlab_offsite_ready
+
+- name: Set up GitLab's off-site backup store
+  when: gitops_gitlab_offsite_ready
+  block:
+    # The pinned client is a linux-amd64 binary, run on the controller.
+    - name: Check the controller can run MinIO's client
+      ansible.builtin.command: uname -sm
+      register: gitops_controller_platform
+      changed_when: false
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail early on a controller the pinned client cannot run on
+      ansible.builtin.assert:
+        that: gitops_controller_platform.stdout == "Linux x86_64"
+        fail_msg: >-
+          GitLab's off-site store is set up from the controller with a linux-amd64 mc;
+          this controller is {{ gitops_controller_platform.stdout }}.
+      run_once: true
+
+    - name: Read the MinIO admin credentials and the passphrase on the controller
+      ansible.builtin.set_fact:
+        gitops_minio_admin: "{{ lookup('file', gitops_minio_admin_credentials_file) | from_yaml }}"
+        gitops_gitlab_backup_passphrase: "{{ lookup('file', gitops_gitlab_backup_passphrase_file) | trim }}"
+      no_log: true
+
+    # Checked without no_log, so a failure says what is wrong; only lengths are
+    # compared, nothing secret is printed.
+    - name: Check the credentials files hold what the setup needs
+      ansible.builtin.assert:
+        that:
+          - gitops_minio_admin.accessKey | default('') | length > 0
+          - gitops_minio_admin.secretKey | default('') | length > 0
+          - gitops_gitlab_backup_passphrase | length > 0
+        fail_msg: >-
+          {{ gitops_minio_admin_credentials_file }} must hold accessKey and secretKey,
+          and {{ gitops_gitlab_backup_passphrase_file }} must not be empty.
+        quiet: true
+
+    - name: Look up the existing off-site credentials
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: "{{ gitops_gitlab_backup_secret }}"
+        namespace: "{{ gitops_gitlab_namespace }}"
+      register: gitops_gitlab_backup_lookup
+      no_log: true
+
+    # Generated once per cluster and reused. A rebuilt cluster generates a new
+    # one, and the user step below re-sets it on MinIO, so the old cluster's key
+    # stops working and nothing is done by hand.
+    - name: Settle the GitLab user's MinIO secret
+      ansible.builtin.set_fact:
+        gitops_gitlab_backup_secret_is_new: "{{ 'secret-key' not in stored }}"
+        gitops_gitlab_backup_user_secret: >-
+          {{ (stored['secret-key'] | b64decode) if 'secret-key' in stored
+             else lookup('community.general.random_string', length=40, special=false) }}
+      vars:
+        stored: "{{ (gitops_gitlab_backup_lookup.resources | first | default({})).data | default({}) }}"
+      no_log: true
+
+    - name: Prepare a private working directory on the controller
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: yakir-mc
+      register: gitops_mc_dir
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch MinIO's client, pinned by checksum
+      ansible.builtin.get_url:
+        url: "{{ gitops_mc_url }}"
+        dest: "{{ gitops_mc_dir.path }}/mc"
+        checksum: "sha256:{{ gitops_mc_sha256 }}"
+        mode: "0700"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Render the bucket policy and lifecycle on the controller
+      ansible.builtin.template:
+        src: "{{ item }}.j2"
+        dest: "{{ gitops_mc_dir.path }}/{{ item }}"
+        mode: "0600"
+      loop:
+        - gitlab-backup-writer.json
+        - gitlab-backups-lifecycle.json
+      delegate_to: localhost
+      run_once: true
+
+    # Credentials go to mc through its own config file, mode 0600 in the
+    # private directory, never through the environment or argv: Ansible puts a
+    # task's environment on the command line it runs.
+    - name: Create mc's private configuration directory
+      ansible.builtin.file:
+        path: "{{ gitops_mc_dir.path }}/config"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Write mc's configuration with the admin alias
+      ansible.builtin.template:
+        src: mc-config.json.j2
+        dest: "{{ gitops_mc_dir.path }}/config/config.json"
+        mode: "0600"
+      delegate_to: localhost
+      run_once: true
+      no_log: true
+
+    - name: Write the GitLab user's secret for mc to read on stdin
+      ansible.builtin.copy:
+        content: "{{ gitops_gitlab_backup_user_secret }}"
+        dest: "{{ gitops_mc_dir.path }}/user-secret"
+        mode: "0600"
+      delegate_to: localhost
+      run_once: true
+      no_log: true
+
+    # Each step is idempotent. The bucket is created with object lock and a
+    # default GOVERNANCE retention as long as the lifecycle keeps archives: the
+    # GitLab user cannot delete, and cannot purge an archive by overwriting it
+    # either, since the old version stays locked. Object lock can only be chosen
+    # when the bucket is created, hence the check. ilm import replaces the
+    # lifecycle (rule add would stack a duplicate on every replay), policy
+    # create updates, user add re-sets the secret.
+    - name: Configure the bucket and the GitLab user on MinIO
+      ansible.builtin.shell: |
+        set -euo pipefail
+        mc() { "{{ gitops_mc_dir.path }}/mc" --config-dir "{{ gitops_mc_dir.path }}/config" "$@"; }
+        bucket="offsite/{{ gitops_gitlab_backup_bucket }}"
+        # mc treats an alias it cannot resolve as a local path and would create
+        # directories on the controller; make sure the admin alias reaches MinIO.
+        mc admin info offsite >/dev/null
+        mc mb --ignore-existing --with-lock "$bucket"
+        if ! mc retention info --default "$bucket" >/dev/null 2>&1; then
+          echo "$bucket exists without object lock; it can only be enabled at creation" >&2
+          exit 1
+        fi
+        mc retention set --default GOVERNANCE "{{ gitops_gitlab_backup_retention_days }}d" "$bucket"
+        mc ilm import "$bucket" < "{{ gitops_mc_dir.path }}/gitlab-backups-lifecycle.json"
+        mc admin policy create offsite gitlab-backup-writer "{{ gitops_mc_dir.path }}/gitlab-backup-writer.json"
+        # A secret new to this cluster for a user that already exists means
+        # another cluster held it: it is about to lose access.
+        if {{ gitops_gitlab_backup_secret_is_new | bool | ternary('true', 'false') }} \
+           && mc admin user info offsite "{{ gitops_gitlab_backup_user }}" >/dev/null 2>&1; then
+          echo "TAKEOVER"
+        fi
+        mc admin user add offsite "{{ gitops_gitlab_backup_user }}" < "{{ gitops_mc_dir.path }}/user-secret"
+        if ! mc admin policy entities offsite --user "{{ gitops_gitlab_backup_user }}" \
+             | grep -qw gitlab-backup-writer; then
+          mc admin policy attach offsite gitlab-backup-writer --user "{{ gitops_gitlab_backup_user }}"
+        fi
+      args:
+        executable: /bin/bash
+      register: gitops_offsite_setup
+      delegate_to: localhost
+      run_once: true
+      # user add re-sets the secret on every run, by design.
+      changed_when: true
+
+    - name: Warn that another cluster's backup key was revoked
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: the MinIO user {{ gitops_gitlab_backup_user }} already existed and this
+          cluster had no stored key for it, so its secret was re-set. Any other cluster
+          still using it (an earlier build, or a second cluster pointed at the same MinIO)
+          has just lost access to {{ gitops_gitlab_backup_bucket }}. Expected after a
+          rebuild; investigate otherwise.
+      when: "'TAKEOVER' in gitops_offsite_setup.stdout"
+
+    - name: Store the off-site credentials for GitLab's backup mirror
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ gitops_gitlab_backup_secret }}"
+            namespace: "{{ gitops_gitlab_namespace }}"
+          type: Opaque
+          stringData:
+            endpoint: "{{ backup_s3_url }}"
+            access-key: "{{ gitops_gitlab_backup_user }}"
+            secret-key: "{{ gitops_gitlab_backup_user_secret }}"
+            crypt-passphrase: "{{ gitops_gitlab_backup_passphrase }}"
+      no_log: true
+
+  always:
+    - name: Remove the controller's working directory
+      ansible.builtin.file:
+        path: "{{ gitops_mc_dir.path }}"
+        state: absent
+      delegate_to: localhost
+      run_once: true
+      when: gitops_mc_dir.path is defined

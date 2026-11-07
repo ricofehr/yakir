@@ -38,6 +38,8 @@ global_controlplane_endpoint_ip: "192.168.58.250"
 global_controlplane_endpoint_port: 6443
 global_ingress_http_nodeport: 30080
 global_ingress_https_nodeport: 30443
+# Git over SSH to the factory's GitLab: HAProxy :2222 on the managers forwards here.
+global_ingress_ssh_nodeport: 30022
 
 # cert-manager config
 global_cert_manager_selfsigned_issuer: "my-ca-issuer"

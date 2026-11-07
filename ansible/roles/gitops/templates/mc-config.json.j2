@@ -1,0 +1,12 @@
+{
+  "version": "10",
+  "aliases": {
+    "offsite": {
+      "url": {{ backup_s3_url | regex_replace('/+$', '') | to_json }},
+      "accessKey": {{ gitops_minio_admin.accessKey | to_json }},
+      "secretKey": {{ gitops_minio_admin.secretKey | to_json }},
+      "api": "S3v4",
+      "path": "auto"
+    }
+  }
+}

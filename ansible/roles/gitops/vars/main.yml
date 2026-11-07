@@ -13,13 +13,20 @@ gitops_argocd_tracing_params:
 gitops_repo_secret: "ai-factory-repo"
 gitops_masterkey_secret: "litellm-masterkey"
 gitops_llama_secret: "llama-credentials"
-gitops_github_app_secret: "arc-github-app"
 gitops_keycloak_secret: "keycloak-admin"
 gitops_github_token_secret: "github-token"
 gitops_neo4j_secret: "neo4j-auth"
-# Name and keys are fixed by charts/cert-dns01 in the ai-factory repository,
-# which references them; they are the contract between the two repositories.
-gitops_ovh_secret: "ovh-credentials"
+# Names and keys are fixed by charts/valkey and charts/gitlab in the ai-factory
+# repository, which reference them; they are the contract between the two.
+gitops_valkey_secret: "valkey-auth"
+gitops_gitlab_backup_secret: "gitlab-backup-offsite"
+
+# MinIO's client, to set up GitLab's off-site store. MinIO's community releases
+# are archived and dl.min.io no longer serves them; this is the last release
+# published on GitHub, pinned by checksum.
+gitops_mc_version: "RELEASE.2025-08-13T08-35-41Z"
+gitops_mc_url: "https://github.com/minio/mc/releases/download/{{ gitops_mc_version }}/mc.linux-amd64.{{ gitops_mc_version }}"
+gitops_mc_sha256: "01f866e9c5f9b87c2b09116fa5d7c06695b106242d829a8bb32990c00312e891"
 
 gitops_root_application: "ai-factory"
 gitops_project: "ai-factory"
@@ -27,10 +34,9 @@ gitops_project: "ai-factory"
 # Cluster-scoped kinds the factory legitimately creates. Anything outside this
 # list is refused by Argo CD rather than applied with cluster-admin.
 #
-# The last two are the factory's DNS-01 issuer. Its wildcard host
-# (*.devpods.k8s.nextdeploy.io) cannot be solved over HTTP-01, and a DNS-01
-# solver for a registrar cert-manager has no native support for is an extension
-# api server: it needs an APIService alongside the ClusterIssuer itself.
+# The last two are GitLab's admission policy: RBAC cannot narrow Secret
+# creation by name, so a ValidatingAdmissionPolicy holds the service accounts
+# that create Secrets to their own.
 gitops_project_cluster_resources:
   - {group: "", kind: Namespace}
   - {group: "apiextensions.k8s.io", kind: CustomResourceDefinition}
@@ -38,14 +44,13 @@ gitops_project_cluster_resources:
   - {group: "rbac.authorization.k8s.io", kind: ClusterRoleBinding}
   - {group: "admissionregistration.k8s.io", kind: ValidatingWebhookConfiguration}
   - {group: "admissionregistration.k8s.io", kind: MutatingWebhookConfiguration}
-  - {group: "cert-manager.io", kind: ClusterIssuer}
-  - {group: "apiregistration.k8s.io", kind: APIService}
+  - {group: "admissionregistration.k8s.io", kind: ValidatingAdmissionPolicy}
+  - {group: "admissionregistration.k8s.io", kind: ValidatingAdmissionPolicyBinding}
 
 # Namespaced kinds the factory must never create, on top of the ResourceQuota
-# and LimitRange the template always denies. The project's destinations now
-# include kube-system and the cert-manager namespace, and a destination grants
-# every kind that is not denied here — so this is what stops a commit under
-# apps/ from replacing a control-plane add-on or planting a credential.
+# and LimitRange the template always denies. A destination grants every kind
+# that is not denied here, so this is what stops a commit under apps/ from
+# planting a credential or a node-wide workload.
 #
 # The ai-factory repository renders neither kind anywhere: its application
 # passwords come from CloudNativePG's generated secrets and the externally

@@ -29,7 +29,9 @@
     - role: k8s
       tags: ["controlplane"]
     - role: haproxy
-      tags: ["controlplane"]
+      # Its own tag too, so a live cluster can take it without replaying the
+      # whole control plane.
+      tags: ["controlplane", "haproxy"]
 
 - name: Init kubernetes on worker nodes
   hosts:

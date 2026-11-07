@@ -5,5 +5,9 @@ csi_rook_chart_version: v1.12.6
 csi_rook_namespace: kube-rook
 csi_rook_disk: "vdb"
 csi_ceph_version: v17.2.0
+# Namespaces where workloads may create their own object store users: GitLab's
+# storage in the ai-factory.
+csi_rook_object_user_namespaces:
+  - ai-gitlab
 
 ...

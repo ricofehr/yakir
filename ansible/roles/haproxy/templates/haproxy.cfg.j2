@@ -25,6 +25,14 @@ frontend https-in
     bind *:443
     default_backend servers_https
 
+# Git over SSH to the factory's GitLab. Not 22: the managers' own sshd is there.
+frontend gitlab-ssh
+    bind *:2222
+    # A large fetch can pack for minutes before the first byte, and a session
+    # may idle; the 50s defaults above would cut both.
+    timeout client 1h
+    default_backend servers_gitlab_ssh
+
 backend servers_http
     mode tcp
     server server1 {{ haproxy_ip }}:{{ haproxy_http_fw_port }} check
@@ -32,3 +40,8 @@ backend servers_http
 backend servers_https
     mode tcp
     server server1 {{ haproxy_ip }}:{{ haproxy_https_fw_port }} check
+
+backend servers_gitlab_ssh
+    mode tcp
+    timeout server 1h
+    server server1 {{ haproxy_ip }}:{{ haproxy_ssh_fw_port }} check
