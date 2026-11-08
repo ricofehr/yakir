@@ -80,4 +80,41 @@
     enabled: true
     state: started
 
+# Its own tag: a live cluster takes it with --ansible-tags apparmor, without
+# replaying the rest of the node setup. Only where the gitops role runs too:
+# that role installs the admission policy keeping the profile to ai-build, and
+# without it any baseline pod could select it.
+- name: Install the AppArmor profile that grants rootless BuildKit user namespaces
+  become: true
+  ansible.builtin.copy:
+    src: apparmor-buildkitd
+    dest: /etc/apparmor.d/buildkitd
+    owner: root
+    group: root
+    mode: '0644'
+  register: crio_buildkitd_profile
+  when: gitops_repo_url | default('') | length > 0
+  tags: ["apparmor"]
+
+# apparmor.service loads it at boot; until then it is loaded here, also after a
+# run whose load step failed once the file was already in place.
+- name: Check whether the kernel has the BuildKit AppArmor profile
+  become: true
+  ansible.builtin.command: grep -q '^buildkitd ' /sys/kernel/security/apparmor/profiles
+  register: crio_buildkitd_loaded
+  failed_when: false
+  changed_when: false
+  check_mode: false
+  when: gitops_repo_url | default('') | length > 0
+  tags: ["apparmor"]
+
+- name: Load the BuildKit AppArmor profile into the kernel
+  become: true
+  ansible.builtin.command: apparmor_parser --replace /etc/apparmor.d/buildkitd
+  when:
+    - gitops_repo_url | default('') | length > 0
+    - crio_buildkitd_profile is changed or crio_buildkitd_loaded.rc != 0
+  changed_when: true
+  tags: ["apparmor"]
+
 ...

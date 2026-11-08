@@ -111,6 +111,19 @@
         name: "{{ item }}"
   loop: "{{ gitops_app_namespaces }}"
 
+- name: Create the factory's build namespace at Pod Security privileged
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        labels:
+          kubernetes.io/metadata.name: "{{ gitops_build_namespace }}"
+          name: "{{ gitops_build_namespace }}"
+          pod-security.kubernetes.io/enforce: privileged
+        name: "{{ gitops_build_namespace }}"
+
 - name: Store the git deploy key so Argo CD can read the ai-factory repository
   kubernetes.core.k8s:
     state: present
@@ -343,6 +356,36 @@
   kubernetes.core.k8s:
     state: present
     template: app-project.yml.j2
+
+- name: Hold the factory's app namespaces to Pod Security baseline
+  kubernetes.core.k8s:
+    state: present
+    template: apps-namespaces-policy.yml.j2
+
+- name: Hold the factory's app hostnames to one name per namespace
+  kubernetes.core.k8s:
+    state: present
+    template: apps-hosts-policy.yml.j2
+
+- name: Cap what a factory app namespace may consume
+  kubernetes.core.k8s:
+    state: present
+    template: apps-resources-policy.yml.j2
+
+- name: Refuse factory app pods while their namespace has no quota
+  kubernetes.core.k8s:
+    state: present
+    template: apps-quota-required-policy.yml.j2
+
+- name: Keep Localhost AppArmor profiles, BuildKit's included, to the build namespace
+  kubernetes.core.k8s:
+    state: present
+    template: apparmor-localhost-policy.yml.j2
+
+- name: Deploy the project the factory's own apps are confined to
+  kubernetes.core.k8s:
+    state: present
+    template: apps-project.yml.j2
 
 - name: Deploy the ai-factory root application
   kubernetes.core.k8s:

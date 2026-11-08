@@ -1,0 +1,46 @@
+# The resources policy caps a quota, but nothing makes one exist: a commit could
+# drop the app chart's quota, and Argo CD would prune it. With the chart's
+# labelled ResourceQuota as its parameter, this refuses every new pod in an app
+# namespace while that namespace has no unscoped quota bounding CPU, memory and
+# pods. A namespace is selected by its label, which the namespaces policy makes
+# mandatory on prod-* and review-*.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: factory-apps-quota-required
+spec:
+  failurePolicy: Fail
+  paramKind:
+    apiVersion: v1
+    kind: ResourceQuota
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE"]
+        resources: ["pods"]
+  validations:
+    - expression: >-
+        !has(params.spec.scopes) && !has(params.spec.scopeSelector)
+        && ["requests.cpu", "requests.memory", "limits.memory", "pods"].all(k, k in params.spec.?hard.orValue({}))
+      message: >-
+        Factory app pods need the namespace's {{ gitops_apps_quota_label }} ResourceQuota, unscoped, bounding
+        requests.cpu, requests.memory, limits.memory and pods.
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: factory-apps-quota-required
+spec:
+  policyName: factory-apps-quota-required
+  validationActions: ["Deny"]
+  # No namespace: the parameter is looked up in the pod's own namespace.
+  paramRef:
+    selector:
+      matchLabels:
+        {{ gitops_apps_quota_label }}: "true"
+    parameterNotFoundAction: Deny
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        {{ gitops_apps_namespace_label }}: "true"

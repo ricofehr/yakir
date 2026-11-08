@@ -1,0 +1,39 @@
+# The apps the factory builds, as opposed to the factory itself. ai-factory's
+# delivery ApplicationSets generate one Application per app (prod-<name>) and
+# per open merge request (review-<name>-<mr>), from a repository on the
+# cluster's own GitLab that CI and agents write to. Whatever lands there is
+# applied with the application controller's rights, so the envelope is narrow:
+# that one repository, the prod-* and review-* namespaces, and no cluster-scoped
+# object but a Namespace of those names, which a review deployment owns. The
+# name matters: Argo CD checks destinations for namespaced objects only, so a
+# kind-only whitelist would let a commit adopt, relabel or prune any namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ gitops_apps_project }}
+  namespace: {{ gitops_namespace }}
+spec:
+  description: Apps built and deployed by the ai-factory
+  sourceRepos:
+    - {{ gitops_apps_repo_url }}
+  destinations:
+{% for namespace in gitops_apps_namespaces %}
+    - server: https://kubernetes.default.svc
+      namespace: "{{ namespace }}"
+{% endfor %}
+  clusterResourceWhitelist:
+{% for namespace in gitops_apps_namespaces %}
+    - group: ""
+      kind: Namespace
+      name: "{{ namespace }}"
+{% endfor %}
+  # A whitelist, not the root project's blacklist: exactly the kinds ai-factory's
+  # app chart renders (app-template workloads, its Ingress and Certificate, its
+  # NetworkPolicy, quota and LimitRange, the CloudNativePG database). Anything
+  # else, RBAC, Endpoints, Secrets, cert-manager requests, Traefik or Gateway
+  # routes, and any CRD installed later, is refused.
+  namespaceResourceWhitelist:
+{% for resource in gitops_apps_namespaced_allowed %}
+    - group: "{{ resource.group }}"
+      kind: {{ resource.kind }}
+{% endfor %}

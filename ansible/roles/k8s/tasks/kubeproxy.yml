@@ -1,6 +1,11 @@
 ---
 
-- name: Prepare kubeproxy as a service
+# kubectl proxy serves the API with the admin kubeconfig and no authentication
+# of its own, so it listens on the loopback only: reach it through an SSH tunnel
+# (ssh -L 8001:127.0.0.1:8001 <manager>). On the LAN address, anything that can
+# reach the manager, an app pod with a widened NetworkPolicy included, would be
+# cluster-admin.
+- name: Prepare kubeproxy as a service, on the loopback only
   become: true
   ansible.builtin.copy:
     content: |
@@ -9,7 +14,7 @@
       After=syslog.target network.target auditd.service crio.service
 
       [Service]
-      ExecStart=kubectl proxy --address={{ k8s_man01_ip }} --accept-hosts='^.*$'
+      ExecStart=kubectl proxy --address=127.0.0.1 --accept-hosts='^(localhost|127\.0\.0\.1)$'
       User={{ ansible_user }}
       Restart=always
       RestartSec=30
@@ -19,12 +24,14 @@
       WantedBy=multi-user.target
     dest: /etc/systemd/system/kubeproxy.service
     owner: root
-    mode: '0755'
+    mode: '0644'
+  register: k8s_kubeproxy_unit
 
+# Restarted when the unit changes, so a live cluster drops the old LAN listener.
 - name: Proxy manager node
   become: true
   ansible.builtin.systemd_service:
-    state: started
+    state: "{{ 'restarted' if k8s_kubeproxy_unit is changed else 'started' }}"
     daemon_reload: true
     name: kubeproxy
 

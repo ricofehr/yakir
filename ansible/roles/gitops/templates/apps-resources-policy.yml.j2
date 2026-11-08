@@ -1,0 +1,62 @@
+# What an app namespace may hold, whoever writes it: one box runs everything,
+# and the platform's traffic passes through the same Traefik and kube-proxy.
+# - a ResourceQuota within gitops_apps_quota_max, unscoped (the quota-required
+#   policy below makes one mandatory);
+# - pods with no positive priority, which would let them preempt the platform;
+# - Services with no external IPs (CVE-2020-8554) and no node, load-balancer or
+#   external-name exposure;
+# - no Traefik or Gateway API objects: routing outside a plain Ingress, which
+#   the hosts policy does not see.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: factory-apps-resources
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["resourcequotas", "pods", "services"]
+      - apiGroups: ["traefik.io", "traefik.containo.us", "gateway.networking.k8s.io"]
+        apiVersions: ["*"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["*"]
+  matchConditions:
+    - name: in-a-factory-app-namespace
+      expression: >-
+        {% for pattern in gitops_apps_namespaces %}request.namespace.startsWith("{{ pattern | replace('*', '') }}"){{ " || " if not loop.last else "" }}{% endfor %}
+
+  variables:
+    - name: max
+      expression: '{{ gitops_apps_quota_max | to_json }}'
+  validations:
+    - expression: >-
+        request.resource.resource != "resourcequotas"
+        || (!has(object.spec.scopes) && !has(object.spec.scopeSelector)
+          && object.spec.?hard.orValue({}).all(k, k in variables.max
+            && quantity(object.spec.hard[k]).compareTo(quantity(variables.max[k])) <= 0))
+      message: >-
+        A factory app quota may not be scoped, and may only set {{ gitops_apps_quota_max.keys() | join(", ") }}, at most {{ gitops_apps_quota_max | to_json }}.
+    # The resolved priority, not the class name: the Priority admission plugin
+    # fills in a globalDefault class before this runs.
+    - expression: >-
+        request.resource.resource != "pods" || object.spec.?priority.orValue(0) <= 0
+      message: Factory app pods may not have a positive priority.
+    - expression: >-
+        request.resource.resource != "services"
+        || (!has(object.spec.externalIPs)
+          && object.spec.?type.orValue("ClusterIP") == "ClusterIP")
+      message: Factory app Services must be ClusterIP, with no external IPs.
+    - expression: >-
+        !(request.resource.group in ["traefik.io", "traefik.containo.us", "gateway.networking.k8s.io"])
+      message: Factory app namespaces may not hold Traefik or Gateway API objects; use the app chart's Ingress.
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: factory-apps-resources
+spec:
+  policyName: factory-apps-resources
+  validationActions: ["Deny"]

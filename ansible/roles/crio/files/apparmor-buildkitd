@@ -1,0 +1,12 @@
+# Rootless BuildKit (ai-factory's charts/buildkit) creates user namespaces.
+# Ubuntu 24.04 denies their capabilities to unconfined processes
+# (kernel.apparmor_restrict_unprivileged_userns=1). This profile adds only that
+# permission; a pod opts in with
+#   appArmorProfile: {type: Localhost, localhostProfile: buildkitd}
+# and every other container keeps the restriction.
+abi <abi/4.0>,
+include <tunables/global>
+
+profile buildkitd flags=(unconfined) {
+  userns,
+}
