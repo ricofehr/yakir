@@ -32,7 +32,7 @@ yakir/
         +---bench           Launch, display, and save a kube-bench analysis
         +---cert_manager    Deploy certificate-manager helm chart and define Issuers for both letsencrypt and autosigned type
         +---cni             Manage network plugins for Kubernetes : Flannel, Cilium, Calico
-        +---crio            Manage container engine installation
+        +---crio            Manage container engine installation, and the AppArmor profile rootless BuildKit uses
         +---csi             Manage storage plugins for Kubernetes : Rook or Cinder
         +---gitops          Deploy Argo CD and the CloudNativePG operator, and register the ai-factory root application (skipped unless --gitops-repo is set)
         +---haproxy         Install and configure haproxy on each manager nodes : expose https (port 443) of the cluster and route traffic to ingress controller
@@ -573,9 +573,69 @@ operator's. The cluster-scoped whitelist adds `ValidatingAdmissionPolicy` and it
 the operator kinds: GitLab's chart narrows, by admission policy, the Secret creation RBAC
 cannot narrow by name. Weigh any addition, since each one widens what a commit can do.
 
+One destination stands apart: `ai-build`, the factory's shared BuildKit, is created at Pod
+Security `privileged`, because rootless BuildKit needs seccomp `Unconfined`. The other
+namespaces the role creates for the factory (`gitops_app_namespaces`) enforce `baseline`.
+
+### The factory's own apps
+
+The apps the factory builds are not applications of the ai-factory repository. Its delivery
+ApplicationSets generate them from `factory/deployments`, a repository on the cluster's own
+GitLab that CI and agents write to. They belong to a second project, `factory-apps`, with a
+narrower envelope:
+
+- one source, the in-cluster URL of that repository;
+- destinations `prod-*` and `review-*`;
+- no cluster-scoped object but a `Namespace` named `prod-*` or `review-*`, so that a review
+  deployment can own its namespace and remove it when the merge request closes. The name
+  is part of the whitelist: Argo CD checks destinations for namespaced objects only, so a
+  kind-only entry would let a commit adopt, relabel or prune any namespace on the cluster;
+- a **whitelist** of namespaced kinds, exactly what the app chart renders
+  (`gitops_apps_namespaced_allowed`: workloads, ConfigMap, ClusterIP Service,
+  ServiceAccount, PVC, Ingress, Certificate, NetworkPolicy, ResourceQuota, LimitRange, the
+  CloudNativePG Cluster), rather than the root project's blacklist. RBAC, Endpoints,
+  Secrets, cert-manager requests, Traefik or Gateway routes, and any CRD installed later
+  are refused.
+
+Admission policies cover what the project cannot express, whoever writes the object:
+
+- `factory-apps-namespaces`: a `prod-*` or `review-*` namespace must enforce Pod Security
+  `baseline` or `restricted`, at the latest version (an older `enforce-version` drops checks),
+  and carry `factory.nextdeploy.io/app-namespace=true`.
+  Even limited to those names, the whitelist would otherwise let a commit create one at
+  `privileged`.
+- `factory-apps-hosts`: an Ingress or Certificate in `prod-<app>` may only name
+  `<app>.apps.K8S_DOMAIN`, and in `review-<app>-<mr>` only `<app>-mr-<mr>.review.K8S_DOMAIN`,
+  with no default backend; a Certificate must not be a CA and must come from the ACME
+  ClusterIssuers, never the internal CA. Without it an app could publish the platform's own
+  hostnames (GitLab, Argo CD, Keycloak) on the shared Traefik and capture their traffic.
+- `factory-apps-resources`: an app namespace's ResourceQuota may grant at most
+  `gitops_apps_quota_max` (4 CPU and 8 Gi requested, 16 Gi of memory limits, 100 Gi of
+  storage, 10 PVCs, 30 pods) and may not be scoped; app pods may not have a positive
+  priority; Services must be ClusterIP with no external IPs (CVE-2020-8554); Traefik and
+  Gateway API objects are refused.
+- `factory-apps-quota-required`: no pod is admitted in an app namespace unless its labelled
+  ResourceQuota exists (a parameterized policy, `parameterNotFoundAction: Deny`), so dropping
+  the quota from the chart stops new pods rather than lifting the cap. One box runs
+  everything.
+
+Rootless BuildKit also needs user namespaces, which Ubuntu 24.04 denies to unconfined
+processes (`kernel.apparmor_restrict_unprivileged_userns=1`). The `crio` role installs an
+AppArmor profile, `buildkitd`, that grants only that permission; the BuildKit pod opts into it
+by name. The profile is installed only where the gitops role runs, since that role brings the
+policy that guards it. Pod Security baseline admits any Localhost profile, and Ubuntu ships
+other unconfined profiles granting user namespaces (rootlesskit, podman, ...), so the
+`localhost-apparmor-profiles`
+admission policy refuses any Localhost profile to every pod outside `ai-build` (and
+`kube-system`, where creating a pod already amounts to cluster admin). On a live cluster the
+profile is applied with `--ansible-tags apparmor`.
+
 ### Applying to a live cluster
 
-`--ansible-tags` runs only the roles carrying those tags. Terraform still runs, and finds
+`--ansible-tags` runs only the roles and tasks carrying those tags. The `kubectl proxy`
+on the managers listens on the loopback only (reach it with
+`ssh -L 8001:127.0.0.1:8001 <manager>`): it serves the API with the admin kubeconfig and no
+authentication of its own. Its tasks carry the `kubeproxy` tag. Terraform still runs, and finds
 nothing to change on an unchanged cluster. For instance, after a change to the factory's
 prerequisites:
 

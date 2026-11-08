@@ -1,0 +1,64 @@
+# An app could otherwise publish an Ingress or obtain a certificate for any
+# name, the platform's included (GitLab, Argo CD, Keycloak), and capture its
+# traffic on the shared Traefik. ai-factory's app chart computes one name per
+# namespace; this holds every Ingress and Certificate there to it:
+#   prod-<app>          -> <app>.apps.<domain>
+#   review-<app>-<mr>   -> <app>-mr-<mr>.review.<domain>
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: factory-apps-hosts
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["networking.k8s.io"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["ingresses"]
+      - apiGroups: ["cert-manager.io"]
+        apiVersions: ["*"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["certificates"]
+  matchConditions:
+    - name: in-a-factory-app-namespace
+      expression: request.namespace.startsWith("prod-") || request.namespace.startsWith("review-")
+  variables:
+    - name: suffix
+      expression: request.namespace.substring(request.namespace.indexOf("-") + 1)
+    - name: host
+      expression: >-
+        request.namespace.startsWith("prod-")
+        ? variables.suffix + ".apps.{{ gitops_domain }}"
+        : variables.suffix.substring(0, variables.suffix.lastIndexOf("-")) + "-mr"
+          + variables.suffix.substring(variables.suffix.lastIndexOf("-")) + ".review.{{ gitops_domain }}"
+    - name: isIngress
+      expression: request.resource.resource == "ingresses"
+  validations:
+    # Every rule names the host: Traefik ranks rules by length, so a host-less
+    # rule with a long path could outrank the platform's own.
+    - expression: >-
+        !variables.isIngress
+        || (!has(object.spec.defaultBackend)
+          && object.spec.?rules.orValue([]).all(r, r.?host.orValue("") == variables.host)
+          && object.spec.?tls.orValue([]).all(t, t.?hosts.orValue([]).all(h, h == variables.host)))
+      messageExpression: >-
+        "Ingresses in " + request.namespace + " must route " + variables.host + " only, with no default backend"
+    - expression: >-
+        variables.isIngress
+        || (object.spec.?dnsNames.orValue([]).all(n, n == variables.host)
+          && object.spec.?commonName.orValue(variables.host) == variables.host
+          && !has(object.spec.ipAddresses) && !has(object.spec.uris) && !has(object.spec.emailAddresses)
+          && !object.spec.?isCA.orValue(false)
+          && object.spec.issuerRef.?kind.orValue("Issuer") == "ClusterIssuer"
+          && object.spec.issuerRef.name in {{ gitops_apps_cert_issuers | to_json }})
+      messageExpression: >-
+        "Certificates in " + request.namespace + " must be for " + variables.host + " only, not a CA, from " + {{ gitops_apps_cert_issuers | join(" or ") | to_json }}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: factory-apps-hosts
+spec:
+  policyName: factory-apps-hosts
+  validationActions: ["Deny"]

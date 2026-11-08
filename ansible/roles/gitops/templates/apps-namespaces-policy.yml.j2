@@ -1,0 +1,46 @@
+# The factory-apps project must whitelist Namespace, so that a review deployment
+# can own its namespace and take it along when the merge request closes. That
+# would also let a commit to the deployments repository create a prod-* or
+# review-* namespace labelled Pod Security "privileged" and run privileged pods
+# in it. The project limits Namespaces to those names; this policy holds every such namespace, whoever writes it, to baseline
+# or restricted.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: factory-apps-namespaces
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["namespaces"]
+  matchConditions:
+    - name: is-a-factory-app-namespace
+      expression: >-
+        {% for pattern in gitops_apps_namespaces %}object.metadata.name.startsWith("{{ pattern | replace('*', '') }}"){{ " || " if not loop.last else "" }}{% endfor %}
+
+  validations:
+    - expression: >-
+        has(object.metadata.labels)
+        && "pod-security.kubernetes.io/enforce" in object.metadata.labels
+        && object.metadata.labels["pod-security.kubernetes.io/enforce"] in ["baseline", "restricted"]
+      message: Factory app namespaces must enforce Pod Security baseline or restricted.
+    # Selects the namespace for the quota-required policy.
+    - expression: >-
+        object.metadata.?labels[?"{{ gitops_apps_namespace_label }}"].orValue("") == "true"
+      message: Factory app namespaces must carry {{ gitops_apps_namespace_label }}=true.
+    # Pinning an older policy version drops the checks added since (host probes
+    # in v1.34, seccomp in v1.19).
+    - expression: >-
+        object.metadata.?labels[?"pod-security.kubernetes.io/enforce-version"].orValue("latest") == "latest"
+      message: Factory app namespaces must enforce the latest Pod Security version.
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: factory-apps-namespaces
+spec:
+  policyName: factory-apps-namespaces
+  validationActions: ["Deny"]

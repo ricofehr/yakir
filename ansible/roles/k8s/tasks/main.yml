@@ -19,9 +19,12 @@
   when: k8s_managers_group_name in group_names
   ansible.builtin.import_tasks: kubeconfig.yml
 
+# Its own tag too, so a live cluster can take it without replaying the control
+# plane.
 - name: Kubeproxy setting
   when:
     - k8s_managers_group_name in group_names
   ansible.builtin.import_tasks: "kubeproxy.yml"
+  tags: ["kubeproxy"]
 
 ...

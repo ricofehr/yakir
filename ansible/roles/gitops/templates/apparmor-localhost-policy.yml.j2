@@ -1,0 +1,48 @@
+# Pod Security baseline admits any Localhost AppArmor profile, by name. Besides
+# buildkitd, Ubuntu ships several unconfined profiles that grant user namespaces
+# (rootlesskit, podman, buildah, ...), so denying one name would not do: outside
+# the build namespace, no pod may select a Localhost profile at all. No workload
+# on the cluster used one when this was written.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: localhost-apparmor-profiles
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods", "pods/ephemeralcontainers"]
+  matchConditions:
+    # kube-system is left out: creating a pod there already amounts to cluster
+    # admin, and nothing the factory deploys lands there.
+    - name: outside-the-build-namespace
+      expression: >-
+        !(request.namespace in ["{{ gitops_build_namespace }}", "kube-system"])
+  variables:
+    - name: containers
+      expression: >-
+        object.spec.containers
+        + object.spec.?initContainers.orValue([])
+        + object.spec.?ephemeralContainers.orValue([])
+    - name: profileTypes
+      expression: >-
+        [object.spec.?securityContext.?appArmorProfile.?type.orValue("")]
+        + variables.containers.map(c, c.?securityContext.?appArmorProfile.?type.orValue(""))
+  validations:
+    - expression: >-
+        !variables.profileTypes.exists(t, t == "Localhost")
+        && !object.metadata.?annotations.orValue({}).exists(k,
+          k.startsWith("container.apparmor.security.beta.kubernetes.io/")
+          && object.metadata.annotations[k].startsWith("localhost/"))
+      message: Only pods in {{ gitops_build_namespace }} may use a Localhost AppArmor profile.
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: localhost-apparmor-profiles
+spec:
+  policyName: localhost-apparmor-profiles
+  validationActions: ["Deny"]
