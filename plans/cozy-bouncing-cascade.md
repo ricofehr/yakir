@@ -3,7 +3,7 @@
 ## Context
 
 The `large` libvirt cluster went down ~26h after a clean deploy. Diagnosis on
-`k8s-manager1` (192.168.3.210) showed the control plane itself was **healthy**
+`k8s-manager1` (<manager1>) showed the control plane itself was **healthy**
 (`/healthz` → 200, etcd/scheduler/controller-manager all up) — but the name
 every component uses to reach it, `control-plane:6443`, resolved nowhere.
 
@@ -30,12 +30,12 @@ keepalived: Sep 26 11:25 "Non-existent interface specified"   ← ens3 gone, exi
 `deploy-to-libvirt:8` hardcodes `VM_ETH="ens3"` and passes it as
 `-e keepalived_eth` (line 278), so keepalived was configured for an interface
 that the repo's own hardening role guarantees will disappear. VIP
-`192.168.3.250` never came back.
+`<vip>` never came back.
 
 **2. cloud-init wipes `/etc/hosts` on every boot.**
 `tf/libvirt/cloud_init.cfg:3` sets `manage_etc_hosts: true`, which makes
 cloud-init re-render `/etc/hosts` from the distro template with
-`frequency: always`. That deletes the `192.168.3.250 control-plane` line (and
+`frequency: always`. That deletes the `<vip> control-plane` line (and
 all manager/node entries) written by
 `roles/k8s/tasks/local_hosts_file.yml`. Confirmed: `/etc/hosts` mtime
 `14:17:17`, exactly the boot, and `cloud-init.log` logs
@@ -204,10 +204,10 @@ followed by a deliberate `reboot` of all six VMs, then checking
 
 - **The live cluster stays down.** Repo changes do not touch it. Remediation is
   a separate ask: on each manager `sed -i 's/ens3/eth0/g'
-  /etc/keepalived/keepalived.conf`, re-add `192.168.3.250 control-plane` to
+  /etc/keepalived/keepalived.conf`, re-add `<vip> control-plane` to
   `/etc/hosts`, `systemctl start keepalived`; then the same hosts line on the 5
-  workers + `systemctl restart kubelet`. Note I only have an SSH key for
-  `.210` — `.211`, `.212` and all workers refused `~/.ssh/id_ed25519`.
+  workers + `systemctl restart kubelet`. Note I only had an SSH key for
+  manager1; the other managers and all workers refused it.
 - **certSANs only affect new clusters.** Certificates are generated at
   `kubeadm init`; the existing cluster would need `kubeadm certs renew` plus a
   regenerated apiserver cert to pick the new SAN up.

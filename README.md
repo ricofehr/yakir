@@ -211,22 +211,24 @@ network:
       dhcp4: true
       dhcp6: false
 ```
-- A DHCP server with following lease list : adapt it if changing default MAC addresses and/or IPs
+- A DHCP server with following lease list. The addresses below are documentation
+  examples (RFC 5737): reserve real ones on your LAN for these MACs, and pass them with
+  `--manager-ips`, `--node-ips` and `--failover-ip`.
 
 | VM HostName | MAC Address | IP Address |
 |-------------|-------------|------------|
-| k8s-man-01 | 42:34:00:e2:a1:11 | 192.168.3.210 |
-| k8s-man-02 | 42:34:00:a6:d5:21 | 192.168.3.211 |
-| k8s-man-03 | 42:34:00:4c:95:a1 | 192.168.3.212 |
-| k8s-wrk-01 | 42:34:00:84:5f:13 | 192.168.3.220 |
-| k8s-wrk-02 | 42:34:00:28:2d:2c | 192.168.3.221 |
-| k8s-wrk-03 | 42:34:00:31:97:53 | 192.168.3.222 |
-| k8s-wrk-04 | 42:34:00:04:3e:1d | 192.168.3.223 |
-| k8s-wrk-05 | 42:34:00:ba:48:c2 | 192.168.3.224 |
+| k8s-man-01 | 42:34:00:e2:a1:11 | 192.0.2.210 |
+| k8s-man-02 | 42:34:00:a6:d5:21 | 192.0.2.211 |
+| k8s-man-03 | 42:34:00:4c:95:a1 | 192.0.2.212 |
+| k8s-wrk-01 | 42:34:00:84:5f:13 | 192.0.2.220 |
+| k8s-wrk-02 | 42:34:00:28:2d:2c | 192.0.2.221 |
+| k8s-wrk-03 | 42:34:00:31:97:53 | 192.0.2.222 |
+| k8s-wrk-04 | 42:34:00:04:3e:1d | 192.0.2.223 |
+| k8s-wrk-05 | 42:34:00:ba:48:c2 | 192.0.2.224 |
 
 - For use with public exposed IP
   - defined a wildcard *.K8S_DOMAIN which is binding to the public IP
-  - add a nat PREROUTING rule to forward incoming public IP on port 80 and 443 connection to the private VIP IP (default is 192.168.3.250)
+  - add a nat PREROUTING rule to forward incoming public IP on port 80 and 443 connection to the private VIP IP (`--failover-ip`)
   - allow port 443 and 80 on Firewall
   - set the issuer for certificate-manager on "letsencrypt-prod"
 
@@ -241,7 +243,9 @@ Use 'deploy-to-libvirt' script for launch deployment
 Usage: ./deploy-to-libvirt [options]
 -h                                this is some help text.
 -c xxx                            CNI plugin, choices are cilium / calico / weave / flannel, default is flannel
---failover-ip xxxx                failover ip for managers nodes, default is 192.168.3.250
+--failover-ip xxxx                failover ip for managers nodes, default is 192.0.2.250
+--manager-ips a,b,c               the three managers' addresses, default is 192.0.2.210-212
+--node-ips a,b,c,d,e              the five workers' addresses, default is 192.0.2.220-224
 --ansible-path xxxx               override ansible path
 --keepalived-password xxxx        keepalived password, default is randomly generated
 --kube-domain xxxx                global kubernetes domain, default is kubernetes.local
