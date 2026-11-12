@@ -4,7 +4,7 @@
 
 The goal is an **AI software factory** — an operating model where the SDLC runs as a
 production line with agents doing the work at each stage — built on the Kubernetes cluster
-`yakir` provisions, deployed to **ricosrv (192.168.3.42)**. The reference is Uber's
+`yakir` provisions, deployed to **the server (<server>)**. The reference is Uber's
 platform (Port newsletter): six foundational components — context graph, skills registry,
 MCP gateway, LLM gateway, warm agent environments, assistant interface — with the workflows
 layered on top. The article's central claim is that *the platform has to exist before any
@@ -21,11 +21,11 @@ changes ship by `git push` rather than by re-running a playbook against a live c
 
 These are facts from this session, not assumptions:
 
-1. **ricosrv is down.** No ping, no SSH on 192.168.3.42; `nexus.nextdeploy.io` is down with
+1. **the server is down.** No ping, no SSH on <server>; the package mirror is down with
    it. Nothing deploys until it is back. Per your answer we build anyway — `CLAUDE.md`
    forbids me running `./deploy-to-libvirt`, so the apply was always yours.
-2. **ricostation's firewall blocks the cluster from the LLM.** `ufw` allows `8080/tcp` only
-   from `192.168.2.0/24`. The k8s VMs live on `192.168.3.210-224`. **As things stand the
+2. **the workstation's firewall blocks the cluster from the LLM.** `ufw` allows `8080/tcp` only
+   from `<wifi lan>`. The k8s VMs live on `<vm range>`. **As things stand the
    LLM gateway cannot reach the local model at all.** Needs an operator fix (below).
 3. **The local model is live and bigger than the inventory says.** `qwen3-next-instruct`
    (Qwen3-Next-80B-A3B Q4_K_M) is serving, and `LLAMA_CTX` is now **65536**, not the 32K in
@@ -38,7 +38,7 @@ These are facts from this session, not assumptions:
 ## Decisions
 
 **Local-only LLM gateway.** Per your answer, LiteLLM fronts **only** the Qwen3 on
-ricostation. No Anthropic API key, no cloud spend. Claude Code keeps using your
+the workstation. No Anthropic API key, no cloud spend. Claude Code keeps using your
 subscription directly inside DevPods and runners. The gateway is still worth having: it
 gives one OpenAI-compatible endpoint, virtual keys per project, budgets, retries, and
 Prometheus metrics into the Grafana `monitoring` already deploys — and adding a second
@@ -112,7 +112,7 @@ MR1 ships `charts/factory-pg/` (CNPG `Cluster` + `Database` CRs) and `values/key
 
 ### MR2 — Gateways
 
-- **LiteLLM** — `qwen3-next-instruct` routed to `http://192.168.3.30:8080/v1` as an
+- **LiteLLM** — `qwen3-next-instruct` routed to `http://<workstation>:8080/v1` as an
   `openai/` provider. Three settings come straight from finding #3/#4:
   `max_parallel_requests: 2` (matches `--parallel 2` — more just queues),
   `max_input_tokens: 65536`, and a request timeout sized for ~30 tok/s generation.
@@ -161,21 +161,21 @@ Rook-Ceph OSDs, Prometheus, Grafana and Loki (all of which `deploy-to-libvirt` i
 it pins `SIZING=large`) there is not enough left. Factory baseline is ~8–9 GiB, peaking
 ~16–20 GiB with runners and workspaces active.
 
-Raising workers to **12288 MB** gives 3×6 + 5×12 = 78 GB of ricosrv's 123 GB usable,
-leaving room for the host, Nexus's JVM and MinIO. 16384 would be more comfortable for the
-cluster but squeezes those. CPU stays as-is: 3×2 + 5×4 = 26 of 28 threads, already at the
+Raising workers to **12288 MB** gives 3×6 + 5×12 = 78 GB, most of the host's usable memory,
+leaving room for the host and its other services. 16384 would be more comfortable for the
+cluster but squeezes those. CPU stays as-is: 3×2 + 5×4 = 26 vCPUs, close to the host's thread count, already at the
 line — ARC runners and Coder builds will contend, and that is the expected trade on one box.
 
-Disk is fine: 750 GB of Ceph across 5 workers on the 1 TB `/var/lib/libvirt` SSD.
+Disk is fine: 750 GB of Ceph across 5 workers, thin-provisioned on the libvirt pool.
 
 ## Operator prerequisites — things I cannot do
 
-1. **Power ricosrv back on.** Everything blocks on this.
-2. **ricostation ufw** — the cluster subnet must reach the model:
-   `sudo ufw allow from 192.168.3.0/24 to any port 8080 proto tcp`.
+1. **Power the server back on.** Everything blocks on this.
+2. **the workstation ufw** — the cluster subnet must reach the model:
+   `sudo ufw allow from <lan> to any port 8080 proto tcp`.
    Arm the documented rollback first:
    `sudo systemd-run --on-active=300 --unit=ufw-rollback /usr/sbin/ufw --force disable`,
-   and run it from a `192.168.2.0/24` host — from `192.168.3.x` you will lock yourself out.
+   and run it from a `<wifi lan>` host — from `<lan address>` you will lock yourself out.
 3. **Give the model server a key** — add `--api-key <secret>` to `LLAMA_EXTRA` in
    `/etc/default/llama-server`. Once step 2 lands, two subnets can reach an open endpoint.
 4. **GitHub**: a GitHub App on `ricofehr` for ARC, and a deploy key for `ai-factory`.
@@ -195,7 +195,7 @@ Everything below runs offline, with no cluster:
    `kubeconform` against the k8s 1.35 schema. This is the real gate for MR2–MR4 and catches
    the class of error that only shows up at apply time.
 6. Render the Coder Terraform template with `terraform fmt -check`; `terraform` is not
-   installed locally (it lives on ricosrv), so validation there is `tflint` only.
+   installed locally (it lives on the server), so validation there is `tflint` only.
 7. Validate every new `SKILL.md` frontmatter against the marketplace schema.
 8. **No apply, no `terraform apply`, no playbook run against a live cluster.**
 
@@ -206,7 +206,7 @@ Everything below runs offline, with no cluster:
   than failing under load, but this stack will feel slow with more than a couple of
   concurrent agents. Claude Code on your subscription is the release valve.
 - **Single-box blast radius.** Argo CD, the registry it pulls from (Nexus), and the cluster
-  all sit on ricosrv, which was down when I probed. That is a lab, not a fault — but the
+  all sit on the server, which was down when I probed. That is a lab, not a fault — but the
   factory inherits it.
 - **Neo4j is the heaviest single addition** (~2 GiB) for the least immediately-proven value.
   If capacity bites, MR4's context graph is the first thing to cut.

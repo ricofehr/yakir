@@ -107,7 +107,7 @@ gitops_assistant_namespace: "ai-assistant"
 gitops_keycloak_admin_user: "admin"
 gitops_neo4j_user: "neo4j"
 
-# Api key of the llama-server exposed by ricostation. Empty means the model
+# Api key of the llama-server the LLM gateway talks to. Empty means the model
 # server is still unauthenticated and the gateway sends a placeholder it ignores.
 gitops_llama_api_key: ""
 

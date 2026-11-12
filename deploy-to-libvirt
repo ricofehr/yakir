@@ -16,16 +16,12 @@ declare BACKUP_ACCESS_KEY=""
 declare BACKUP_ACCESS_SECRET=""
 declare BACKUP_REGION="minio"
 declare SIZING="large"
-declare VIP_MANAGERS="192.168.3.250"
+# Documentation addresses (RFC 5737): set --failover-ip, --manager-ips and
+# --node-ips to the addresses your DHCP server reserves for the VMs' MACs.
+declare VIP_MANAGERS="192.0.2.250"
 declare SSH_PARAMS="-C -o ControlMaster=auto -o ControlPersist=60s -o ConnectTimeout=30 -o ConnectionAttempts=5 -o StrictHostKeyChecking=no"
-declare K8SMANAGER1_IP="192.168.3.210"
-declare K8SMANAGER2_IP="192.168.3.211"
-declare K8SMANAGER3_IP="192.168.3.212"
-declare K8SNODE1_IP="192.168.3.220"
-declare K8SNODE2_IP="192.168.3.221"
-declare K8SNODE3_IP="192.168.3.222"
-declare K8SNODE4_IP="192.168.3.223"
-declare K8SNODE5_IP="192.168.3.224"
+declare MANAGER_IPS="192.0.2.210,192.0.2.211,192.0.2.212"
+declare NODE_IPS="192.0.2.220,192.0.2.221,192.0.2.222,192.0.2.223,192.0.2.224"
 declare CERTISSUER="my-selfsigned-ca"
 declare GITOPS_REPO=""
 declare GITOPS_BRANCH="main"
@@ -46,6 +42,8 @@ Usage: $0 [options]
 -h                                this is some help text.
 -c xxx                            CNI plugin, choices are cilium / weave / flannel, default is $CNI_PLUGIN
 --failover-ip xxxx                failover ip for managers nodes, default is $VIP_MANAGERS
+--manager-ips a,b,c               the three managers' addresses, default is $MANAGER_IPS
+--node-ips a,b,c,d,e              the five workers' addresses, default is $NODE_IPS
 --ansible-path xxxx               override ansible path
 --keepalived-password xxxx        keepalived password, default is randomly generated
 --kube-domain xxxx                global kubernetes domain, default is $K8S_DOMAIN
@@ -114,6 +112,16 @@ while (($# > 0)); do
     --failover-ip)
       shift
       VIP_MANAGERS="$1"
+      shift
+      ;;
+    --manager-ips)
+      shift
+      MANAGER_IPS="$1"
+      shift
+      ;;
+    --node-ips)
+      shift
+      NODE_IPS="$1"
       shift
       ;;
     --ansible-path)
@@ -202,6 +210,21 @@ if [[ -z "$VIP_MANAGERS" ]]; then
   deployhelp
 fi
 
+# Each address lands in the generated Ansible inventory: anything but an IPv4
+# address (a space, an empty field) would become a host variable there.
+IFS=, read -r -a MANAGER_IP_LIST <<< "$MANAGER_IPS"
+IFS=, read -r -a NODE_IP_LIST <<< "$NODE_IPS"
+if [[ ${#MANAGER_IP_LIST[@]} -ne 3 || ${#NODE_IP_LIST[@]} -ne 5 ]]; then
+  echo "--manager-ips takes 3 addresses and --node-ips 5, comma separated"
+  deployhelp
+fi
+for ip in "$VIP_MANAGERS" "${MANAGER_IP_LIST[@]}" "${NODE_IP_LIST[@]}"; do
+  if [[ ! "$ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
+    echo "not an IPv4 address: '$ip'"
+    deployhelp
+  fi
+done
+
 # Check the off-site store's files here, before anything is built. The gitops
 # role is the very last thing the playbook runs, so a typo in a path or a
 # missing companion flag would otherwise cost a full cluster build to discover.
@@ -266,11 +289,11 @@ ln -sf "sizing_vars/sizing_vars_${SIZING}.yml" sizing_vars.yml
 # Prepare inventory
 cat > tfinventory <<EOF
 [man01]
-k8s-manager1 ansible_host=${K8SMANAGER1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=MASTER keepalived_priority=100
+k8s-manager1 ansible_host=${MANAGER_IP_LIST[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=MASTER keepalived_priority=100
 [man02]
-k8s-manager2 ansible_host=${K8SMANAGER2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80
+k8s-manager2 ansible_host=${MANAGER_IP_LIST[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80
 [man03]
-k8s-manager3 ansible_host=${K8SMANAGER3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80
+k8s-manager3 ansible_host=${MANAGER_IP_LIST[2]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3 keepalived_state=BACKUP keepalived_priority=80
 
 [leader:children]
 man01
@@ -281,11 +304,11 @@ man02
 man03
 
 [nodes]
-k8s-node1 ansible_host=${K8SNODE1_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
-k8s-node2 ansible_host=${K8SNODE2_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
-k8s-node3 ansible_host=${K8SNODE3_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
-k8s-node4 ansible_host=${K8SNODE4_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
-k8s-node5 ansible_host=${K8SNODE5_IP} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+k8s-node1 ansible_host=${NODE_IP_LIST[0]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+k8s-node2 ansible_host=${NODE_IP_LIST[1]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+k8s-node3 ansible_host=${NODE_IP_LIST[2]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+k8s-node4 ansible_host=${NODE_IP_LIST[3]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
+k8s-node5 ansible_host=${NODE_IP_LIST[4]} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_python_interpreter=/usr/bin/python3
 EOF
 
 # Disable cowsay ansible output
