@@ -32,13 +32,13 @@ gitops_root_application: "ai-factory"
 gitops_project: "ai-factory"
 
 # Cluster-scoped kinds the factory legitimately creates. Anything outside this
-# list is refused by Argo CD rather than applied with cluster-admin.
+# list is refused by Argo CD rather than applied with cluster-admin. Namespaces
+# are listed by name in templates/app-project.yml.j2, not here.
 #
 # The last two are GitLab's admission policy: RBAC cannot narrow Secret
 # creation by name, so a ValidatingAdmissionPolicy holds the service accounts
 # that create Secrets to their own.
 gitops_project_cluster_resources:
-  - {group: "", kind: Namespace}
   - {group: "apiextensions.k8s.io", kind: CustomResourceDefinition}
   - {group: "rbac.authorization.k8s.io", kind: ClusterRole}
   - {group: "rbac.authorization.k8s.io", kind: ClusterRoleBinding}
@@ -59,5 +59,8 @@ gitops_project_cluster_resources:
 gitops_project_namespaced_denied:
   - {group: "", kind: Secret}
   - {group: "apps", kind: DaemonSet}
+  # kube-gitops is a destination: without this, a commit could rewrite this very
+  # project (or factory-apps) and widen its own envelope.
+  - {group: "argoproj.io", kind: AppProject}
 
 ...

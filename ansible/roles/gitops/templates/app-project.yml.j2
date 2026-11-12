@@ -18,6 +18,13 @@ spec:
       namespace: {{ namespace }}
 {% endfor %}
   clusterResourceWhitelist:
+    # Namespaces by name, those of the destinations only: a kind-only entry
+    # would let a commit adopt, relabel or prune any namespace on the cluster.
+{% for namespace in gitops_project_namespaces %}
+    - group: ""
+      kind: Namespace
+      name: "{{ namespace }}"
+{% endfor %}
 {% for resource in gitops_project_cluster_resources %}
     - group: "{{ resource.group }}"
       kind: {{ resource.kind }}
