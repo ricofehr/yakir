@@ -377,6 +377,21 @@
     state: present
     template: apps-quota-required-policy.yml.j2
 
+# Superseded by the per-kind policies above, so that each expression is
+# type-checked against one kind; removed only once those exist, so a live
+# cluster is never left without enforcement.
+- name: Remove the factory's old multi-kind admission policies
+  kubernetes.core.k8s:
+    state: absent
+    api_version: admissionregistration.k8s.io/v1
+    kind: "{{ item.kind }}"
+    name: "{{ item.name }}"
+  loop:
+    - {kind: ValidatingAdmissionPolicyBinding, name: factory-apps-hosts}
+    - {kind: ValidatingAdmissionPolicy, name: factory-apps-hosts}
+    - {kind: ValidatingAdmissionPolicyBinding, name: factory-apps-resources}
+    - {kind: ValidatingAdmissionPolicy, name: factory-apps-resources}
+
 - name: Keep Localhost AppArmor profiles, BuildKit's included, to the build namespace
   kubernetes.core.k8s:
     state: present

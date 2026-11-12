@@ -562,7 +562,8 @@ factory's GitLab routes it. Clone URLs use `ssh://git@gitlab.<domain>:2222/…`.
 
 Anything committed under `apps/` is applied with the application controller's rights, so the
 role scopes the `AppProject` rather than leaving it at Argo CD's permit-everything default:
-a list of destination namespaces, a whitelist of cluster-scoped kinds, and a blacklist of
+a list of destination namespaces, a whitelist of cluster-scoped kinds (Namespaces only by the
+names of those destinations), and a blacklist of
 namespaced ones (`ResourceQuota`, `LimitRange`, `Secret`, `DaemonSet`). `Secret` is denied
 because the factory never renders one: its passwords come from CloudNativePG's generated
 secrets and the rest are created here. That makes "no credentials in that repository" a
@@ -597,19 +598,22 @@ narrower envelope:
   Secrets, cert-manager requests, Traefik or Gateway routes, and any CRD installed later
   are refused.
 
-Admission policies cover what the project cannot express, whoever writes the object:
+Admission policies cover what the project cannot express, whoever writes the object. Each
+matches one kind, so its expressions are type-checked against that kind only:
 
 - `factory-apps-namespaces`: a `prod-*` or `review-*` namespace must enforce Pod Security
   `baseline` or `restricted`, at the latest version (an older `enforce-version` drops checks),
   and carry `factory.nextdeploy.io/app-namespace=true`.
   Even limited to those names, the whitelist would otherwise let a commit create one at
   `privileged`.
-- `factory-apps-hosts`: an Ingress or Certificate in `prod-<app>` may only name
+- `factory-apps-ingress-hosts`, `factory-apps-certificate-hosts`: an Ingress or Certificate
+  in `prod-<app>` may only name
   `<app>.apps.K8S_DOMAIN`, and in `review-<app>-<mr>` only `<app>-mr-<mr>.review.K8S_DOMAIN`,
   with no default backend; a Certificate must not be a CA and must come from the ACME
   ClusterIssuers, never the internal CA. Without it an app could publish the platform's own
   hostnames (GitLab, Argo CD, Keycloak) on the shared Traefik and capture their traffic.
-- `factory-apps-resources`: an app namespace's ResourceQuota may grant at most
+- `factory-apps-quotas`, `factory-apps-pods`, `factory-apps-services`, `factory-apps-routing`:
+  an app namespace's ResourceQuota may grant at most
   `gitops_apps_quota_max` (4 CPU and 8 Gi requested, 16 Gi of memory limits, 100 Gi of
   storage, 10 PVCs, 30 pods) and may not be scoped; app pods may not have a positive
   priority; Services must be ClusterIP with no external IPs (CVE-2020-8554); Traefik and

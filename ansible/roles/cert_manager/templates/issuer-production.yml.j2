@@ -18,5 +18,5 @@ spec:
           ingressClassName: ingress-traefik
           # Traefik runs in the cluster and reaches a ClusterIP Service; the
           # default NodePort would open a port on every node, and is refused in
-          # the factory's app namespaces (factory-apps-resources policy).
+          # the factory's app namespaces (factory-apps-services policy).
           serviceType: ClusterIP
