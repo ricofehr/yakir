@@ -3,6 +3,7 @@
 tracing_namespace: "tracing"
 tracing_monitoring_namespace: "monitoring"
 tracing_logcollect_namespace: "logcollect"
+tracing_nextsre_namespace: "nextsre"
 tracing_grafana_datasource_label: "grafana_datasource"
 
 tracing_tempo_version: "3.2.1"

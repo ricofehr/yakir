@@ -1,0 +1,55 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: nextsre-k8s-write-scope
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["apps"]
+        apiVersions: ["v1"]
+        operations: ["UPDATE"]
+        resources: ["deployments", "deployments/scale"]
+  matchConditions:
+    - name: k8s-write-only
+      expression: request.userInfo.username == "system:serviceaccount:{{ gitops_nextsre_namespace }}:k8s-write"
+  variables:
+    - name: newAnnotations
+      expression: >-
+        request.subResource == "" && has(object.spec.template.metadata.annotations) ?
+        object.spec.template.metadata.annotations : {}
+    - name: oldAnnotations
+      expression: >-
+        request.subResource == "" && has(oldObject.spec.template.metadata.annotations) ?
+        oldObject.spec.template.metadata.annotations : {}
+  validations:
+    - expression: >-
+        request.subResource == "scale" ?
+        (object.spec.replicas >= 1 && object.spec.replicas <= 20) :
+        ((!has(object.spec.replicas) || (object.spec.replicas >= 1 && object.spec.replicas <= 20)) &&
+         object.metadata.name == oldObject.metadata.name &&
+         object.metadata.labels == oldObject.metadata.labels &&
+         object.metadata.annotations == oldObject.metadata.annotations &&
+         (has(object.metadata.finalizers) ? object.metadata.finalizers == oldObject.metadata.finalizers : !has(oldObject.metadata.finalizers)) &&
+         object.spec.paused == oldObject.spec.paused &&
+         object.spec.minReadySeconds == oldObject.spec.minReadySeconds &&
+         object.spec.progressDeadlineSeconds == oldObject.spec.progressDeadlineSeconds &&
+         object.spec.revisionHistoryLimit == oldObject.spec.revisionHistoryLimit &&
+         object.spec.template.spec == oldObject.spec.template.spec &&
+         object.spec.selector == oldObject.spec.selector &&
+         object.spec.strategy == oldObject.spec.strategy &&
+         object.spec.template.metadata.labels == oldObject.spec.template.metadata.labels &&
+         variables.newAnnotations.filter(k, k != "sre-agent/restartedAt").all(k,
+           k in variables.oldAnnotations &&
+           variables.oldAnnotations[k] == variables.newAnnotations[k]) &&
+         variables.oldAnnotations.filter(k, k != "sre-agent/restartedAt").all(k,
+           k in variables.newAnnotations))
+      message: k8s-write may only change replicas (bounded 1-20) and the sre-agent/restartedAt pod template annotation
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: nextsre-k8s-write-scope
+spec:
+  policyName: nextsre-k8s-write-scope
+  validationActions: ["Deny"]

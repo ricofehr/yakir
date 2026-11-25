@@ -31,6 +31,12 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: "{{ tracing_monitoring_namespace }}"
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: "{{ tracing_nextsre_namespace }}"
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: tempo-traces
       ports:
         - port: 3200
           protocol: TCP
