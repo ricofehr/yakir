@@ -59,6 +59,11 @@
           metadata:
             name: "{{ logcollect_basic_auth_secret }}"
             namespace: "{{ logcollect_namespace }}"
+            annotations:
+              reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+              reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "{{ logcollect_nextsre_namespace }}"
+              reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+              reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "{{ logcollect_nextsre_namespace }}"
           type: Opaque
           stringData:
             username: "{{ logcollect_loki_username }}"
@@ -69,6 +74,22 @@
   ansible.builtin.set_fact:
     logcollect_loki_username: "{{ logcollect_basic_auth_data.username | b64decode }}"
     logcollect_loki_password: "{{ logcollect_basic_auth_data.password | b64decode }}"
+  when: logcollect_basic_auth_ready
+  no_log: true
+
+- name: Ensure Loki gateway credentials carry Reflector annotations for NextSRE
+  kubernetes.core.k8s:
+    state: patched
+    kind: Secret
+    name: "{{ logcollect_basic_auth_secret }}"
+    namespace: "{{ logcollect_namespace }}"
+    definition:
+      metadata:
+        annotations:
+          reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+          reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "{{ logcollect_nextsre_namespace }}"
+          reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+          reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "{{ logcollect_nextsre_namespace }}"
   when: logcollect_basic_auth_ready
   no_log: true
 

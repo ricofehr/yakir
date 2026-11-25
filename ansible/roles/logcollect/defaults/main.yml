@@ -13,6 +13,7 @@ logcollect_loki_ingestion_burst_mb: 20
 logcollect_loki_max_streams: 5000
 
 logcollect_basic_auth_username: "loki"
+logcollect_nextsre_namespace: "nextsre"
 
 logcollect_fluentbit_version: "0.56.0"
 logcollect_loki_version: "7.3.0"

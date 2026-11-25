@@ -397,6 +397,11 @@
     state: present
     template: apparmor-localhost-policy.yml.j2
 
+- name: Bound the NextSRE k8s-write service account scope
+  kubernetes.core.k8s:
+    state: present
+    template: nextsre-write-scope-policy.yml.j2
+
 - name: Deploy the project the factory's own apps are confined to
   kubernetes.core.k8s:
     state: present

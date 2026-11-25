@@ -20,6 +20,57 @@
     template: prometheus-write-deny.yml.j2
   when: monitoring_tracing_enabled | bool
 
+- name: Look up the existing NextSRE webhook token
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ monitoring_nextsre_token_secret }}"
+    namespace: "{{ monitoring_namespace }}"
+  register: monitoring_nextsre_token_lookup
+  no_log: true
+
+- name: Provision NextSRE webhook token when not present
+  when: (monitoring_nextsre_token_lookup.resources | length) == 0
+  no_log: true
+  block:
+    - name: Generate random webhook token for NextSRE
+      ansible.builtin.set_fact:
+        monitoring_nextsre_token: "{{ lookup('community.general.random_string', length=32, special=false) }}"
+
+    - name: Store NextSRE webhook token secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ monitoring_nextsre_token_secret }}"
+            namespace: "{{ monitoring_namespace }}"
+            annotations:
+              reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+              reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "{{ monitoring_nextsre_namespace }}"
+              reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+              reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "{{ monitoring_nextsre_namespace }}"
+          type: Opaque
+          stringData:
+            token: "{{ monitoring_nextsre_token }}"
+
+- name: Ensure NextSRE webhook token secret carries Reflector annotations
+  kubernetes.core.k8s:
+    state: patched
+    kind: Secret
+    name: "{{ monitoring_nextsre_token_secret }}"
+    namespace: "{{ monitoring_namespace }}"
+    definition:
+      metadata:
+        annotations:
+          reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+          reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "{{ monitoring_nextsre_namespace }}"
+          reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+          reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "{{ monitoring_nextsre_namespace }}"
+  when: (monitoring_nextsre_token_lookup.resources | length) > 0
+  no_log: true
+
 - name: Deploy Prometheus
   kubernetes.core.helm:
     name: prometheus
@@ -30,6 +81,78 @@
       alertmanager:
         persistence:
           storageClass: "{{ monitoring_storage_class }}"
+        extraSecretMounts:
+          - name: nextsre-token
+            mountPath: /etc/alertmanager/secrets/nextsre
+            subPath: ""
+            secretName: "{{ monitoring_nextsre_token_secret }}"
+            readOnly: true
+        config:
+          global: {}
+          templates:
+            - '/etc/alertmanager/*.tmpl'
+          receivers:
+            - name: default-receiver
+            - name: nextsre
+              webhook_configs:
+                - url: "{{ monitoring_nextsre_webhook_url }}"
+                  send_resolved: false
+                  http_config:
+                    authorization:
+                      type: Bearer
+                      credentials_file: /etc/alertmanager/secrets/nextsre/token
+          route:
+            group_wait: 10s
+            group_interval: 5m
+            repeat_interval: 3h
+            receiver: default-receiver
+            routes:
+              - receiver: nextsre
+                matchers:
+                  - severity =~ "warning|critical|fatal"
+                continue: true
+      serverFiles:
+        alerting_rules.yml:
+          groups:
+            - name: kubernetes-workloads
+              rules:
+                - alert: KubePodCrashLooping
+                  expr: >-
+                    increase(kube_pod_container_status_restarts_total[5m]) > 0 and on(namespace, pod, container)
+                    kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} == 1
+                  for: 2m
+                  labels:
+                    severity: warning
+                  annotations:
+                    summary: "{% raw %}Pod {{ $labels.pod }} is crash-looping in namespace {{ $labels.namespace }}{% endraw %}"
+                    description: >-
+                      {% raw %}Container {{ $labels.container }} in pod {{ $labels.pod }}
+                      (namespace {{ $labels.namespace }}) has restarted multiple times and is in CrashLoopBackOff.{% endraw %}
+                - alert: KubePodNotReady
+                  expr: >-
+                    sum by (namespace, pod) (max by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown"}) *
+                    on(namespace, pod) group_left(owner_kind) topk by(namespace, pod) (1,
+                    max by(namespace, pod, owner_kind) (kube_pod_owner{owner_kind!="Job"}))) > 0 or on(namespace, pod)
+                    (kube_pod_status_ready{condition="false"} == 1 and on(namespace, pod) kube_pod_status_phase{phase="Running"} == 1)
+                  for: 10m
+                  labels:
+                    severity: warning
+                  annotations:
+                    summary: "{% raw %}Pod {{ $labels.pod }} is not ready in namespace {{ $labels.namespace }}{% endraw %}"
+                    description: >-
+                      {% raw %}Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been in non-ready
+                      phase for more than 10 minutes.{% endraw %}
+                - alert: KubeDeploymentReplicasMismatch
+                  expr: >-
+                    kube_deployment_spec_replicas != kube_deployment_status_replicas_available
+                  for: 5m
+                  labels:
+                    severity: warning
+                  annotations:
+                    summary: "{% raw %}Deployment {{ $labels.deployment }} replica mismatch in namespace {{ $labels.namespace }}{% endraw %}"
+                    description: >-
+                      {% raw %}Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has
+                      unavailable or mismatched replicas compared to desired spec.{% endraw %}
       server:
         extraFlags: "{{ monitoring_prometheus_flags + (monitoring_prometheus_tracing_flags if monitoring_tracing_enabled | bool else []) }}"
         otlp: "{{ monitoring_prometheus_otlp if monitoring_tracing_enabled | bool else {} }}"
