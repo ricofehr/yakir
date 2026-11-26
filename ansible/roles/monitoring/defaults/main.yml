@@ -15,6 +15,7 @@ monitoring_nextsre_token_secret: "alertmanager-nextsre-token"
 monitoring_nextsre_webhook_url: "http://gateway.{{ monitoring_nextsre_namespace }}.svc.cluster.local:9302/api/v1/alerts"
 
 monitoring_prometheus_version: "23.4.0"
+monitoring_prometheus_storage_size: "20Gi"
 monitoring_grafana_version: "6.58.8"
 
 # Off by default: prometheus accepts pushed metrics and stores exemplars, grafana

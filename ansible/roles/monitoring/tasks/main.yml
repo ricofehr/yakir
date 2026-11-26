@@ -173,6 +173,7 @@
                 - "{{ monitoring_exporter_domain }}"
         persistentVolume:
           storageClass: "{{ monitoring_storage_class }}"
+          size: "{{ monitoring_prometheus_storage_size }}"
 
 - name: Add grafana chart repo
   kubernetes.core.helm_repository:
