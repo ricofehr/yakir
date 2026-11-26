@@ -13,12 +13,12 @@ spec:
   sourceRepos:
     - {{ gitops_repo_url }}
   destinations:
-{% for namespace in gitops_project_namespaces %}
+{% for namespace in gitops_project_destinations %}
     - server: https://kubernetes.default.svc
       namespace: {{ namespace }}
 {% endfor %}
   clusterResourceWhitelist:
-    # Namespaces by name, those of the destinations only: a kind-only entry
+    # Namespaces by name, those of the managed destinations only: a kind-only entry
     # would let a commit adopt, relabel or prune any namespace on the cluster.
 {% for namespace in gitops_project_namespaces %}
     - group: ""

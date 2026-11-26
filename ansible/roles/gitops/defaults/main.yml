@@ -47,6 +47,17 @@ gitops_app_namespaces:
 # ai-factory repository can write every non-blacklisted kind into.
 gitops_project_namespaces: >-
   {{ gitops_app_namespaces + [gitops_namespace, 'toolhive-system', gitops_build_namespace] }}
+
+# Application workload namespaces where NextSRE deploys read-only RBAC roles.
+# Permitted as destinations in the root AppProject, but excluded from
+# clusterResourceWhitelist so the factory cannot manage/adopt the namespaces.
+gitops_watched_app_namespaces:
+  - "prod-hello"
+
+# Destinations permitted for the ai-factory AppProject. Includes factory-managed
+# namespaces plus application workload namespaces watched by NextSRE.
+gitops_project_destinations: >-
+  {{ gitops_project_namespaces + gitops_watched_app_namespaces }}
 # The factory's shared BuildKit. Rootless BuildKit needs seccomp Unconfined, which
 # Pod Security baseline refuses, so this namespace is created at privileged.
 # The weight of the destination note above applies doubly: the ai-factory
